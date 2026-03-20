@@ -802,7 +802,7 @@ input {
   }
 
   .stock-grid {
-    grid-template-columns: 2fr;
+    grid-template-columns: 1fr;
   }
 }
 
