@@ -1,0 +1,676 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f8fc;
+  color: #1e293b;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+/* =========================
+   공통
+========================= */
+
+.app-button {
+  border: none;
+  border-radius: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+  padding: 0 18px;
+  height: 50px;
+}
+
+.app-button.full-width {
+  width: 100%;
+}
+
+.app-button.primary {
+  background: #2563eb;
+  color: white;
+}
+
+.app-button.primary:hover {
+  background: #1d4ed8;
+}
+
+.app-button.danger {
+  background: #ef4444;
+  color: white;
+}
+
+.app-button.danger:hover {
+  background: #dc2626;
+}
+
+.section-title {
+  margin: 0 0 18px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.up {
+  color: #16a34a;
+}
+
+.down {
+  color: #dc2626;
+}
+
+/* =========================
+   로그인 / 회원가입 페이지
+========================= */
+
+.auth-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #eef6ff 0%, #ffffff 55%, #edfdf4 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 32px;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 1280px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 72px;
+}
+
+.auth-left {
+  flex: 1;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.brand-badge {
+  display: inline-block;
+  width: fit-content;
+  padding: 10px 18px;
+  background: #dbeafe;
+  color: #2563eb;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 28px;
+}
+
+.auth-title {
+  font-size: 64px;
+  line-height: 1.15;
+  margin: 0 0 22px;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.auth-description {
+  font-size: 24px;
+  color: #475569;
+  margin-bottom: 36px;
+  line-height: 1.6;
+}
+
+.market-card {
+  width: 100%;
+  max-width: 520px;
+  background: white;
+  border-radius: 28px;
+  padding: 32px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.quote-label {
+  font-size: 18px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 18px;
+}
+
+.quote-message {
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1.4;
+  color: #0f172a;
+  min-height: 120px;
+  white-space: pre-line;
+  word-break: keep-all;
+  opacity: 1;
+  transition: opacity 0.8s ease-in-out;
+}
+
+.fade-in {
+  opacity: 1;
+}
+
+.fade-out {
+  opacity: 0;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  flex-shrink: 0;
+  background: white;
+  border-radius: 28px;
+  padding: 36px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.auth-switch-text {
+  text-align: right;
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 24px;
+}
+
+.switch-button {
+  margin-left: 8px;
+  border: none;
+  background: none;
+  color: #2563eb;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.switch-button:hover {
+  text-decoration: underline;
+}
+
+.form-box {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+}
+
+.custom-input {
+  width: 100%;
+  height: 48px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 0 14px 0 42px;
+  font-size: 14px;
+  outline: none;
+  background: #f8fafc;
+  transition: 0.2s;
+}
+
+.custom-input:focus {
+  border-color: #3b82f6;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+}
+
+.verify-row {
+  display: flex;
+  gap: 10px;
+}
+
+.verify-input {
+  padding-left: 14px;
+  text-align: center;
+}
+
+.terms-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.social-auth {
+  margin-top: 24px;
+}
+
+.divider {
+  text-align: center;
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.divider::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.divider span {
+  position: relative;
+  background: white;
+  padding: 0 12px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.google-button {
+  width: 100%;
+  height: 50px;
+  border: 1px solid #dbe2ea;
+  border-radius: 14px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  color: #334155;
+  transition: 0.2s;
+}
+
+.google-button:hover {
+  background: #f8fafc;
+}
+
+.google-button img {
+  width: 20px;
+  height: 20px;
+}
+
+/* =========================
+   사이트형 레이아웃
+========================= */
+
+.site-layout {
+  min-height: 100vh;
+  background: #f8fbff;
+}
+
+.top-nav {
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.top-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+}
+
+.top-nav-logo {
+  font-size: 28px;
+  font-weight: 800;
+  color: #2563eb;
+  cursor: pointer;
+}
+
+.top-nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.top-nav-link {
+  border: none;
+  background: none;
+  font-size: 16px;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  padding: 8px 4px;
+}
+
+.top-nav-link.active {
+  color: #2563eb;
+}
+
+.top-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.site-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px 60px;
+}
+
+/* =========================
+   랜딩 홈
+========================= */
+
+.landing-page {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.landing-hero {
+  background: linear-gradient(135deg, #eef6ff 0%, #ffffff 55%, #edfdf4 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 28px;
+  padding: 56px;
+}
+
+.landing-badge {
+  display: inline-block;
+  width: fit-content;
+  padding: 10px 18px;
+  background: #dbeafe;
+  color: #2563eb;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.landing-title {
+  margin: 0 0 18px;
+  font-size: 52px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.landing-description {
+  margin: 0 0 28px;
+  font-size: 20px;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.landing-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.landing-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* =========================
+   로그인 후 대시보드 카드
+========================= */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.summary-card {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+}
+
+.summary-card p {
+  margin: 0 0 10px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.summary-card h3 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.content-card {
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+}
+
+.content-card.large {
+  grid-column: span 2;
+}
+
+.stock-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stock-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.stock-list li:last-child {
+  border-bottom: none;
+}
+
+.stock-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.stock-table th,
+.stock-table td {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid #eef2f7;
+  font-size: 14px;
+}
+
+.stock-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.mini-stock-card {
+  background: #f8fbff;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.mini-stock-card h4 {
+  margin: 0 0 10px;
+}
+
+.page-desc {
+  color: #64748b;
+  margin-bottom: 18px;
+}
+
+.contest-box {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.contest-item {
+  background: #f8fbff;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.contest-item h4 {
+  margin: 0 0 8px;
+}
+
+.mypage-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mypage-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+/* =========================
+   반응형
+========================= */
+
+@media (max-width: 1100px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .content-card.large {
+    grid-column: span 2;
+  }
+
+  .auth-container {
+    gap: 40px;
+  }
+
+  .auth-title {
+    font-size: 52px;
+  }
+
+  .auth-description {
+    font-size: 20px;
+  }
+
+  .quote-message {
+    font-size: 32px;
+    min-height: 104px;
+  }
+
+  .landing-title {
+    font-size: 42px;
+  }
+}
+
+@media (max-width: 900px) {
+  .auth-page {
+    padding: 32px 20px;
+  }
+
+  .auth-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 32px;
+    max-width: 500px;
+  }
+
+  .auth-left {
+    max-width: 100%;
+  }
+
+  .auth-title {
+    font-size: 40px;
+  }
+
+  .auth-description {
+    font-size: 18px;
+    margin-bottom: 24px;
+  }
+
+  .market-card {
+    max-width: 100%;
+    padding: 24px;
+  }
+
+  .quote-message {
+    font-size: 26px;
+    min-height: 84px;
+  }
+
+  .auth-card {
+    max-width: 100%;
+    padding: 28px;
+  }
+
+  .top-nav-inner {
+    flex-direction: column;
+    height: auto;
+    gap: 14px;
+    padding: 18px 20px;
+  }
+
+  .top-nav-menu {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .site-main {
+    padding: 28px 20px 48px;
+  }
+
+  .landing-hero {
+    padding: 32px 24px;
+  }
+
+  .landing-title {
+    font-size: 34px;
+  }
+
+  .landing-description {
+    font-size: 17px;
+  }
+
+  .landing-actions {
+    flex-direction: column;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .content-card.large {
+    grid-column: span 1;
+  }
+
+  .stock-grid {
+    grid-template-columns: 1fr;
+  }
+}
