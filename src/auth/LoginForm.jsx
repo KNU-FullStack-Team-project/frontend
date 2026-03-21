@@ -18,7 +18,7 @@ const LoginForm = ({ onLogin }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onLogin();
+    onLogin(form);
   };
 
   return (

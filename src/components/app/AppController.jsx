@@ -38,7 +38,9 @@ const AppController = () => {
   const [currentPage, setCurrentPage] = useState("home");
   const [pendingPage, setPendingPage] = useState(null);
 
-  const handleLogin = () => {
+  const handleLogin = (form) => {
+    console.log("로그인 입력값:", form);
+
     setIsLoggedIn(true);
 
     if (pendingPage) {
