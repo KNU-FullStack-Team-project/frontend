@@ -11,7 +11,7 @@ const messages = [
   "작은 시작이\n큰 차이를 만듭니다.",
 ];
 
-const AuthPage = ({ title, description, onLogin }) => {
+const AuthPage = ({ title, description, onLogin, onSignup }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [messageIndex, setMessageIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
@@ -58,7 +58,7 @@ const AuthPage = ({ title, description, onLogin }) => {
           {isLogin ? (
             <LoginForm onLogin={onLogin} />
           ) : (
-            <SignupForm onSignup={onLogin} />
+            <SignupForm onSignup={onSignup} />
           )}
 
           <SocialAuth />

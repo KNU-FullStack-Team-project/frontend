@@ -51,6 +51,10 @@ const AppController = () => {
     }
   };
 
+  const handleSignup = (form) => {
+    console.log("회원가입 입력값:", form);
+  };
+
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentPage("home");
@@ -79,6 +83,7 @@ const AppController = () => {
         title={pageTexts.auth.title}
         description={pageTexts.auth.description}
         onLogin={handleLogin}
+        onSignup={handleSignup}
       />
     );
   }
