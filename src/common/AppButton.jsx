@@ -6,12 +6,16 @@ const AppButton = ({
   type = "button",
   onClick,
   fullWidth = false,
+  disabled = false,
 }) => {
   return (
     <button
       type={type}
       onClick={onClick}
-      className={`app-button ${variant} ${fullWidth ? "full-width" : ""}`}
+      disabled={disabled}
+      className={`app-button ${variant} ${fullWidth ? "full-width" : ""} ${
+        disabled ? "disabled" : ""
+      }`}
     >
       {children}
     </button>

@@ -50,6 +50,13 @@ input {
   background: #dc2626;
 }
 
+.app-button.disabled,
+.app-button:disabled {
+  background: #cbd5e1;
+  color: white;
+  cursor: not-allowed;
+}
+
 .section-title {
   margin: 0 0 18px;
   font-size: 18px;
@@ -61,6 +68,20 @@ input {
 }
 
 .down {
+  color: #dc2626;
+}
+
+.helper-text {
+  margin: 8px 4px 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.helper-text.success {
+  color: #16a34a;
+}
+
+.helper-text.error {
   color: #dc2626;
 }
 
@@ -248,14 +269,6 @@ input {
   text-align: center;
 }
 
-.terms-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #475569;
-}
-
 .social-auth {
   margin-top: 24px;
 }
@@ -308,6 +321,138 @@ input {
 .google-button img {
   width: 20px;
   height: 20px;
+}
+
+/* =========================
+   약관
+========================= */
+
+.terms-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.terms-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.terms-link-button {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+}
+
+.terms-link-button:hover {
+  text-decoration: underline;
+}
+
+/* =========================
+   약관 모달
+========================= */
+
+.terms-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 9999;
+}
+
+.terms-modal-card {
+  width: 100%;
+  max-width: 680px;
+  max-height: 80vh;
+  background: #ffffff;
+  border-radius: 28px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  animation: modalFadeUp 0.2s ease;
+}
+
+.terms-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fbff;
+}
+
+.terms-modal-header h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.terms-modal-close {
+  border: none;
+  background: #eef2ff;
+  color: #334155;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.terms-modal-close:hover {
+  background: #dbeafe;
+}
+
+.terms-modal-body {
+  padding: 24px;
+  max-height: 420px;
+  overflow-y: auto;
+  background: #ffffff;
+}
+
+.terms-modal-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: keep-all;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #334155;
+}
+
+.terms-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fbff;
+}
+
+@keyframes modalFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* =========================
@@ -822,5 +967,32 @@ input {
 
   .contest-card-footer {
     padding: 18px 20px;
+  }
+
+  .terms-modal-overlay {
+    padding: 16px;
+  }
+
+  .terms-modal-card {
+    max-height: 85vh;
+    border-radius: 22px;
+  }
+
+  .terms-modal-header {
+    padding: 18px 20px;
+  }
+
+  .terms-modal-header h3 {
+    font-size: 20px;
+  }
+
+  .terms-modal-body {
+    padding: 20px;
+    max-height: 360px;
+  }
+
+  .terms-modal-footer {
+    padding: 16px 20px;
+    flex-direction: column;
   }
 }
