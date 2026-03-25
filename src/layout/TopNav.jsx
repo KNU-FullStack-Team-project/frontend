@@ -12,6 +12,7 @@ const TopNav = ({
   currentPage,
   onMovePage,
   isLoggedIn,
+  isAdmin,
   onOpenLogin,
   onLogout,
 }) => {
@@ -36,9 +37,16 @@ const TopNav = ({
 
         <div className="top-nav-right">
           {isLoggedIn ? (
-            <AppButton variant="danger" onClick={onLogout}>
-              로그아웃
-            </AppButton>
+            <>
+              {isAdmin ? (
+                <AppButton variant="primary" onClick={() => onMovePage("admin")}>
+                  관리자
+                </AppButton>
+              ) : null}
+              <AppButton variant="danger" onClick={onLogout}>
+                로그아웃
+              </AppButton>
+            </>
           ) : (
             <AppButton variant="primary" onClick={onOpenLogin}>
               로그인
