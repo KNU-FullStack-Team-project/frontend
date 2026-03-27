@@ -5,10 +5,17 @@ import StockPage from "../../pages/StockPage";
 import ContestPage from "../../pages/ContestPage";
 import MyPage from "../../pages/MyPage";
 import AuthPage from "../../pages/AuthPage";
+import AdminPage from "../../pages/AdminPage";
 
 import TopNav from "../../layout/TopNav";
 
 import "../../auth.css";
+
+const LOCAL_ACCOUNTS = [
+  //로컬 테스트용 계정! 배포 전에 삭제예정
+  { email: "user@knu.com", password: "12345", role: "user" },
+  { email: "admin@knu.com", password: "12345", role: "admin" },
+];
 
 const pageTexts = {
   home: {
@@ -37,17 +44,30 @@ const AppController = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState("home");
   const [pendingPage, setPendingPage] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const handleLogin = (form) => {
     console.log("로그인 입력값:", form);
 
+    const matchedAccount = LOCAL_ACCOUNTS.find(
+      (account) =>
+        account.email === form.email.trim().toLowerCase() &&
+        account.password === form.password,
+    );
+
+    if (!matchedAccount) {
+      alert("로그인 정보가 일치하지 않습니다.");
+      return;
+    }
+
+    setCurrentUser(matchedAccount);
     setIsLoggedIn(true);
 
     if (pendingPage) {
       setCurrentPage(pendingPage);
       setPendingPage(null);
     } else {
-      setCurrentPage("home");
+      setCurrentPage("mypage");
     }
   };
 
@@ -56,16 +76,21 @@ const AppController = () => {
   };
 
   const handleLogout = () => {
+    setCurrentUser(null);
     setIsLoggedIn(false);
     setCurrentPage("home");
   };
 
   const handleMovePage = (page) => {
-    const protectedPages = ["mypage"];
+    const protectedPages = ["mypage", "admin"];
 
     if (!isLoggedIn && protectedPages.includes(page)) {
       setPendingPage(page);
       setCurrentPage("auth");
+      return;
+    }
+
+    if (page === "admin" && currentUser?.role !== "admin") {
       return;
     }
 
@@ -96,6 +121,8 @@ const AppController = () => {
         return <ContestPage isLoggedIn={isLoggedIn} />;
       case "mypage":
         return <MyPage />;
+      case "admin":
+        return <AdminPage />;
       case "home":
       default:
         return (
@@ -110,6 +137,7 @@ const AppController = () => {
         currentPage={currentPage}
         onMovePage={handleMovePage}
         isLoggedIn={isLoggedIn}
+        isAdmin={currentUser?.role === "admin"}
         onOpenLogin={handleOpenLogin}
         onLogout={handleLogout}
       />
