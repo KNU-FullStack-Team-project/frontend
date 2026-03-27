@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import AppInput from "../common/AppInput";
 import AppButton from "../common/AppButton";
 import TermsSection from "./agreement/TermsSection";
 import TermsModal from "./agreement/TermsModal";
 import { TERMS_CONTENT } from "./agreement/termsData";
+import ProfileImagePicker from "./ProfileImagePicker";
+
+const DEFAULT_PROFILE_IMAGE = "/default-profile.png";
 
 const SignupForm = ({ onSignup }) => {
   const [form, setForm] = useState({
@@ -29,6 +32,9 @@ const SignupForm = ({ onSignup }) => {
   const [agreeMarketing, setAgreeMarketing] = useState(false);
 
   const [openedTerm, setOpenedTerm] = useState(null);
+
+  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [profilePreview, setProfilePreview] = useState(DEFAULT_PROFILE_IMAGE);
 
   const validateEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
@@ -127,6 +133,32 @@ const SignupForm = ({ onSignup }) => {
     setIsNicknameValid(true);
   };
 
+  const handleProfileImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    const maxSize = 5 * 1024 * 1024;
+
+    if (!allowedTypes.includes(file.type)) {
+      alert("jpg, png, webp 형식의 이미지만 업로드할 수 있습니다.");
+      return;
+    }
+
+    if (file.size > maxSize) {
+      alert("이미지 크기는 5MB 이하만 가능합니다.");
+      return;
+    }
+
+    setProfileImageFile(file);
+    setProfilePreview(URL.createObjectURL(file));
+  };
+
+  const handleResetProfileImage = () => {
+    setProfileImageFile(null);
+    setProfilePreview(DEFAULT_PROFILE_IMAGE);
+  };
+
   const handleAgreeAllChange = (e) => {
     const checked = e.target.checked;
     setAgreeAll(checked);
@@ -195,6 +227,7 @@ const SignupForm = ({ onSignup }) => {
       password: form.password,
       nickname: form.nickname.trim(),
       marketingConsent: agreeMarketing,
+      profileImageFile,
     };
 
     onSignup(signupData);
@@ -207,6 +240,13 @@ const SignupForm = ({ onSignup }) => {
     <>
       <form className="form-box" onSubmit={handleSubmit}>
         <h3 className="section-title">회원가입</h3>
+
+        {/* 프로필 이미지 컴포넌트 */}
+        <ProfileImagePicker
+          profilePreview={profilePreview}
+          onChangeImage={handleProfileImageChange}
+          onResetImage={handleResetProfileImage}
+        />
 
         <div>
           <AppInput
