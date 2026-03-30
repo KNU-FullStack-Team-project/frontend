@@ -11,6 +11,24 @@ import TopNav from "../../layout/TopNav";
 
 import "../../auth.css";
 
+const LOCAL_ACCOUNTS = [
+  //로컬 테스트용 계정! 배포 전에 삭제예정
+  {
+    id: 1,
+    email: "user@knu.com",
+    password: "12345",
+    role: "user",
+    nickname: "강원준",
+  },
+  {
+    id: 2,
+    email: "admin@knu.com",
+    password: "12345",
+    role: "admin",
+    nickname: "관리자",
+  },
+];
+
 const pageTexts = {
   home: {
     title: "모의투자 플랫폼",
@@ -153,7 +171,7 @@ const AppController = () => {
   const renderPage = () => {
     switch (currentPage) {
       case "stock":
-        return <StockPage isLoggedIn={isLoggedIn} />;
+        return <StockPage isLoggedIn={isLoggedIn} user={currentUser} />;
       case "contest":
         return <ContestPage isLoggedIn={isLoggedIn} />;
       case "mypage":
