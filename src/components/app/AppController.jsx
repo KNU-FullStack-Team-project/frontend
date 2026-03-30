@@ -13,8 +13,8 @@ import "../../auth.css";
 
 const LOCAL_ACCOUNTS = [
   //로컬 테스트용 계정! 배포 전에 삭제예정
-  { email: "user@knu.com", password: "12345", role: "user" },
-  { email: "admin@knu.com", password: "12345", role: "admin" },
+  { id: 1, email: "user@knu.com", password: "12345", role: "user", nickname: "강원준" },
+  { id: 2, email: "admin@knu.com", password: "12345", role: "admin", nickname: "관리자" },
 ];
 
 const pageTexts = {
@@ -47,19 +47,24 @@ const AppController = () => {
   const [currentUser, setCurrentUser] = useState(null);
 
   const handleLogin = (form) => {
-    console.log("로그인 입력값:", form);
+    const inputEmail = form.email.trim();
+    const inputPassword = form.password.trim();
+    
+    console.log("로그인 시도 - 입력:", { email: inputEmail, password: inputPassword });
 
     const matchedAccount = LOCAL_ACCOUNTS.find(
       (account) =>
-        account.email === form.email.trim().toLowerCase() &&
-        account.password === form.password,
+        account.email === inputEmail &&
+        account.password === inputPassword,
     );
 
     if (!matchedAccount) {
-      alert("로그인 정보가 일치하지 않습니다.");
+      console.warn("로그인 실패: 일치하는 계정 없음");
+      alert("로그인 정보가 일치하지 않습니다. (테스트용: 1 / 1)");
       return;
     }
 
+    console.log("로그인 성공:", matchedAccount.nickname);
     setCurrentUser(matchedAccount);
     setIsLoggedIn(true);
 
@@ -116,11 +121,11 @@ const AppController = () => {
   const renderPage = () => {
     switch (currentPage) {
       case "stock":
-        return <StockPage isLoggedIn={isLoggedIn} />;
+        return <StockPage isLoggedIn={isLoggedIn} user={currentUser} />;
       case "contest":
         return <ContestPage isLoggedIn={isLoggedIn} />;
       case "mypage":
-        return <MyPage />;
+        return <MyPage user={currentUser} />;
       case "admin":
         return <AdminPage />;
       case "home":
