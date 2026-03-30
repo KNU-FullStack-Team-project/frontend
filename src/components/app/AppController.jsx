@@ -11,12 +11,6 @@ import TopNav from "../../layout/TopNav";
 
 import "../../auth.css";
 
-const LOCAL_ACCOUNTS = [
-  //로컬 테스트용 계정! 배포 전에 삭제예정
-  { email: "user@knu.com", password: "12345", role: "user" },
-  { email: "admin@knu.com", password: "12345", role: "admin" },
-];
-
 const pageTexts = {
   home: {
     title: "모의투자 플랫폼",
@@ -46,33 +40,76 @@ const AppController = () => {
   const [pendingPage, setPendingPage] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
 
-  const handleLogin = (form) => {
-    console.log("로그인 입력값:", form);
+  const handleLogin = async (form) => {
+    try {
+      const res = await fetch("http://localhost:8081/users/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: form.email.trim(),
+          password: form.password,
+        }),
+      });
 
-    const matchedAccount = LOCAL_ACCOUNTS.find(
-      (account) =>
-        account.email === form.email.trim().toLowerCase() &&
-        account.password === form.password,
-    );
+      const data = await res.text();
+      console.log("로그인 응답:", data);
 
-    if (!matchedAccount) {
-      alert("로그인 정보가 일치하지 않습니다.");
-      return;
-    }
+      if (data === "로그인 성공") {
+        const loginUser = {
+          email: form.email.trim(),
+          role: "user",
+        };
 
-    setCurrentUser(matchedAccount);
-    setIsLoggedIn(true);
+        setCurrentUser(loginUser);
+        setIsLoggedIn(true);
 
-    if (pendingPage) {
-      setCurrentPage(pendingPage);
-      setPendingPage(null);
-    } else {
-      setCurrentPage("mypage");
+        if (pendingPage) {
+          setCurrentPage(pendingPage);
+          setPendingPage(null);
+        } else {
+          setCurrentPage("mypage");
+        }
+      } else {
+        alert(data);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("로그인 중 오류가 발생했습니다.");
     }
   };
 
-  const handleSignup = (form) => {
-    console.log("회원가입 입력값:", form);
+  const handleSignup = async (form) => {
+    try {
+      const res = await fetch("http://localhost:8081/users/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: form.email.trim(),
+          password: form.password,
+          nickname: form.nickname.trim(),
+          marketingConsent: form.marketingConsent,
+        }),
+      });
+
+      const data = await res.text();
+      console.log("회원가입 응답:", data);
+
+      if (data === "회원가입 완료") {
+        setCurrentPage("auth");
+        return "success";
+      } else {
+        alert(data);
+        return "fail";
+      }
+    } catch (error) {
+      console.error(error);
+      alert("회원가입 중 오류가 발생했습니다.");
+      return "fail";
+    }
   };
 
   const handleLogout = () => {
@@ -120,7 +157,7 @@ const AppController = () => {
       case "contest":
         return <ContestPage isLoggedIn={isLoggedIn} />;
       case "mypage":
-        return <MyPage />;
+        return <MyPage currentUser={currentUser} />;
       case "admin":
         return <AdminPage />;
       case "home":
