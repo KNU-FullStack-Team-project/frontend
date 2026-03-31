@@ -35,6 +35,8 @@ const pageTexts = {
   },
 };
 
+const ADMIN_EMAIL = "admin@knu.com";
+
 const AppController = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState("home");
@@ -42,7 +44,6 @@ const AppController = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
 
-  // 🔥 로그인 유지 (너 코드 유지)
   useEffect(() => {
     const savedUser = localStorage.getItem("currentUser");
 
@@ -53,7 +54,6 @@ const AppController = () => {
     }
   }, []);
 
-  // 🔥 로그인 API (너 코드 유지)
   const handleLogin = async (form) => {
     try {
       const response = await fetch("http://localhost:8081/api/auth/login", {
@@ -75,9 +75,16 @@ const AppController = () => {
 
       const data = await response.json();
 
-      setCurrentUser(data);
+      const normalizedUser = {
+        ...data,
+        role:
+          data?.role?.toLowerCase?.() ||
+          (data?.email?.toLowerCase?.() === ADMIN_EMAIL ? "admin" : "user"),
+      };
+
+      setCurrentUser(normalizedUser);
       setIsLoggedIn(true);
-      localStorage.setItem("currentUser", JSON.stringify(data));
+      localStorage.setItem("currentUser", JSON.stringify(normalizedUser));
 
       if (pendingPage) {
         setCurrentPage(pendingPage);
