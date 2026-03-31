@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import HomePage from "../../pages/HomePage";
 import StockPage from "../../pages/StockPage";
 import ContestPage from "../../pages/ContestPage";
+import ContestDetailPage from "../../pages/ContestDetailPage";
 import MyPage from "../../pages/MyPage";
 import AuthPage from "../../pages/AuthPage";
 import AdminPage from "../../pages/AdminPage";
@@ -10,12 +11,6 @@ import AdminPage from "../../pages/AdminPage";
 import TopNav from "../../layout/TopNav";
 
 import "../../auth.css";
-
-const LOCAL_ACCOUNTS = [
-  //로컬 테스트용 계정! 배포 전에 삭제예정
-  { email: "user@knu.com", password: "12345", role: "user" },
-  { email: "admin@knu.com", password: "12345", role: "admin" },
-];
 
 const pageTexts = {
   home: {
@@ -45,29 +40,52 @@ const AppController = () => {
   const [currentPage, setCurrentPage] = useState("home");
   const [pendingPage, setPendingPage] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
 
-  const handleLogin = (form) => {
-    console.log("로그인 입력값:", form);
+  useEffect(() => {
+    const savedUser = localStorage.getItem("currentUser");
 
-    const matchedAccount = LOCAL_ACCOUNTS.find(
-      (account) =>
-        account.email === form.email.trim().toLowerCase() &&
-        account.password === form.password,
-    );
-
-    if (!matchedAccount) {
-      alert("로그인 정보가 일치하지 않습니다.");
-      return;
+    if (savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      setCurrentUser(parsedUser);
+      setIsLoggedIn(true);
     }
+  }, []);
 
-    setCurrentUser(matchedAccount);
-    setIsLoggedIn(true);
+  const handleLogin = async (form) => {
+    try {
+      const response = await fetch("http://localhost:8081/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+        }),
+      });
 
-    if (pendingPage) {
-      setCurrentPage(pendingPage);
-      setPendingPage(null);
-    } else {
-      setCurrentPage("mypage");
+      if (!response.ok) {
+        const errorText = await response.text();
+        alert(errorText || "로그인에 실패했습니다.");
+        return;
+      }
+
+      const data = await response.json();
+
+      setCurrentUser(data);
+      setIsLoggedIn(true);
+      localStorage.setItem("currentUser", JSON.stringify(data));
+
+      if (pendingPage) {
+        setCurrentPage(pendingPage);
+        setPendingPage(null);
+      } else {
+        setCurrentPage("mypage");
+      }
+    } catch (error) {
+      console.error("로그인 오류:", error);
+      alert("서버와 연결할 수 없습니다.");
     }
   };
 
@@ -76,6 +94,7 @@ const AppController = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("currentUser");
     setCurrentUser(null);
     setIsLoggedIn(false);
     setCurrentPage("home");
@@ -102,6 +121,15 @@ const AppController = () => {
     setCurrentPage("auth");
   };
 
+  const handleSelectCompetition = (competitionId) => {
+    setSelectedCompetitionId(competitionId);
+    setCurrentPage("contestDetail");
+  };
+
+  const handleBackToContestList = () => {
+    setCurrentPage("contest");
+  };
+
   if (currentPage === "auth") {
     return (
       <AuthPage
@@ -117,12 +145,32 @@ const AppController = () => {
     switch (currentPage) {
       case "stock":
         return <StockPage isLoggedIn={isLoggedIn} />;
+
       case "contest":
-        return <ContestPage isLoggedIn={isLoggedIn} />;
+        return (
+          <ContestPage
+            isLoggedIn={isLoggedIn}
+            currentUser={currentUser}
+            onSelectCompetition={handleSelectCompetition}
+          />
+        );
+
+      case "contestDetail":
+        return (
+          <ContestDetailPage
+            competitionId={selectedCompetitionId}
+            isLoggedIn={isLoggedIn}
+            currentUser={currentUser}
+            onBack={handleBackToContestList}
+          />
+        );
+
       case "mypage":
         return <MyPage />;
+
       case "admin":
         return <AdminPage />;
+
       case "home":
       default:
         return (
