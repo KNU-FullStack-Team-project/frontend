@@ -11,10 +11,21 @@ const messages = [
   "작은 시작이\n큰 차이를 만듭니다.",
 ];
 
-const AuthPage = ({ title, description, onLogin, onSignup }) => {
-  const [isLogin, setIsLogin] = useState(true);
+const AuthPage = ({
+  title,
+  description,
+  onLogin,
+  onSignup,
+  initialMode = "login",
+  onChangeMode,
+}) => {
+  const [isLogin, setIsLogin] = useState(initialMode === "login");
   const [messageIndex, setMessageIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    setIsLogin(initialMode === "login");
+  }, [initialMode]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -28,6 +39,15 @@ const AuthPage = ({ title, description, onLogin, onSignup }) => {
 
     return () => clearInterval(interval);
   }, []);
+
+  const handleSwitchMode = () => {
+    const nextIsLogin = !isLogin;
+    setIsLogin(nextIsLogin);
+
+    if (onChangeMode) {
+      onChangeMode(nextIsLogin ? "login" : "signup");
+    }
+  };
 
   return (
     <div className="auth-page">
@@ -49,7 +69,7 @@ const AuthPage = ({ title, description, onLogin, onSignup }) => {
             <button
               type="button"
               className="switch-button"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={handleSwitchMode}
             >
               {isLogin ? "회원가입" : "로그인"}
             </button>

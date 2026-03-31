@@ -43,6 +43,7 @@ const AppController = () => {
   const [pendingPage, setPendingPage] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
+  const [authMode, setAuthMode] = useState("login");
 
   useEffect(() => {
     const savedUser = localStorage.getItem("currentUser");
@@ -116,6 +117,7 @@ const AppController = () => {
       const data = await res.text();
 
       if (data === "회원가입 완료") {
+        setAuthMode("login");
         setCurrentPage("auth");
         return "success";
       } else {
@@ -141,6 +143,7 @@ const AppController = () => {
 
     if (!isLoggedIn && protectedPages.includes(page)) {
       setPendingPage(page);
+      setAuthMode("login");
       setCurrentPage("auth");
       return;
     }
@@ -154,6 +157,7 @@ const AppController = () => {
 
   const handleOpenLogin = () => {
     setPendingPage(null);
+    setAuthMode("login");
     setCurrentPage("auth");
   };
 
@@ -173,6 +177,8 @@ const AppController = () => {
         description={pageTexts.auth.description}
         onLogin={handleLogin}
         onSignup={handleSignup}
+        initialMode={authMode}
+        onChangeMode={setAuthMode}
       />
     );
   }
