@@ -15,7 +15,6 @@ const SignupForm = ({ onSignup }) => {
     passwordConfirm: "",
     nickname: "",
   });
-
   const [emailMessage, setEmailMessage] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordConfirmMessage, setPasswordConfirmMessage] = useState("");

@@ -1,36 +1,70 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import OrderHistory from "../components/stock/OrderHistory";
 
-const MyPage = ({ user }) => {
-  // 계좌 ID를 유저 ID와 동일하다고 가정 (실제 프로덕션에서는 계좌 조회 API 필요 가능)
-  const accountId = user?.id || 1;
+const MyPage = ({ currentUser }) => {
+  const [profile, setProfile] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!currentUser?.email) {
+      return;
+    }
+
+    const loadProfile = async () => {
+      try {
+        const params = new URLSearchParams({ email: currentUser.email });
+        const response = await fetch(
+          `http://localhost:8081/users/profile?${params.toString()}`,
+        );
+        if (!response.ok) {
+          throw new Error("failed");
+        }
+
+        setProfile(await response.json());
+        setError("");
+      } catch {
+        setError("회원 정보를 불러오지 못했습니다.");
+      }
+    };
+
+    loadProfile();
+  }, [currentUser?.email]);
+
+  const accountId = profile?.accountId;
 
   return (
     <div className="mypage-container">
       <div className="content-card">
         <h3>마이페이지</h3>
-        <p className="page-desc">
-          내 정보, 투자 내역, 관심 종목, 프로필 수정 영역입니다.
-        </p>
+        <p className="page-desc">내 정보, 투자 내역, 관심 종목, 프로필 수정 영역입니다.</p>
+
+        {error ? <p className="page-desc">{error}</p> : null}
 
         <div className="mypage-info">
           <div className="mypage-row">
             <span>닉네임</span>
-            <strong>{user?.nickname || "강원준"}</strong>
+            <strong>{profile?.nickname ?? "-"}</strong>
           </div>
           <div className="mypage-row">
             <span>이메일</span>
-            <strong>{user?.email || "test@email.com"}</strong>
+            <strong>{profile?.email ?? currentUser?.email ?? "-"}</strong>
+          </div>
+          <div className="mypage-row">
+            <span>권한</span>
+            <strong>{profile?.role ?? currentUser?.role ?? "-"}</strong>
+          </div>
+          <div className="mypage-row">
+            <span>상태</span>
+            <strong>{profile?.status ?? "-"}</strong>
           </div>
           <div className="mypage-row">
             <span>가입일</span>
-            <strong>2026-03-18</strong>
+            <strong>{profile?.createdAt ? profile.createdAt.slice(0, 10) : "-"}</strong>
           </div>
         </div>
       </div>
 
-      {/* 주문 내역 컴포넌트 */}
-      <OrderHistory accountId={accountId} />
+      {accountId ? <OrderHistory accountId={accountId} /> : null}
     </div>
   );
 };

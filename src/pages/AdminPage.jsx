@@ -54,7 +54,7 @@ const AdminPage = () => {
                     <td>{user.nickname}</td>
                     <td>{user.role}</td>
                     <td>{user.status}</td>
-                    <td>{user.accountCount}</td>
+                    <td>{user.accountCount ?? 0}</td>
                   </tr>
                 ))
               )}
