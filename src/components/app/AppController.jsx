@@ -11,24 +11,6 @@ import TopNav from "../../layout/TopNav";
 
 import "../../auth.css";
 
-const LOCAL_ACCOUNTS = [
-  //로컬 테스트용 계정! 배포 전에 삭제예정
-  {
-    id: 1,
-    email: "user@knu.com",
-    password: "12345",
-    role: "user",
-    nickname: "강원준",
-  },
-  {
-    id: 2,
-    email: "admin@knu.com",
-    password: "12345",
-    role: "admin",
-    nickname: "관리자",
-  },
-];
-
 const pageTexts = {
   home: {
     title: "모의투자 플랫폼",
@@ -57,6 +39,7 @@ const AppController = () => {
   const [currentPage, setCurrentPage] = useState("home");
   const [pendingPage, setPendingPage] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [authMode, setAuthMode] = useState("login");
 
   const handleLogin = async (form) => {
     try {
@@ -117,6 +100,7 @@ const AppController = () => {
       console.log("회원가입 응답:", data);
 
       if (data === "회원가입 완료") {
+        setAuthMode("login");
         setCurrentPage("auth");
         return "success";
       } else {
@@ -141,6 +125,7 @@ const AppController = () => {
 
     if (!isLoggedIn && protectedPages.includes(page)) {
       setPendingPage(page);
+      setAuthMode("login");
       setCurrentPage("auth");
       return;
     }
@@ -154,6 +139,7 @@ const AppController = () => {
 
   const handleOpenLogin = () => {
     setPendingPage(null);
+    setAuthMode("login");
     setCurrentPage("auth");
   };
 
@@ -164,6 +150,8 @@ const AppController = () => {
         description={pageTexts.auth.description}
         onLogin={handleLogin}
         onSignup={handleSignup}
+        initialMode={authMode}
+        onChangeMode={setAuthMode}
       />
     );
   }
