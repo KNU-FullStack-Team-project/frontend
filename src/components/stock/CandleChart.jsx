@@ -70,8 +70,8 @@ const CandleChart = ({ data, width = 760, height = 400 }) => {
   const currentY = getY(currentPrice);
 
   return (
-    <div 
-      className="candle-chart-wrapper" 
+    <div
+      className="candle-chart-wrapper"
       ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setHoverIdx(null)}
@@ -129,23 +129,23 @@ const CandleChart = ({ data, width = 760, height = 400 }) => {
           strokeDasharray="2,2"
         />
         <rect
-            x={width - margin.right + 2}
-            y={currentY - 10}
-            width={65}
-            height={20}
-            rx={4}
-            fill="var(--accent)"
+          x={width - margin.right + 2}
+          y={currentY - 10}
+          width={65}
+          height={20}
+          rx={4}
+          fill="var(--accent)"
         />
         <text
-            x={width - margin.right + 34}
-            y={currentY}
-            textAnchor="middle"
-            alignmentBaseline="middle"
-            fill="white"
-            fontSize="11"
-            fontWeight="600"
+          x={width - margin.right + 34}
+          y={currentY}
+          textAnchor="middle"
+          alignmentBaseline="middle"
+          fill="white"
+          fontSize="11"
+          fontWeight="600"
         >
-            {currentPrice.toLocaleString()}
+          {currentPrice.toLocaleString()}
         </text>
 
         {/* 거래량 막대 */}
@@ -172,10 +172,10 @@ const CandleChart = ({ data, width = 760, height = 400 }) => {
           const close = parseFloat(d.close);
           const high = parseFloat(d.high);
           const low = parseFloat(d.low);
-          
+
           const isUp = close >= open;
           const color = isUp ? "#f43f5e" : "#3b82f6";
-          
+
           const yOpen = getY(open);
           const yClose = getY(close);
           const yHigh = getY(high);
@@ -207,21 +207,21 @@ const CandleChart = ({ data, width = 760, height = 400 }) => {
 
         {/* X축 (일자) */}
         {sortedData.filter((_, idx) => idx % Math.max(1, Math.floor(sortedData.length / 6)) === 0).map((d, i) => {
-            const idx = sortedData.indexOf(d);
-            const x = margin.left + idx * candleWidth;
-            return (
-                <text
-                    key={i}
-                    x={x + candleWidth / 2}
-                    y={height - 15}
-                    textAnchor="middle"
-                    fontSize="11"
-                    fill="#9ca3af"
-                    className="chart-axis-label"
-                >
-                    {d.time ? `${d.time.substring(0,2)}:${d.time.substring(2,4)}` : `${d.date.substring(4,6)}.${d.date.substring(6,8)}`}
-                </text>
-            );
+          const idx = sortedData.indexOf(d);
+          const x = margin.left + idx * candleWidth;
+          return (
+            <text
+              key={i}
+              x={x + candleWidth / 2}
+              y={height - 15}
+              textAnchor="middle"
+              fontSize="11"
+              fill="#9ca3af"
+              className="chart-axis-label"
+            >
+              {d.time ? `${d.time.substring(0, 2)}:${d.time.substring(2, 4)}` : `${d.date.substring(4, 6)}.${d.date.substring(6, 8)}`}
+            </text>
+          );
         })}
 
         {/* 크로스헤어 */}
@@ -242,16 +242,16 @@ const CandleChart = ({ data, width = 760, height = 400 }) => {
 
       {/* 툴팁 */}
       {hoverIdx !== null && (
-        <div 
+        <div
           className="chart-tooltip"
-          style={{ 
+          style={{
             left: mousePos.x > width / 2 ? mousePos.x - 180 : mousePos.x + 20,
             top: 20
           }}
         >
           <div style={{ fontWeight: 700, marginBottom: 5 }}>
             {sortedData[hoverIdx].date.replace(/(\d{4})(\d{2})(\d{2})/, "$1.$2.$3")}
-            {sortedData[hoverIdx].time && ` ${sortedData[hoverIdx].time.substring(0,2)}:${sortedData[hoverIdx].time.substring(2,4)}`}
+            {sortedData[hoverIdx].time && ` ${sortedData[hoverIdx].time.substring(0, 2)}:${sortedData[hoverIdx].time.substring(2, 4)}`}
           </div>
           <div className="tooltip-row">
             <span className="tooltip-label">시가</span>

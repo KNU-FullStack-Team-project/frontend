@@ -35,7 +35,7 @@ const StockDetail = ({ stock, user }) => {
       alert("로그인이 필요합니다.");
       return;
     }
-    
+
     // 수량 확인
     if (quantity <= 0) {
       alert("수량은 1주 이상이어야 합니다.");
@@ -59,7 +59,7 @@ const StockDetail = ({ stock, user }) => {
         const msg = await response.text();
         throw new Error(msg);
       }
-      
+
       alert(`${stock.name} ${quantity}주 ${orderSide === "BUY" ? "매수" : "매도"} 주문이 성공적으로 접수되었습니다.`);
     } catch (err) {
       alert("주문 실패: " + err.message);
@@ -108,14 +108,14 @@ const StockDetail = ({ stock, user }) => {
 
       <div className="trading-section">
         <div className="trading-tabs">
-          <button 
-            className={`tab-btn buy ${orderSide === "BUY" ? "active" : ""}`} 
+          <button
+            className={`tab-btn buy ${orderSide === "BUY" ? "active" : ""}`}
             onClick={() => setOrderSide("BUY")}
           >
             매수
           </button>
-          <button 
-            className={`tab-btn sell ${orderSide === "SELL" ? "active" : ""}`} 
+          <button
+            className={`tab-btn sell ${orderSide === "SELL" ? "active" : ""}`}
             onClick={() => setOrderSide("SELL")}
           >
             매도
