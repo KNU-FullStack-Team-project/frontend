@@ -11,24 +11,6 @@ import TopNav from "../../layout/TopNav";
 
 import "../../auth.css";
 
-const LOCAL_ACCOUNTS = [
-  //로컬 테스트용 계정! 배포 전에 삭제예정
-  {
-    id: 1,
-    email: "user@knu.com",
-    password: "12345",
-    role: "user",
-    nickname: "강원준",
-  },
-  {
-    id: 2,
-    email: "admin@knu.com",
-    password: "12345",
-    role: "admin",
-    nickname: "관리자",
-  },
-];
-
 const pageTexts = {
   home: {
     title: "모의투자 플랫폼",
@@ -51,6 +33,8 @@ const pageTexts = {
     description: "가상 자산으로 안전하게 투자 연습을 시작해보세요.",
   },
 };
+
+const ADMIN_EMAIL = "admin@knu.com";
 
 const AppController = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -75,9 +59,10 @@ const AppController = () => {
       console.log("로그인 응답:", data);
 
       if (data === "로그인 성공") {
+        const email = form.email.trim().toLowerCase();
         const loginUser = {
-          email: form.email.trim(),
-          role: "user",
+          email,
+          role: email === ADMIN_EMAIL ? "admin" : "user",
         };
 
         setCurrentUser(loginUser);
