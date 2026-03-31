@@ -9,6 +9,7 @@ const StockDetail = ({ stock, user }) => {
   const [quantity, setQuantity] = useState(1);
   const [orderSide, setOrderSide] = useState("BUY");
   const [period, setPeriod] = useState("1M");
+  const [accountData, setAccountData] = useState(null);
 
   // 유저 정보에서 accountId 추출 (없으면 기본값 1)
   const accountId = user?.id || 1;
@@ -30,15 +31,43 @@ const StockDetail = ({ stock, user }) => {
     if (stock) fetchHistory();
   }, [stock, period]);
 
+  const fetchAccountData = async () => {
+    if (!user?.email) return;
+    try {
+      const response = await fetch(`/api/accounts/my/dashboard?email=${user.email}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAccountData(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch account data:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAccountData();
+  }, [user?.email]);
+
   const handleOrder = async () => {
     if (!user) {
       alert("로그인이 필요합니다.");
       return;
     }
-    
+
+    if (!accountData) {
+      alert("계좌 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+
     // 수량 확인
     if (quantity <= 0) {
       alert("수량은 1주 이상이어야 합니다.");
+      return;
+    }
+
+    // 매수 시 잔고 확인
+    if (orderSide === "BUY" && accountData && (parseInt(stock.currentPrice) * quantity) > accountData.rawCashBalance) {
+      alert("잔고가 부족합니다.");
       return;
     }
 
@@ -47,7 +76,7 @@ const StockDetail = ({ stock, user }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          accountId,
+          accountId: accountData.id || accountData.accountId || 1, // DTO 구조에 따라 조정 필요
           stockCode: stock.symbol,
           orderSide,
           orderType: "MARKET",
@@ -61,6 +90,7 @@ const StockDetail = ({ stock, user }) => {
       }
       
       alert(`${stock.name} ${quantity}주 ${orderSide === "BUY" ? "매수" : "매도"} 주문이 성공적으로 접수되었습니다.`);
+      fetchAccountData(); // 주문 후 잔고 갱신
     } catch (err) {
       alert("주문 실패: " + err.message);
     }
@@ -131,6 +161,19 @@ const StockDetail = ({ stock, user }) => {
             name="quantity"
             placeholder="수량 입력"
           />
+          <div className="order-info">
+            <div className="info-row">
+              <span>{orderSide === "BUY" ? "주문 가능 금액" : "보유 수량"}</span>
+              <strong>
+                {orderSide === "BUY" 
+                  ? (accountData ? accountData.cashBalance : "조회 중...") 
+                  : (accountData 
+                      ? (accountData.holdings.find(h => h.stockName === stock.name)?.quantity || 0) + "주"
+                      : "조회 중...")
+                }
+              </strong>
+            </div>
+          </div>
           <div className="order-preview">
             <span>주문 금액(예상)</span>
             <strong className={orderSide === "BUY" ? "up" : "down"}>

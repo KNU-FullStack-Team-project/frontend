@@ -1,9 +1,31 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import AppButton from "../common/AppButton";
 import InfoCard from "../common/InfoCard";
 import SectionTitle from "../common/SectionTitle";
 
-const HomePage = ({ isLoggedIn, onOpenLogin }) => {
+const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
+  const [accountData, setAccountData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isLoggedIn && currentUser?.email) {
+      const fetchDashboard = async () => {
+        setLoading(true);
+        try {
+          const response = await fetch(`/api/accounts/my/dashboard?email=${currentUser.email}`);
+          if (response.ok) {
+            const data = await response.json();
+            setAccountData(data);
+          }
+        } catch (err) {
+          console.error("Dashboard fetch error:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchDashboard();
+    }
+  }, [isLoggedIn, currentUser?.email]);
   if (!isLoggedIn) {
     return (
       <div className="landing-page">
@@ -41,12 +63,16 @@ const HomePage = ({ isLoggedIn, onOpenLogin }) => {
     );
   }
 
+  if (loading) {
+    return <div className="dashboard-grid">데이터를 불러오는 중...</div>;
+  }
+
   return (
     <div className="dashboard-grid">
-      <InfoCard title="총 자산" value="₩12,450,000" />
-      <InfoCard title="보유 현금" value="₩4,800,000" />
-      <InfoCard title="평가 손익" value="+₩350,000" valueClassName="up" />
-      <InfoCard title="수익률" value="+2.89%" valueClassName="up" />
+      <InfoCard title="총 자산" value={accountData?.totalAsset || "₩0"} />
+      <InfoCard title="보유 현금" value={accountData?.cashBalance || "₩0"} />
+      <InfoCard title="평가 손익" value={accountData?.totalProfitAmount || "₩0"} valueClassName={accountData?.totalProfitAmount?.startsWith("+") ? "up" : "down"} />
+      <InfoCard title="수익률" value={accountData?.totalReturnRate || "0%"} valueClassName={accountData?.totalReturnRate?.startsWith("+") ? "up" : "down"} />
 
       <div className="content-card large">
         <SectionTitle>관심 종목</SectionTitle>
@@ -82,18 +108,20 @@ const HomePage = ({ isLoggedIn, onOpenLogin }) => {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>삼성전자</td>
-              <td>15주</td>
-              <td>71,200원</td>
-              <td>72,300원</td>
-            </tr>
-            <tr>
-              <td>현대차</td>
-              <td>5주</td>
-              <td>242,000원</td>
-              <td>247,000원</td>
-            </tr>
+            {accountData?.holdings && accountData.holdings.length > 0 ? (
+              accountData.holdings.map((h, i) => (
+                <tr key={i}>
+                  <td>{h.stockName}</td>
+                  <td>{h.quantity}주</td>
+                  <td>{h.averageBuyPrice}</td>
+                  <td>{h.currentPrice}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" style={{ textAlign: "center", padding: "20px" }}>보유 중인 종목이 없습니다.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

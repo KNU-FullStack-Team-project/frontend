@@ -354,6 +354,26 @@ code {
   border-radius: 8px;
 }
 
+.order-info {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.info-row strong {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
 /* Candle Chart Enhancements */
 .candle-chart-wrapper {
   position: relative;

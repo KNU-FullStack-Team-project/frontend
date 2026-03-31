@@ -60,7 +60,7 @@ const AppController = () => {
       console.log("로그인 응답:", data);
 
       if (data === "로그인 성공") {
-        const email = form.email.trim().toLowerCase();
+        const email = form.email.trim().toUpperCase();
         const loginUser = {
           email,
           role: email === ADMIN_EMAIL ? "admin" : "user",
@@ -170,9 +170,12 @@ const AppController = () => {
       case "admin":
         return <AdminPage />;
       case "home":
-      default:
         return (
-          <HomePage isLoggedIn={isLoggedIn} onOpenLogin={handleOpenLogin} />
+          <HomePage 
+            isLoggedIn={isLoggedIn} 
+            onOpenLogin={handleOpenLogin} 
+            currentUser={currentUser} 
+          />
         );
     }
   };
