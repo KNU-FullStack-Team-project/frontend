@@ -3,6 +3,7 @@ import OrderHistory from "../components/stock/OrderHistory";
 
 const MyPage = ({ currentUser }) => {
   const [profile, setProfile] = useState(null);
+  const [dashboard, setDashboard] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -13,14 +14,24 @@ const MyPage = ({ currentUser }) => {
     const loadProfile = async () => {
       try {
         const params = new URLSearchParams({ email: currentUser.email });
-        const response = await fetch(
-          `http://localhost:8081/users/profile?${params.toString()}`,
-        );
-        if (!response.ok) {
+        const [profileResponse, dashboardResponse] = await Promise.all([
+          fetch(`http://localhost:8081/users/profile?${params.toString()}`),
+          fetch(
+            `http://localhost:8081/api/accounts/my/dashboard?${params.toString()}`,
+          ),
+        ]);
+
+        if (!profileResponse.ok || !dashboardResponse.ok) {
           throw new Error("failed");
         }
 
-        setProfile(await response.json());
+        const [profileData, dashboardData] = await Promise.all([
+          profileResponse.json(),
+          dashboardResponse.json(),
+        ]);
+
+        setProfile(profileData);
+        setDashboard(dashboardData);
         setError("");
       } catch {
         setError("회원 정보를 불러오지 못했습니다.");
@@ -36,7 +47,9 @@ const MyPage = ({ currentUser }) => {
     <div className="mypage-container">
       <div className="content-card">
         <h3>마이페이지</h3>
-        <p className="page-desc">내 정보, 투자 내역, 관심 종목, 프로필 수정 영역입니다.</p>
+        <p className="page-desc">
+          회원 정보, 자산 내역, 관심 종목, 프로필 설정 영역입니다.
+        </p>
 
         {error ? <p className="page-desc">{error}</p> : null}
 
@@ -50,12 +63,8 @@ const MyPage = ({ currentUser }) => {
             <strong>{profile?.email ?? currentUser?.email ?? "-"}</strong>
           </div>
           <div className="mypage-row">
-            <span>권한</span>
-            <strong>{profile?.role ?? currentUser?.role ?? "-"}</strong>
-          </div>
-          <div className="mypage-row">
-            <span>상태</span>
-            <strong>{profile?.status ?? "-"}</strong>
+            <span>잔액</span>
+            <strong>{dashboard?.cashBalance ?? "-"}</strong>
           </div>
           <div className="mypage-row">
             <span>가입일</span>
