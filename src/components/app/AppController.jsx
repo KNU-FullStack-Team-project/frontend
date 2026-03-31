@@ -51,19 +51,20 @@ const AppController = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: form.email.trim(),
+          email: form.email.trim().toUpperCase(),
           password: form.password,
         }),
       });
 
-      const data = await res.text();
-      console.log("로그인 응답:", data);
+      const data = await res.json();
+      console.log("로그인 응답 데이터:", data);
 
-      if (data === "로그인 성공") {
-        const email = form.email.trim().toUpperCase();
+      if (data.message === "로그인 성공") {
         const loginUser = {
-          email,
-          role: email === ADMIN_EMAIL ? "admin" : "user",
+          id: data.userId,
+          email: data.email,
+          nickname: data.nickname,
+          role: data.role === "ADMIN" ? "admin" : "user",
         };
 
         setCurrentUser(loginUser);
@@ -76,7 +77,7 @@ const AppController = () => {
           setCurrentPage("mypage");
         }
       } else {
-        alert(data);
+        alert(data.message || "로그인에 실패했습니다.");
       }
     } catch (error) {
       console.error(error);
@@ -92,7 +93,7 @@ const AppController = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: form.email.trim(),
+          email: form.email.trim().toUpperCase(),
           password: form.password,
           nickname: form.nickname.trim(),
           marketingConsent: form.marketingConsent,
