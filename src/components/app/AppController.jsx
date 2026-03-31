@@ -34,6 +34,8 @@ const pageTexts = {
   },
 };
 
+const ADMIN_EMAIL = "admin@knu.com";
+
 const AppController = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState("home");
@@ -58,9 +60,10 @@ const AppController = () => {
       console.log("로그인 응답:", data);
 
       if (data === "로그인 성공") {
+        const email = form.email.trim().toLowerCase();
         const loginUser = {
-          email: form.email.trim(),
-          role: "user",
+          email,
+          role: email === ADMIN_EMAIL ? "admin" : "user",
         };
 
         setCurrentUser(loginUser);
