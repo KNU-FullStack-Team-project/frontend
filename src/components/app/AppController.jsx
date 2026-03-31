@@ -171,10 +171,10 @@ const AppController = () => {
         return <AdminPage />;
       case "home":
         return (
-          <HomePage 
-            isLoggedIn={isLoggedIn} 
-            onOpenLogin={handleOpenLogin} 
-            currentUser={currentUser} 
+          <HomePage
+            isLoggedIn={isLoggedIn}
+            onOpenLogin={handleOpenLogin}
+            currentUser={currentUser}
           />
         );
     }

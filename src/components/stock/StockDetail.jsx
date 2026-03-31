@@ -88,7 +88,7 @@ const StockDetail = ({ stock, user }) => {
         const msg = await response.text();
         throw new Error(msg);
       }
-      
+
       alert(`${stock.name} ${quantity}주 ${orderSide === "BUY" ? "매수" : "매도"} 주문이 성공적으로 접수되었습니다.`);
       fetchAccountData(); // 주문 후 잔고 갱신
     } catch (err) {
@@ -138,14 +138,14 @@ const StockDetail = ({ stock, user }) => {
 
       <div className="trading-section">
         <div className="trading-tabs">
-          <button 
-            className={`tab-btn buy ${orderSide === "BUY" ? "active" : ""}`} 
+          <button
+            className={`tab-btn buy ${orderSide === "BUY" ? "active" : ""}`}
             onClick={() => setOrderSide("BUY")}
           >
             매수
           </button>
-          <button 
-            className={`tab-btn sell ${orderSide === "SELL" ? "active" : ""}`} 
+          <button
+            className={`tab-btn sell ${orderSide === "SELL" ? "active" : ""}`}
             onClick={() => setOrderSide("SELL")}
           >
             매도
@@ -165,11 +165,11 @@ const StockDetail = ({ stock, user }) => {
             <div className="info-row">
               <span>{orderSide === "BUY" ? "주문 가능 금액" : "보유 수량"}</span>
               <strong>
-                {orderSide === "BUY" 
-                  ? (accountData ? accountData.cashBalance : "조회 중...") 
-                  : (accountData 
-                      ? (accountData.holdings.find(h => h.stockName === stock.name)?.quantity || 0) + "주"
-                      : "조회 중...")
+                {orderSide === "BUY"
+                  ? (accountData ? accountData.cashBalance : "조회 중...")
+                  : (accountData
+                    ? (accountData.holdings.find(h => h.stockName === stock.name)?.quantity || 0) + "주"
+                    : "조회 중...")
                 }
               </strong>
             </div>

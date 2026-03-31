@@ -1,71 +1,254 @@
-import React from "react";
-import ContestCard from "../common/ContestCard";
+import React, { useEffect, useMemo, useState } from "react";
 
-import contest1 from "../assets/contest1.jpg";
-import contest2 from "../assets/contest2.jpg";
-import contest3 from "../assets/contest3.jpg";
-import contest4 from "../assets/contest4.jpg";
+const ContestPage = ({ onSelectCompetition, currentUser, isLoggedIn }) => {
+  const [contestList, setContestList] = useState([]);
+  const [myCompetitions, setMyCompetitions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showOnlyJoined, setShowOnlyJoined] = useState(false);
 
-const contestList = [
-  {
-    image: contest1,
-    category: "COMPETITION",
-    title: "초보 투자 수익률 챌린지",
-    description: "가상 자산으로 수익률을 겨루며 투자 감각을 익혀보세요.",
-    teams: 12337,
-    tag: "Beginner",
-    status: "Ongoing",
-  },
-  {
-    image: contest2,
-    category: "COMPETITION",
-    title: "가치주 발굴 모의투자 대회",
-    description: "저평가 종목을 찾고 장기 투자 전략을 연습해보세요.",
-    teams: 4177,
-    tag: "Value Investing",
-    status: "Ongoing",
-  },
-  {
-    image: contest3,
-    category: "COMPETITION",
-    title: "단기 매매 트레이딩 리그",
-    description: "짧은 기간 안에 시장 흐름을 읽고 빠르게 대응해보세요.",
-    teams: 2017,
-    tag: "Trading",
-    status: "Ongoing",
-  },
-  {
-    image: contest4,
-    category: "COMPETITION",
-    title: "AI 추천 종목 챌린지",
-    description: "추천 종목 데이터를 참고해 나만의 포트폴리오를 구성해보세요.",
-    teams: 215,
-    tag: "AI Strategy",
-    status: "Ongoing",
-  },
-];
+  useEffect(() => {
+    fetch("http://localhost:8081/api/competitions")
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("대회 목록을 불러오지 못했습니다.");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setContestList(data);
+      })
+      .catch((err) => {
+        console.error("대회 목록 조회 오류:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
 
-const ContestPage = () => {
+  useEffect(() => {
+    if (!isLoggedIn || !currentUser?.userId) {
+      setMyCompetitions([]);
+      return;
+    }
+
+    fetch(
+      `http://localhost:8081/api/competitions/my?userId=${currentUser.userId}`
+    )
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("내 참가 대회를 불러오지 못했습니다.");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setMyCompetitions(data);
+      })
+      .catch((err) => {
+        console.error("내 참가 대회 조회 오류:", err);
+      });
+  }, [isLoggedIn, currentUser]);
+
+  const formatStatus = (status) => {
+    switch (status) {
+      case "ONGOING":
+        return "진행중";
+      case "SCHEDULED":
+        return "예정";
+      case "ENDED":
+        return "종료";
+      default:
+        return status;
+    }
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case "ONGOING":
+        return { backgroundColor: "#e8f7ee", color: "#1f7a45" };
+      case "SCHEDULED":
+        return { backgroundColor: "#eef2ff", color: "#3b5bdb" };
+      case "ENDED":
+        return { backgroundColor: "#f1f3f5", color: "#555" };
+      default:
+        return { backgroundColor: "#f1f3f5", color: "#555" };
+    }
+  };
+
+  const filteredContestList = useMemo(() => {
+    if (!showOnlyJoined) return contestList;
+    return contestList.filter((contest) =>
+      myCompetitions.includes(contest.competitionId)
+    );
+  }, [contestList, myCompetitions, showOnlyJoined]);
+
   return (
-    <section>
-      <p className="page-desc">
-        다양한 모의투자 대회에 참여하고 다른 사용자들과 수익률을 비교해보세요.
+    <section style={{ maxWidth: "1100px", margin: "0 auto", padding: "20px" }}>
+      <p style={{ marginBottom: "20px", color: "#666" }}>
+        다양한 모의투자 대회에 참여하고 수익률을 비교해보세요.
       </p>
 
-      <div className="contest-card-grid">
-        {contestList.map((contest, index) => (
-          <ContestCard
-            key={index}
-            image={contest.image}
-            category={contest.category}
-            title={contest.title}
-            description={contest.description}
-            teams={contest.teams}
-            tag={contest.tag}
-            status={contest.status}
-          />
-        ))}
+      {/* 필터 버튼 */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginBottom: "20px",
+        }}
+      >
+        <button
+          onClick={() => setShowOnlyJoined((prev) => !prev)}
+          style={{
+            padding: "10px 16px",
+            borderRadius: "10px",
+            border: "1px solid #ddd",
+            backgroundColor: showOnlyJoined ? "#111" : "#fff",
+            color: showOnlyJoined ? "#fff" : "#111",
+            cursor: "pointer",
+            fontWeight: "600",
+          }}
+        >
+          {showOnlyJoined ? "전체 대회 보기" : "참가한 대회만 보기"}
+        </button>
       </div>
+
+      {loading ? (
+        <p>대회 목록을 불러오는 중입니다...</p>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "20px",
+          }}
+        >
+          {filteredContestList.map((contest) => {
+            const isJoined = myCompetitions.includes(
+              contest.competitionId
+            );
+
+            const percent =
+              contest.maxParticipants && contest.participantCount
+                ? Math.min(
+                    (contest.participantCount /
+                      contest.maxParticipants) *
+                      100,
+                    100
+                  )
+                : 0;
+
+            return (
+              <div
+                key={contest.competitionId}
+                onClick={() =>
+                  onSelectCompetition(contest.competitionId)
+                }
+                style={{
+                  background: "#fff",
+                  borderRadius: "20px",
+                  padding: "20px",
+                  border: "1px solid #eee",
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.05)",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  position: "relative",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.transform =
+                    "translateY(-4px)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.transform =
+                    "translateY(0)")
+                }
+              >
+                {/* 상태 뱃지 */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "16px",
+                    right: "16px",
+                    padding: "6px 10px",
+                    borderRadius: "999px",
+                    fontSize: "12px",
+                    fontWeight: "700",
+                    ...getStatusStyle(contest.status),
+                  }}
+                >
+                  {formatStatus(contest.status)}
+                </div>
+
+                {/* 참가중 뱃지 */}
+                {isJoined && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "16px",
+                      left: "16px",
+                      background: "#111",
+                      color: "#fff",
+                      padding: "6px 10px",
+                      borderRadius: "999px",
+                      fontSize: "12px",
+                      fontWeight: "700",
+                    }}
+                  >
+                    참가중
+                  </div>
+                )}
+
+                {/* 제목 */}
+                <h3 style={{ marginTop: "40px" }}>
+                  {contest.title}
+                </h3>
+
+                {/* 설명 */}
+                <p
+                  style={{
+                    fontSize: "14px",
+                    color: "#666",
+                    marginBottom: "12px",
+                  }}
+                >
+                  {contest.description}
+                </p>
+
+                {/* 참가자 */}
+                <div style={{ fontSize: "13px", marginBottom: "8px" }}>
+                  👥 {contest.participantCount ?? 0}명 참여
+                </div>
+
+                {/* 진행률 바 */}
+                <div
+                  style={{
+                    height: "8px",
+                    background: "#eee",
+                    borderRadius: "10px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${percent}%`,
+                      height: "100%",
+                      background: "#111",
+                    }}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "12px",
+                    marginTop: "5px",
+                    color: "#777",
+                  }}
+                >
+                  참가율 {Math.round(percent)}%
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 };
