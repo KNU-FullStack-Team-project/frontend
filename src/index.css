@@ -354,8 +354,100 @@ code {
   border-radius: 8px;
 }
 
-.loading-spinner, .no-data {
-  padding: 40px;
-  text-align: center;
+/* Candle Chart Enhancements */
+.candle-chart-wrapper {
+  position: relative;
+  background: var(--bg);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 10px;
+  user-select: none;
+}
+
+.chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 12px;
+  box-shadow: var(--shadow);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .chart-tooltip {
+    background: rgba(22, 23, 29, 0.9);
+    color: var(--text-h);
+  }
+}
+
+.tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.tooltip-label {
   color: var(--text);
+  font-weight: 500;
+}
+
+.tooltip-value {
+  font-weight: 600;
+  font-family: var(--mono);
+}
+
+.price-label-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 4px;
+  border-radius: 2px;
+  color: white;
+  background: var(--accent);
+}
+
+.chart-axis-label {
+  font-family: var(--sans);
+  font-weight: 500;
+}
+.period-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--code-bg);
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.period-btn {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.period-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.period-btn.active {
+  background: var(--bg);
+  color: var(--accent);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .period-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
 }
