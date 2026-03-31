@@ -73,7 +73,7 @@ const AppController = () => {
           setCurrentPage(pendingPage);
           setPendingPage(null);
         } else {
-          setCurrentPage("mypage");
+          setCurrentPage("home");
         }
       } else {
         alert(data);
