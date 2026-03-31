@@ -8,6 +8,7 @@ const StockDetail = ({ stock, user }) => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [orderSide, setOrderSide] = useState("BUY");
+  const [period, setPeriod] = useState("1M");
 
   // 유저 정보에서 accountId 추출 (없으면 기본값 1)
   const accountId = user?.id || 1;
@@ -16,7 +17,7 @@ const StockDetail = ({ stock, user }) => {
     const fetchHistory = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/stocks/${stock.symbol}/history`);
+        const response = await fetch(`/api/stocks/${stock.symbol}/history?period=${period}`);
         if (!response.ok) throw new Error("Failed to fetch history");
         const data = await response.json();
         setCandles(data);
@@ -27,7 +28,7 @@ const StockDetail = ({ stock, user }) => {
       }
     };
     if (stock) fetchHistory();
-  }, [stock]);
+  }, [stock, period]);
 
   const handleOrder = async () => {
     if (!user) {
@@ -82,7 +83,20 @@ const StockDetail = ({ stock, user }) => {
       <div className="divider" />
 
       <div className="chart-container">
-        <h4 className="section-title">일봉 차트</h4>
+        <div className="section-header">
+          <h4 className="section-title">차트</h4>
+          <div className="period-tabs">
+            {["1D", "1W", "1M", "6M", "1Y"].map((p) => (
+              <button
+                key={p}
+                className={`period-btn ${period === p ? "active" : ""}`}
+                onClick={() => setPeriod(p)}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
         {loading ? (
           <div className="loading-placeholder">차트 데이터를 불러오는 중...</div>
         ) : (
