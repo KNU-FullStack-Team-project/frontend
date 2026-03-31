@@ -42,6 +42,7 @@ const AppController = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
 
+  // 🔥 로그인 유지 (너 코드 유지)
   useEffect(() => {
     const savedUser = localStorage.getItem("currentUser");
 
@@ -52,6 +53,7 @@ const AppController = () => {
     }
   }, []);
 
+  // 🔥 로그인 API (너 코드 유지)
   const handleLogin = async (form) => {
     try {
       const response = await fetch("http://localhost:8081/api/auth/login", {
@@ -89,8 +91,35 @@ const AppController = () => {
     }
   };
 
-  const handleSignup = (form) => {
-    console.log("회원가입 입력값:", form);
+  const handleSignup = async (form) => {
+    try {
+      const res = await fetch("http://localhost:8081/users/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: form.email.trim(),
+          password: form.password,
+          nickname: form.nickname.trim(),
+          marketingConsent: form.marketingConsent,
+        }),
+      });
+
+      const data = await res.text();
+
+      if (data === "회원가입 완료") {
+        setCurrentPage("auth");
+        return "success";
+      } else {
+        alert(data);
+        return "fail";
+      }
+    } catch (error) {
+      console.error(error);
+      alert("회원가입 중 오류가 발생했습니다.");
+      return "fail";
+    }
   };
 
   const handleLogout = () => {
@@ -144,7 +173,7 @@ const AppController = () => {
   const renderPage = () => {
     switch (currentPage) {
       case "stock":
-        return <StockPage isLoggedIn={isLoggedIn} />;
+        return <StockPage isLoggedIn={isLoggedIn} user={currentUser} />;
 
       case "contest":
         return (
@@ -166,7 +195,7 @@ const AppController = () => {
         );
 
       case "mypage":
-        return <MyPage />;
+        return <MyPage currentUser={currentUser} />;
 
       case "admin":
         return <AdminPage />;

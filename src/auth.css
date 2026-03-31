@@ -996,33 +996,3 @@ input {
     flex-direction: column;
   }
 }
-
-.contest-card-wrapper {
-  position: relative;
-  border: 3px solid transparent;
-  border-radius: 16px;
-  transition: all 0.2s ease;
-}
-
-.contest-card-wrapper:hover {
-  transform: translateY(-3px);
-}
-
-.contest-card-wrapper.joined {
-  border: 3px solid #ff3b3b;
-  box-shadow: 0 0 14px rgba(255, 59, 59, 0.22);
-}
-
-.joined-badge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 5;
-  background: #ff3b3b;
-  color: white;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 6px 10px;
-  border-radius: 999px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-}

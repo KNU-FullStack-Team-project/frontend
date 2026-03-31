@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import AppInput from "../common/AppInput";
 import AppButton from "../common/AppButton";
 import TermsSection from "./agreement/TermsSection";
 import TermsModal from "./agreement/TermsModal";
 import { TERMS_CONTENT } from "./agreement/termsData";
+import ProfileImagePicker from "./ProfileImagePicker";
+
+const DEFAULT_PROFILE_IMAGE = "/default-profile.png";
 
 const SignupForm = ({ onSignup }) => {
   const [form, setForm] = useState({
@@ -23,12 +26,21 @@ const SignupForm = ({ onSignup }) => {
   const [isPasswordMatch, setIsPasswordMatch] = useState(false);
   const [isNicknameValid, setIsNicknameValid] = useState(false);
 
+  const [isEmailChecked, setIsEmailChecked] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationMessage, setVerificationMessage] = useState("");
+  const [isCodeSent, setIsCodeSent] = useState(false);
+
   const [agreeAll, setAgreeAll] = useState(false);
   const [agreeService, setAgreeService] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [agreeMarketing, setAgreeMarketing] = useState(false);
 
   const [openedTerm, setOpenedTerm] = useState(null);
+
+  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [profilePreview, setProfilePreview] = useState(DEFAULT_PROFILE_IMAGE);
 
   const validateEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
@@ -42,9 +54,18 @@ const SignupForm = ({ onSignup }) => {
     return trimmed.length >= 2 && trimmed.length <= 12;
   };
 
+  const resetEmailVerificationState = () => {
+    setIsEmailChecked(false);
+    setIsEmailVerified(false);
+    setIsCodeSent(false);
+    setVerificationCode("");
+    setVerificationMessage("");
+  };
+
   const handleEmailChange = (e) => {
     const value = e.target.value;
     setForm((prev) => ({ ...prev, email: value }));
+    resetEmailVerificationState();
 
     if (!value.trim()) {
       setEmailMessage("이메일을 입력해주세요.");
@@ -127,6 +148,32 @@ const SignupForm = ({ onSignup }) => {
     setIsNicknameValid(true);
   };
 
+  const handleProfileImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    const maxSize = 5 * 1024 * 1024;
+
+    if (!allowedTypes.includes(file.type)) {
+      alert("jpg, png, webp 형식의 이미지만 업로드할 수 있습니다.");
+      return;
+    }
+
+    if (file.size > maxSize) {
+      alert("이미지 크기는 5MB 이하만 가능합니다.");
+      return;
+    }
+
+    setProfileImageFile(file);
+    setProfilePreview(URL.createObjectURL(file));
+  };
+
+  const handleResetProfileImage = () => {
+    setProfileImageFile(null);
+    setProfilePreview(DEFAULT_PROFILE_IMAGE);
+  };
+
   const handleAgreeAllChange = (e) => {
     const checked = e.target.checked;
     setAgreeAll(checked);
@@ -174,15 +221,113 @@ const SignupForm = ({ onSignup }) => {
     setAgreeAll(agreeService && agreePrivacy && agreeMarketing);
   }, [agreeService, agreePrivacy, agreeMarketing]);
 
+  const handleCheckEmailDuplicate = async () => {
+    if (!isEmailValid) {
+      alert("올바른 이메일을 입력해주세요.");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:8081/users/check-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: form.email.trim(),
+        }),
+      });
+
+      const data = await res.text();
+
+      if (data === "사용 가능한 이메일입니다.") {
+        alert(data);
+        setIsEmailChecked(true);
+      } else {
+        alert(data);
+        setIsEmailChecked(false);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("이메일 중복 체크 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleSendVerificationCode = async () => {
+    if (!isEmailChecked) {
+      alert("이메일 중복 체크를 먼저 해주세요.");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:8081/email/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: form.email.trim(),
+        }),
+      });
+
+      const data = await res.text();
+      alert(data);
+
+      if (data === "인증코드 발송 완료") {
+        setIsCodeSent(true);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("인증번호 발송 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!verificationCode.trim()) {
+      alert("인증번호를 입력해주세요.");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:8081/email/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: form.email.trim(),
+          code: verificationCode.trim(),
+        }),
+      });
+
+      const data = await res.text();
+
+      if (data === "인증 성공") {
+        setVerificationMessage("이메일 인증이 완료되었습니다.");
+        setIsEmailVerified(true);
+        alert("이메일 인증 완료");
+      } else {
+        setVerificationMessage("인증번호가 올바르지 않습니다.");
+        setIsEmailVerified(false);
+        alert("인증 실패");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("인증번호 확인 중 오류가 발생했습니다.");
+    }
+  };
+
   const canSubmit =
     isEmailValid &&
+    isEmailChecked &&
+    isEmailVerified &&
     isPasswordValid &&
     isPasswordMatch &&
     isNicknameValid &&
     agreeService &&
     agreePrivacy;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!canSubmit) {
@@ -195,10 +340,14 @@ const SignupForm = ({ onSignup }) => {
       password: form.password,
       nickname: form.nickname.trim(),
       marketingConsent: agreeMarketing,
+      profileImageFile,
     };
 
-    onSignup(signupData);
-    alert("1단계 프론트 검증 통과");
+    const result = await onSignup(signupData);
+
+    if (result === "success") {
+      alert("회원가입 성공! 로그인 해주세요.");
+    }
   };
 
   const currentTerm = openedTerm ? TERMS_CONTENT[openedTerm] : null;
@@ -207,6 +356,12 @@ const SignupForm = ({ onSignup }) => {
     <>
       <form className="form-box" onSubmit={handleSubmit}>
         <h3 className="section-title">회원가입</h3>
+
+        <ProfileImagePicker
+          profilePreview={profilePreview}
+          onChangeImage={handleProfileImageChange}
+          onResetImage={handleResetProfileImage}
+        />
 
         <div>
           <AppInput
@@ -227,7 +382,44 @@ const SignupForm = ({ onSignup }) => {
               {emailMessage}
             </p>
           )}
+
+          <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+            <AppButton type="button" onClick={handleCheckEmailDuplicate}>
+              이메일 중복 체크
+            </AppButton>
+            <AppButton type="button" onClick={handleSendVerificationCode}>
+              인증번호 보내기
+            </AppButton>
+          </div>
         </div>
+
+        {isCodeSent && (
+          <div style={{ marginTop: "16px" }}>
+            <AppInput
+              label="인증번호"
+              placeholder="인증번호를 입력하세요"
+              icon="✅"
+              type="text"
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value)}
+              name="verificationCode"
+            />
+            <div style={{ marginTop: "10px" }}>
+              <AppButton type="button" onClick={handleVerifyCode}>
+                인증번호 확인
+              </AppButton>
+            </div>
+            {verificationMessage && (
+              <p
+                className={
+                  isEmailVerified ? "helper-text success" : "helper-text error"
+                }
+              >
+                {verificationMessage}
+              </p>
+            )}
+          </div>
+        )}
 
         <div>
           <AppInput

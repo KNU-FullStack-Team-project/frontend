@@ -1,0 +1,63 @@
+.profile-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.profile-picker__preview-wrap {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+  background: #f1f5f9;
+  flex-shrink: 0;
+}
+
+.profile-picker__preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-picker__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.profile-picker__button {
+  border: none;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.profile-picker__button--primary {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.profile-picker__button--primary:hover {
+  background: #1d4ed8;
+}
+
+.profile-picker__button--secondary {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.profile-picker__button--secondary:hover {
+  background: #d1d5db;
+}
+
+.profile-picker__file-input {
+  display: none;
+}
