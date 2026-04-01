@@ -227,6 +227,53 @@ code {
   gap: 20px;
 }
 
+.password-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+  text-align: left;
+}
+
+.password-form__field {
+  display: grid;
+  gap: 8px;
+  color: var(--text-h);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.password-form__field input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text-h);
+  padding: 12px 14px;
+  font: inherit;
+}
+
+.password-form__field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.password-form__hint,
+.password-form__message {
+  font-size: 14px;
+  text-align: left;
+}
+
+.password-form__message {
+  color: var(--accent);
+}
+
+.password-form__actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
 /* Stock Page & Detail Styles */
 .clickable {
   cursor: pointer;
