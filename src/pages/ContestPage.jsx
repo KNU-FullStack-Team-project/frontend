@@ -1,12 +1,23 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-const ContestPage = ({ onSelectCompetition, currentUser, isLoggedIn }) => {
+const ContestPage = ({
+  onSelectCompetition,
+  currentUser,
+  isLoggedIn,
+  onCreateCompetition,
+  onEditCompetition,
+  onDeleteCompetition,
+}) => {
   const [contestList, setContestList] = useState([]);
   const [myCompetitions, setMyCompetitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showOnlyJoined, setShowOnlyJoined] = useState(false);
 
-  useEffect(() => {
+  const isAdmin = currentUser?.role === "admin";
+
+  const fetchCompetitions = () => {
+    setLoading(true);
+
     fetch("http://localhost:8081/api/competitions")
       .then((res) => {
         if (!res.ok) {
@@ -23,6 +34,10 @@ const ContestPage = ({ onSelectCompetition, currentUser, isLoggedIn }) => {
       .finally(() => {
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchCompetitions();
   }, []);
 
   useEffect(() => {
@@ -87,7 +102,25 @@ const ContestPage = ({ onSelectCompetition, currentUser, isLoggedIn }) => {
         다양한 모의투자 대회에 참여하고 수익률을 비교해보세요.
       </p>
 
-      {/* 필터 버튼 */}
+      {isAdmin && (
+        <div style={{ marginBottom: "20px", textAlign: "right" }}>
+          <button
+            onClick={onCreateCompetition}
+            style={{
+              padding: "10px 16px",
+              borderRadius: "10px",
+              border: "none",
+              backgroundColor: "#111",
+              color: "#fff",
+              cursor: "pointer",
+              fontWeight: "600",
+            }}
+          >
+            + 대회 생성
+          </button>
+        </div>
+      )}
+
       <div
         style={{
           display: "flex",
@@ -122,16 +155,12 @@ const ContestPage = ({ onSelectCompetition, currentUser, isLoggedIn }) => {
           }}
         >
           {filteredContestList.map((contest) => {
-            const isJoined = myCompetitions.includes(
-              contest.competitionId
-            );
+            const isJoined = myCompetitions.includes(contest.competitionId);
 
             const percent =
               contest.maxParticipants && contest.participantCount
                 ? Math.min(
-                    (contest.participantCount /
-                      contest.maxParticipants) *
-                      100,
+                    (contest.participantCount / contest.maxParticipants) * 100,
                     100
                   )
                 : 0;
@@ -139,9 +168,7 @@ const ContestPage = ({ onSelectCompetition, currentUser, isLoggedIn }) => {
             return (
               <div
                 key={contest.competitionId}
-                onClick={() =>
-                  onSelectCompetition(contest.competitionId)
-                }
+                onClick={() => onSelectCompetition(contest.competitionId)}
                 style={{
                   background: "#fff",
                   borderRadius: "20px",
@@ -153,15 +180,12 @@ const ContestPage = ({ onSelectCompetition, currentUser, isLoggedIn }) => {
                   position: "relative",
                 }}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.transform =
-                    "translateY(-4px)")
+                  (e.currentTarget.style.transform = "translateY(-4px)")
                 }
                 onMouseLeave={(e) =>
-                  (e.currentTarget.style.transform =
-                    "translateY(0)")
+                  (e.currentTarget.style.transform = "translateY(0)")
                 }
               >
-                {/* 상태 뱃지 */}
                 <div
                   style={{
                     position: "absolute",
@@ -177,7 +201,6 @@ const ContestPage = ({ onSelectCompetition, currentUser, isLoggedIn }) => {
                   {formatStatus(contest.status)}
                 </div>
 
-                {/* 참가중 뱃지 */}
                 {isJoined && (
                   <div
                     style={{
@@ -196,28 +219,16 @@ const ContestPage = ({ onSelectCompetition, currentUser, isLoggedIn }) => {
                   </div>
                 )}
 
-                {/* 제목 */}
-                <h3 style={{ marginTop: "40px" }}>
-                  {contest.title}
-                </h3>
+                <h3 style={{ marginTop: "40px" }}>{contest.title}</h3>
 
-                {/* 설명 */}
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "#666",
-                    marginBottom: "12px",
-                  }}
-                >
+                <p style={{ fontSize: "14px", color: "#666" }}>
                   {contest.description}
                 </p>
 
-                {/* 참가자 */}
                 <div style={{ fontSize: "13px", marginBottom: "8px" }}>
                   👥 {contest.participantCount ?? 0}명 참여
                 </div>
 
-                {/* 진행률 바 */}
                 <div
                   style={{
                     height: "8px",
@@ -235,15 +246,66 @@ const ContestPage = ({ onSelectCompetition, currentUser, isLoggedIn }) => {
                   />
                 </div>
 
-                <div
-                  style={{
-                    fontSize: "12px",
-                    marginTop: "5px",
-                    color: "#777",
-                  }}
-                >
+                <div style={{ fontSize: "12px", marginTop: "5px" }}>
                   참가율 {Math.round(percent)}%
                 </div>
+
+                {isAdmin && (
+                  <div
+                    style={{
+                      marginTop: "12px",
+                      display: "flex",
+                      gap: "8px",
+                    }}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditCompetition(contest.competitionId);
+                      }}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: "8px",
+                        border: "1px solid #ddd",
+                        backgroundColor: "#fff",
+                        cursor: "pointer",
+                        fontWeight: "600",
+                      }}
+                    >
+                      수정
+                    </button>
+
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+
+                        const confirmDelete = window.confirm(
+                          "정말 삭제하시겠습니까?"
+                        );
+                        if (!confirmDelete) return;
+
+                        const success = await onDeleteCompetition(
+                          contest.competitionId
+                        );
+
+                        if (success) {
+                          fetchCompetitions();
+                        }
+                      }}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: "8px",
+                        border: "none",
+                        backgroundColor: "#e03131",
+                        color: "#fff",
+                        cursor: "pointer",
+                        fontWeight: "600",
+                      }}
+                    >
+                      삭제
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
