@@ -86,7 +86,7 @@ const AppController = () => {
           setCurrentPage(pendingPage);
           setPendingPage(null);
         } else {
-          setCurrentPage("mypage");
+          setCurrentPage("home");
         }
       } else {
         alert(data.message || "로그인 실패");
@@ -178,7 +178,7 @@ const AppController = () => {
     try {
       const res = await fetch(
         `http://localhost:8081/api/admin/competitions/${competitionId}`,
-        { method: "DELETE" }
+        { method: "DELETE" },
       );
 
       const text = await res.text();
