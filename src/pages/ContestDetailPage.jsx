@@ -10,6 +10,7 @@ const ContestDetailPage = ({
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [participantLoading, setParticipantLoading] = useState(false);
+  const [joining, setJoining] = useState(false);
 
   const isAdmin = currentUser?.role === "admin";
 
@@ -112,38 +113,44 @@ const ContestDetailPage = ({
   };
 
   const handleJoin = async () => {
-    if (!isLoggedIn) {
-      alert("로그인 후 참가할 수 있습니다.");
-      return;
-    }
+  if (joining) return;
 
-    if (!currentUser?.userId) {
-      alert("사용자 정보가 없습니다.");
-      return;
-    }
+  if (!isLoggedIn) {
+    alert("로그인 후 참가할 수 있습니다.");
+    return;
+  }
 
-    try {
-      const response = await fetch(
-        `http://localhost:8081/api/competitions/${competitionId}/join?userId=${currentUser.userId}`,
-        {
-          method: "POST",
-        }
-      );
+  if (!currentUser?.userId) {
+    alert("사용자 정보가 없습니다.");
+    return;
+  }
 
-      const text = await response.text();
+  setJoining(true); // 🔥 요청 시작
 
-      if (!response.ok) {
-        alert(text || "대회 참가에 실패했습니다.");
-        return;
+  try {
+    const response = await fetch(
+      `http://localhost:8081/api/competitions/${competitionId}/join?userId=${currentUser.userId}`,
+      {
+        method: "POST",
       }
+    );
 
-      alert(text || "대회 참가 완료!");
-      onBack();
-    } catch (error) {
-      console.error("대회 참가 오류:", error);
-      alert("참가 처리 중 오류가 발생했습니다.");
+    const text = await response.text();
+
+    if (!response.ok) {
+      alert(text || "대회 참가에 실패했습니다.");
+      return;
     }
-  };
+
+    alert(text || "대회 참가 완료!");
+    onBack();
+  } catch (error) {
+    console.error("대회 참가 오류:", error);
+    alert("참가 처리 중 오류가 발생했습니다.");
+  } finally {
+    setJoining(false);
+  }
+};
 
   if (loading) {
     return <p>대회 정보를 불러오는 중입니다...</p>;
@@ -359,22 +366,23 @@ const ContestDetailPage = ({
           </p>
 
           <button
-            type="button"
-            onClick={handleJoin}
-            style={{
-              padding: "14px 22px",
-              border: "none",
-              borderRadius: "12px",
-              backgroundColor: "#111",
-              color: "#fff",
-              cursor: "pointer",
-              fontWeight: "700",
-              fontSize: "15px",
-              boxShadow: "0 10px 20px rgba(0,0,0,0.12)",
-            }}
-          >
-            참가하기
-          </button>
+  type="button"
+  onClick={handleJoin}
+  disabled={joining} // 🔥 핵심
+  style={{
+    padding: "14px 22px",
+    border: "none",
+    borderRadius: "12px",
+    backgroundColor: joining ? "#999" : "#111", // 시각적으로도 표시
+    color: "#fff",
+    cursor: joining ? "not-allowed" : "pointer",
+    fontWeight: "700",
+    fontSize: "15px",
+    boxShadow: "0 10px 20px rgba(0,0,0,0.12)",
+  }}
+>
+  {joining ? "참가 중..." : "참가하기"} {/* UX 개선 */}
+</button>
         </div>
       )}
     </section>
