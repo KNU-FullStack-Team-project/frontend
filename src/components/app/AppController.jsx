@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import HomePage from "../../pages/HomePage";
 import StockPage from "../../pages/StockPage";
 import ContestPage from "../../pages/ContestPage";
+import ContestDetailPage from "../../pages/ContestDetailPage";
+import ContestCreatePage from "../../pages/ContestCreatePage";
+import ContestEditPage from "../../pages/ContestEditPage";
 import MyPage from "../../pages/MyPage";
 import AuthPage from "../../pages/AuthPage";
 import AdminPage from "../../pages/AdminPage";
@@ -34,14 +37,23 @@ const pageTexts = {
   },
 };
 
-const ADMIN_EMAIL = "admin@knu.com";
-
 const AppController = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState("home");
   const [pendingPage, setPendingPage] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
   const [authMode, setAuthMode] = useState("login");
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("currentUser");
+
+    if (savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      setCurrentUser(parsedUser);
+      setIsLoggedIn(true);
+    }
+  }, []);
 
   const handleLogin = async (form) => {
     try {
@@ -57,11 +69,10 @@ const AppController = () => {
       });
 
       const data = await res.json();
-      console.log("로그인 응답 데이터:", data);
 
       if (data.message === "로그인 성공") {
         const loginUser = {
-          id: data.userId,
+          userId: data.userId,
           email: data.email,
           nickname: data.nickname,
           role: data.role === "ADMIN" ? "admin" : "user",
@@ -69,19 +80,19 @@ const AppController = () => {
 
         setCurrentUser(loginUser);
         setIsLoggedIn(true);
+        localStorage.setItem("currentUser", JSON.stringify(loginUser));
 
         if (pendingPage) {
           setCurrentPage(pendingPage);
           setPendingPage(null);
         } else {
-          setCurrentPage("mypage");
+          setCurrentPage("home");
         }
       } else {
-        alert(data.message || "로그인에 실패했습니다.");
+        alert(data.message || "로그인 실패");
       }
     } catch (error) {
-      console.error(error);
-      alert("로그인 중 오류가 발생했습니다.");
+      alert("로그인 오류");
     }
   };
 
@@ -89,9 +100,7 @@ const AppController = () => {
     try {
       const res = await fetch("http://localhost:8081/users/signup", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: form.email.trim(),
           password: form.password,
@@ -101,27 +110,24 @@ const AppController = () => {
       });
 
       const data = await res.text();
-      console.log("회원가입 응답:", data);
 
       if (data === "회원가입 완료") {
         setAuthMode("login");
         setCurrentPage("auth");
-        return "success";
       } else {
         alert(data);
-        return "fail";
       }
     } catch (error) {
-      console.error(error);
-      alert("회원가입 중 오류가 발생했습니다.");
-      return "fail";
+      alert("회원가입 오류");
     }
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("currentUser");
     setCurrentUser(null);
     setIsLoggedIn(false);
     setCurrentPage("home");
+    setSelectedCompetitionId(null);
   };
 
   const handleMovePage = (page) => {
@@ -134,17 +140,61 @@ const AppController = () => {
       return;
     }
 
-    if (page === "admin" && currentUser?.role !== "admin") {
-      return;
-    }
+    if (page === "admin" && currentUser?.role !== "admin") return;
 
     setCurrentPage(page);
   };
 
   const handleOpenLogin = () => {
-    setPendingPage(null);
     setAuthMode("login");
     setCurrentPage("auth");
+  };
+
+  const handleSelectCompetition = (competitionId) => {
+    setSelectedCompetitionId(competitionId);
+    setCurrentPage("contestDetail");
+  };
+
+  const handleBackToContestList = () => {
+    setCurrentPage("contest");
+  };
+
+  const handleCreateCompetition = () => {
+    setSelectedCompetitionId(null);
+    setCurrentPage("contestCreate");
+  };
+
+  const handleEditCompetition = (competitionId) => {
+    setSelectedCompetitionId(competitionId);
+    setCurrentPage("contestEdit");
+  };
+
+  const handleCompetitionSaved = () => {
+    setCurrentPage("contest");
+    setSelectedCompetitionId(null);
+  };
+
+  const handleDeleteCompetition = async (competitionId) => {
+    try {
+      const res = await fetch(
+        `http://localhost:8081/api/admin/competitions/${competitionId}`,
+        { method: "DELETE" },
+      );
+
+      const text = await res.text();
+
+      if (!res.ok) {
+        alert(text || "삭제 실패");
+        return false;
+      }
+
+      alert(text || "삭제 완료");
+      setSelectedCompetitionId(null);
+      return true;
+    } catch (e) {
+      alert("삭제 오류");
+      return false;
+    }
   };
 
   if (currentPage === "auth") {
@@ -164,13 +214,55 @@ const AppController = () => {
     switch (currentPage) {
       case "stock":
         return <StockPage isLoggedIn={isLoggedIn} user={currentUser} />;
+
       case "contest":
-        return <ContestPage isLoggedIn={isLoggedIn} />;
+        return (
+          <ContestPage
+            isLoggedIn={isLoggedIn}
+            currentUser={currentUser}
+            onSelectCompetition={handleSelectCompetition}
+            onCreateCompetition={handleCreateCompetition}
+            onEditCompetition={handleEditCompetition}
+            onDeleteCompetition={handleDeleteCompetition}
+          />
+        );
+
+      case "contestDetail":
+        return (
+          <ContestDetailPage
+            competitionId={selectedCompetitionId}
+            isLoggedIn={isLoggedIn}
+            currentUser={currentUser}
+            onBack={handleBackToContestList}
+          />
+        );
+
+      case "contestCreate":
+        return (
+          <ContestCreatePage
+            currentUser={currentUser}
+            onBack={handleBackToContestList}
+            onSuccess={handleCompetitionSaved}
+          />
+        );
+
+      case "contestEdit":
+        return (
+          <ContestEditPage
+            competitionId={selectedCompetitionId}
+            currentUser={currentUser}
+            onBack={handleBackToContestList}
+            onSuccess={handleCompetitionSaved}
+          />
+        );
+
       case "mypage":
         return <MyPage currentUser={currentUser} />;
+
       case "admin":
         return <AdminPage />;
-      case "home":
+
+      default:
         return (
           <HomePage
             isLoggedIn={isLoggedIn}

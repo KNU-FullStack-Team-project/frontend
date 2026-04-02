@@ -7,10 +7,17 @@ const ContestDetailPage = ({
   onBack,
 }) => {
   const [competition, setCompetition] = useState(null);
+  const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [participantLoading, setParticipantLoading] = useState(false);
+  const [joining, setJoining] = useState(false);
+
+  const isAdmin = currentUser?.role === "admin";
 
   useEffect(() => {
     if (!competitionId) return;
+
+    setLoading(true);
 
     fetch(`http://localhost:8081/api/competitions/${competitionId}`)
       .then((res) => {
@@ -29,6 +36,33 @@ const ContestDetailPage = ({
         setLoading(false);
       });
   }, [competitionId]);
+
+  useEffect(() => {
+    if (!competitionId || !isAdmin) {
+      setParticipants([]);
+      return;
+    }
+
+    setParticipantLoading(true);
+
+    fetch(`http://localhost:8081/api/competitions/${competitionId}/participants`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("참가자 목록을 불러오지 못했습니다.");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setParticipants(data);
+      })
+      .catch((err) => {
+        console.error("참가자 목록 조회 오류:", err);
+        setParticipants([]);
+      })
+      .finally(() => {
+        setParticipantLoading(false);
+      });
+  }, [competitionId, isAdmin]);
 
   const formatStatus = (status) => {
     switch (status) {
@@ -79,38 +113,44 @@ const ContestDetailPage = ({
   };
 
   const handleJoin = async () => {
-    if (!isLoggedIn) {
-      alert("로그인 후 참가할 수 있습니다.");
-      return;
-    }
+  if (joining) return;
 
-    if (!currentUser?.userId) {
-      alert("사용자 정보가 없습니다.");
-      return;
-    }
+  if (!isLoggedIn) {
+    alert("로그인 후 참가할 수 있습니다.");
+    return;
+  }
 
-    try {
-      const response = await fetch(
-        `http://localhost:8081/api/competitions/${competitionId}/join?userId=${currentUser.userId}`,
-        {
-          method: "POST",
-        }
-      );
+  if (!currentUser?.userId) {
+    alert("사용자 정보가 없습니다.");
+    return;
+  }
 
-      const text = await response.text();
+  setJoining(true); // 🔥 요청 시작
 
-      if (!response.ok) {
-        alert(text || "대회 참가에 실패했습니다.");
-        return;
+  try {
+    const response = await fetch(
+      `http://localhost:8081/api/competitions/${competitionId}/join?userId=${currentUser.userId}`,
+      {
+        method: "POST",
       }
+    );
 
-      alert(text || "대회 참가 완료!");
-      onBack();
-    } catch (error) {
-      console.error("대회 참가 오류:", error);
-      alert("참가 처리 중 오류가 발생했습니다.");
+    const text = await response.text();
+
+    if (!response.ok) {
+      alert(text || "대회 참가에 실패했습니다.");
+      return;
     }
-  };
+
+    alert(text || "대회 참가 완료!");
+    onBack();
+  } catch (error) {
+    console.error("대회 참가 오류:", error);
+    alert("참가 처리 중 오류가 발생했습니다.");
+  } finally {
+    setJoining(false);
+  }
+};
 
   if (loading) {
     return <p>대회 정보를 불러오는 중입니다...</p>;
@@ -213,54 +253,138 @@ const ContestDetailPage = ({
         />
       </div>
 
-      <div
-        style={{
-          backgroundColor: "#fff",
-          border: "1px solid #ececec",
-          borderRadius: "20px",
-          padding: "24px",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
-        }}
-      >
-        <h3
+      {isAdmin && (
+        <div
           style={{
-            marginTop: 0,
-            marginBottom: "10px",
-            fontSize: "20px",
+            backgroundColor: "#fff",
+            border: "1px solid #ececec",
+            borderRadius: "20px",
+            padding: "24px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+            marginBottom: "24px",
           }}
         >
-          지금 참가하시겠어요?
-        </h3>
+          <h3
+            style={{
+              marginTop: 0,
+              marginBottom: "16px",
+              fontSize: "20px",
+            }}
+          >
+            참가자 목록
+          </h3>
 
-        <p
-          style={{
-            marginTop: 0,
-            marginBottom: "20px",
-            color: "#666",
-            lineHeight: "1.6",
-          }}
-        >
-          참가하면 대회 전용 계좌가 생성되고, 해당 대회에서 모의투자를 진행할 수 있습니다.
-        </p>
+          {participantLoading ? (
+            <p style={{ color: "#666", margin: 0 }}>
+              참가자 정보를 불러오는 중입니다...
+            </p>
+          ) : participants.length === 0 ? (
+            <p style={{ color: "#666", margin: 0 }}>
+              현재 참가한 사용자가 없습니다.
+            </p>
+          ) : (
+            <div style={{ display: "grid", gap: "12px" }}>
+              {participants.map((participant) => (
+                <div
+                  key={`${participant.userId}-${participant.accountId}`}
+                  style={{
+                    border: "1px solid #ececec",
+                    borderRadius: "14px",
+                    padding: "16px",
+                    backgroundColor: "#fafafa",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "10px",
+                      gap: "12px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <strong style={{ fontSize: "16px", color: "#111" }}>
+                      {participant.nickname}
+                    </strong>
 
-        <button
-          type="button"
-          onClick={handleJoin}
+                    <span
+                      style={{
+                        padding: "6px 10px",
+                        borderRadius: "999px",
+                        backgroundColor: "#f1f3f5",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        color: "#495057",
+                      }}
+                    >
+                      {participant.status}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: "14px", color: "#555", lineHeight: "1.7" }}>
+                    <div>이메일: {participant.email}</div>
+                    <div>계좌 ID: {participant.accountId}</div>
+                    <div>참가일: {formatDate(participant.joinedAt)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!isAdmin && (
+        <div
           style={{
-            padding: "14px 22px",
-            border: "none",
-            borderRadius: "12px",
-            backgroundColor: "#111",
-            color: "#fff",
-            cursor: "pointer",
-            fontWeight: "700",
-            fontSize: "15px",
-            boxShadow: "0 10px 20px rgba(0,0,0,0.12)",
+            backgroundColor: "#fff",
+            border: "1px solid #ececec",
+            borderRadius: "20px",
+            padding: "24px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
           }}
         >
-          참가하기
-        </button>
-      </div>
+          <h3
+            style={{
+              marginTop: 0,
+              marginBottom: "10px",
+              fontSize: "20px",
+            }}
+          >
+            지금 참가하시겠어요?
+          </h3>
+
+          <p
+            style={{
+              marginTop: 0,
+              marginBottom: "20px",
+              color: "#666",
+              lineHeight: "1.6",
+            }}
+          >
+            참가하면 대회 전용 계좌가 생성되고, 해당 대회에서 모의투자를 진행할 수 있습니다.
+          </p>
+
+          <button
+  type="button"
+  onClick={handleJoin}
+  disabled={joining} // 🔥 핵심
+  style={{
+    padding: "14px 22px",
+    border: "none",
+    borderRadius: "12px",
+    backgroundColor: joining ? "#999" : "#111", // 시각적으로도 표시
+    color: "#fff",
+    cursor: joining ? "not-allowed" : "pointer",
+    fontWeight: "700",
+    fontSize: "15px",
+    boxShadow: "0 10px 20px rgba(0,0,0,0.12)",
+  }}
+>
+  {joining ? "참가 중..." : "참가하기"} {/* UX 개선 */}
+</button>
+        </div>
+      )}
     </section>
   );
 };
