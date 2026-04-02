@@ -148,7 +148,7 @@ const MyPage = ({ currentUser }) => {
           </div>
           <div className="mypage-row">
             <span>가입일</span>
-            <strong>{profile?.createdAt ? profile.createdAt.slice(0, 10) : "-"}</strong>
+            <strong>{profile?.createdAt?.includes("T") ? profile.createdAt.split("T")[0] : (profile?.createdAt?.slice(0, 10) || "-")}</strong>
           </div>
         </div>
       </div>
@@ -211,6 +211,45 @@ const MyPage = ({ currentUser }) => {
             </AppButton>
           </div>
         </form>
+      </div>
+
+      <div className="content-card large">
+        <h3>보유 종목</h3>
+        <p className="page-desc">현재 보유 중인 주식 자산 현황입니다.</p>
+        <div className="table-responsive">
+          <table className="stock-table">
+            <thead>
+              <tr>
+                <th>종목명</th>
+                <th>보유 수량</th>
+                <th>평균 매수가</th>
+                <th>현재가</th>
+                <th>평가금액</th>
+              </tr>
+            </thead>
+            <tbody>
+              {!dashboard?.holdings || dashboard.holdings.length === 0 ? (
+                <tr>
+                  <td colSpan="5" style={{ textAlign: "center", padding: "40px", color: "#888" }}>
+                    보유 중인 종목이 없습니다.
+                  </td>
+                </tr>
+              ) : (
+                dashboard.holdings.map((item, idx) => (
+                  <tr key={idx}>
+                    <td>{item.stockName}</td>
+                    <td>{item.quantity?.toLocaleString()}주</td>
+                    <td>{item.averageBuyPrice}</td>
+                    <td>{item.currentPrice}</td>
+                    <td>
+                      <strong>{item.holdingValue}</strong>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {accountId ? <OrderHistory accountId={accountId} /> : null}

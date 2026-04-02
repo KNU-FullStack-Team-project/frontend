@@ -51,7 +51,7 @@ const AppController = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: form.email.trim().toUpperCase(),
+          email: form.email.trim(),
           password: form.password,
         }),
       });
@@ -93,7 +93,7 @@ const AppController = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: form.email.trim().toUpperCase(),
+          email: form.email.trim(),
           password: form.password,
           nickname: form.nickname.trim(),
           marketingConsent: form.marketingConsent,
