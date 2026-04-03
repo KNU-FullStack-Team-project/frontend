@@ -72,12 +72,16 @@ const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
         throw new Error(message || "비밀번호 변경에 실패했습니다.");
       }
 
-      setPasswordMessage(message || "비밀번호가 변경되었습니다.");
       setPasswordForm({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
+
+      alert(message || "비밀번호가 변경되었습니다. 다시 로그인해 주세요.");
+      if (onLogout) {
+        onLogout();
+      }
     } catch (submitError) {
       setPasswordMessage(
         submitError.message || "비밀번호 변경에 실패했습니다.",
@@ -208,7 +212,7 @@ const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
           <div>
             <h3>회원탈퇴</h3>
             <p className="page-desc">
-              회원탈퇴를 진행하면 계정 정보와 보유 자산이 삭제됩니다.
+              회원탈퇴를 진행하면 계정 상태가 QUIT으로 변경되고, 다시 로그인할 수 없습니다.
             </p>
           </div>
         </div>
