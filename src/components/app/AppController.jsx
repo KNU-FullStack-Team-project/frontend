@@ -7,6 +7,7 @@ import ContestDetailPage from "../../pages/ContestDetailPage";
 import ContestCreatePage from "../../pages/ContestCreatePage";
 import ContestEditPage from "../../pages/ContestEditPage";
 import MyPage from "../../pages/MyPage";
+import AccountSettingsPage from "../../pages/AccountSettingsPage";
 import AuthPage from "../../pages/AuthPage";
 import AdminPage from "../../pages/AdminPage";
 
@@ -257,7 +258,21 @@ const AppController = () => {
         );
 
       case "mypage":
-        return <MyPage currentUser={currentUser} />;
+        return (
+          <MyPage
+            currentUser={currentUser}
+            onMoveAccountSettings={() => setCurrentPage("accountSettings")}
+          />
+        );
+
+      case "accountSettings":
+        return (
+          <AccountSettingsPage
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            onBackToMyPage={() => setCurrentPage("mypage")}
+          />
+        );
 
       case "admin":
         return <AdminPage />;
