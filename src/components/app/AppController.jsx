@@ -43,6 +43,7 @@ const AppController = () => {
   const [currentPage, setCurrentPage] = useState("home");
   const [pendingPage, setPendingPage] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [selectedMyPageUser, setSelectedMyPageUser] = useState(null);
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
   const [authMode, setAuthMode] = useState("login");
 
@@ -129,6 +130,7 @@ const AppController = () => {
     setIsLoggedIn(false);
     setCurrentPage("home");
     setSelectedCompetitionId(null);
+    setSelectedMyPageUser(null);
   };
 
   const handleMovePage = (page) => {
@@ -142,6 +144,10 @@ const AppController = () => {
     }
 
     if (page === "admin" && currentUser?.role !== "admin") return;
+
+    if (page === "mypage") {
+      setSelectedMyPageUser(null);
+    }
 
     setCurrentPage(page);
   };
@@ -261,6 +267,7 @@ const AppController = () => {
         return (
           <MyPage
             currentUser={currentUser}
+            viewedUser={selectedMyPageUser}
             onMoveAccountSettings={() => setCurrentPage("accountSettings")}
           />
         );
@@ -275,7 +282,14 @@ const AppController = () => {
         );
 
       case "admin":
-        return <AdminPage />;
+        return (
+          <AdminPage
+            onOpenUserMyPage={(user) => {
+              setSelectedMyPageUser(user);
+              setCurrentPage("mypage");
+            }}
+          />
+        );
 
       default:
         return (

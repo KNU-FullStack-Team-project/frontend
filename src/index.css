@@ -569,3 +569,44 @@ code {
   cursor: not-allowed;
   transform: none;
 }
+
+.admin-inline-select {
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  border-radius: 999px;
+  padding: 6px 14px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-apply-button {
+  border: none;
+  border-radius: 999px;
+  padding: 7px 14px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-apply-button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.admin-user-link {
+  border: none;
+  background: transparent;
+  color: #1d4ed8;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.admin-user-link:hover {
+  text-decoration: underline;
+}

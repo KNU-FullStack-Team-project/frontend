@@ -9,7 +9,7 @@ const DEPOSIT_OPTIONS = [
   { label: "100만원", value: 1000000 },
 ];
 
-const MyPage = ({ currentUser, onMoveAccountSettings }) => {
+const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   const [profile, setProfile] = useState(null);
   const [dashboard, setDashboard] = useState(null);
   const [accounts, setAccounts] = useState([]);
@@ -17,13 +17,16 @@ const MyPage = ({ currentUser, onMoveAccountSettings }) => {
   const [depositingAccountId, setDepositingAccountId] = useState(null);
   const [error, setError] = useState("");
 
+  const targetEmail = viewedUser?.email || currentUser?.email;
+  const isMyOwnPage = !viewedUser || viewedUser.email === currentUser?.email;
+
   const loadMyPageData = async () => {
-    if (!currentUser?.email) {
+    if (!targetEmail) {
       return;
     }
 
     try {
-      const params = new URLSearchParams({ email: currentUser.email });
+      const params = new URLSearchParams({ email: targetEmail });
       const [profileResponse, dashboardResponse, accountsResponse] =
         await Promise.all([
           fetch(`http://localhost:8081/users/profile?${params.toString()}`),
@@ -67,7 +70,7 @@ const MyPage = ({ currentUser, onMoveAccountSettings }) => {
 
   useEffect(() => {
     loadMyPageData();
-  }, [currentUser?.email]);
+  }, [targetEmail]);
 
   const handleDepositAmountChange = (accountId, amount) => {
     setDepositAmounts((prev) => ({
@@ -77,7 +80,7 @@ const MyPage = ({ currentUser, onMoveAccountSettings }) => {
   };
 
   const handleDeposit = async (accountId) => {
-    if (!accountId || depositingAccountId) {
+    if (!accountId || depositingAccountId || !isMyOwnPage) {
       return;
     }
 
@@ -120,15 +123,21 @@ const MyPage = ({ currentUser, onMoveAccountSettings }) => {
       <div className="content-card">
         <div className="section-header">
           <div>
-            <h3>마이페이지</h3>
+            <h3>
+              {isMyOwnPage
+                ? "마이페이지"
+                : `${profile?.nickname || "회원"} 마이페이지`}
+            </h3>
             <p className="page-desc">
               내 계정 정보와 보유 자산, 최근 주문 내역을 확인할 수 있습니다.
             </p>
           </div>
 
-          <AppButton type="button" onClick={onMoveAccountSettings}>
-            회원정보수정
-          </AppButton>
+          {isMyOwnPage ? (
+            <AppButton type="button" onClick={onMoveAccountSettings}>
+              회원정보수정
+            </AppButton>
+          ) : null}
         </div>
 
         {error ? <p className="page-desc">{error}</p> : null}
@@ -141,7 +150,7 @@ const MyPage = ({ currentUser, onMoveAccountSettings }) => {
 
           <div className="mypage-row">
             <span>이메일</span>
-            <strong>{profile?.email ?? currentUser?.email ?? "-"}</strong>
+            <strong>{profile?.email ?? targetEmail ?? "-"}</strong>
           </div>
 
           {accounts.length > 0 ? (
@@ -152,7 +161,7 @@ const MyPage = ({ currentUser, onMoveAccountSettings }) => {
                 <div className="mypage-row" key={account.accountId}>
                   <span>{account.accountName || `계좌 ${index + 1}`}</span>
                   <div className="mypage-balance-controls">
-                    {isMainAccount ? (
+                    {isMyOwnPage && isMainAccount ? (
                       <>
                         <select
                           className="mypage-deposit-select"
