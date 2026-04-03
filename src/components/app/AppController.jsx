@@ -7,6 +7,7 @@ import ContestDetailPage from "../../pages/ContestDetailPage";
 import ContestCreatePage from "../../pages/ContestCreatePage";
 import ContestEditPage from "../../pages/ContestEditPage";
 import MyPage from "../../pages/MyPage";
+import AccountSettingsPage from "../../pages/AccountSettingsPage";
 import AuthPage from "../../pages/AuthPage";
 import AdminPage from "../../pages/AdminPage";
 
@@ -42,6 +43,7 @@ const AppController = () => {
   const [currentPage, setCurrentPage] = useState("home");
   const [pendingPage, setPendingPage] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [selectedMyPageUser, setSelectedMyPageUser] = useState(null);
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
   const [authMode, setAuthMode] = useState("login");
 
@@ -128,6 +130,7 @@ const AppController = () => {
     setIsLoggedIn(false);
     setCurrentPage("home");
     setSelectedCompetitionId(null);
+    setSelectedMyPageUser(null);
   };
 
   const handleMovePage = (page) => {
@@ -141,6 +144,10 @@ const AppController = () => {
     }
 
     if (page === "admin" && currentUser?.role !== "admin") return;
+
+    if (page === "mypage") {
+      setSelectedMyPageUser(null);
+    }
 
     setCurrentPage(page);
   };
@@ -257,10 +264,32 @@ const AppController = () => {
         );
 
       case "mypage":
-        return <MyPage currentUser={currentUser} />;
+        return (
+          <MyPage
+            currentUser={currentUser}
+            viewedUser={selectedMyPageUser}
+            onMoveAccountSettings={() => setCurrentPage("accountSettings")}
+          />
+        );
+
+      case "accountSettings":
+        return (
+          <AccountSettingsPage
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            onBackToMyPage={() => setCurrentPage("mypage")}
+          />
+        );
 
       case "admin":
-        return <AdminPage />;
+        return (
+          <AdminPage
+            onOpenUserMyPage={(user) => {
+              setSelectedMyPageUser(user);
+              setCurrentPage("mypage");
+            }}
+          />
+        );
 
       default:
         return (
