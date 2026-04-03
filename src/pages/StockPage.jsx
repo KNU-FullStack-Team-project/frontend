@@ -7,11 +7,16 @@ const StockPage = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [selectedStock, setSelectedStock] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [favorites, setFavorites] = useState(new Set());
+
+  const handleStockClick = (stock) => {
+    setSelectedStock(stock);
+    setIsModalOpen(true);
+  };
 
   const fetchStocks = async () => {
     try {
       setLoading(true);
-      // 백엔드 API 호출: 주식 리스트와 Redis 캐싱된 현재가 정보 로드
       const response = await fetch("/api/stocks?page=1&size=60");
       if (!response.ok) throw new Error("Stock list fetch failed");
       const data = await response.json();
@@ -23,13 +28,94 @@ const StockPage = ({ user }) => {
     }
   };
 
+  const fetchFavorites = async () => {
+    const userId = user?.userId || user?.id;
+    if (!userId) return;
+    try {
+      const response = await fetch(`/api/favorites?userId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setFavorites(new Set(data));
+      }
+    } catch (err) {
+      console.error("Failed to fetch favorites:", err);
+    }
+  };
+
   useEffect(() => {
     fetchStocks();
-  }, []);
+    const userId = user?.userId || user?.id;
+    if (userId) {
+      fetchFavorites();
+    } else {
+      const savedFavs = localStorage.getItem("favoriteStocks");
+      if (savedFavs) {
+        setFavorites(new Set(JSON.parse(savedFavs)));
+      }
+    }
+  }, [user?.userId, user?.id]);
 
-  const handleStockClick = (stock) => {
-    setSelectedStock(stock);
-    setIsModalOpen(true);
+  const toggleFavorite = async (e, symbol) => {
+    e.stopPropagation();
+    
+    const userId = user?.userId || user?.id;
+    if (!userId) {
+      // 로그인하지 않은 경우 기존 로컬스토리지 방식 유지
+      const newFavs = new Set(favorites);
+      if (newFavs.has(symbol)) {
+        newFavs.delete(symbol);
+      } else {
+        newFavs.add(symbol);
+      }
+      setFavorites(newFavs);
+      localStorage.setItem("favoriteStocks", JSON.stringify(Array.from(newFavs)));
+      alert("로그인이 필요한 기능입니다. (현재는 로컬에만 저장됩니다)");
+      return;
+    }
+
+    // 낙관적 업데이트 (Optimistic Update): UI를 먼저 변경
+    const isFavorite = favorites.has(symbol);
+    const newFavs = new Set(favorites);
+    if (isFavorite) {
+      newFavs.delete(symbol);
+    } else {
+      newFavs.add(symbol);
+    }
+    setFavorites(newFavs);
+
+    try {
+      const method = isFavorite ? "DELETE" : "POST";
+      const response = await fetch(`/api/favorites/${symbol}?userId=${userId}`, {
+        method: method
+      });
+
+      if (!response.ok) {
+        throw new Error("서버 응답 오류");
+      }
+    } catch (err) {
+      console.error("Failed to toggle favorite:", err);
+      // 에러 발생 시 원래 상태로 복구
+      const revertFavs = new Set(favorites);
+      if (isFavorite) {
+        revertFavs.add(symbol);
+      } else {
+        revertFavs.delete(symbol);
+      }
+      setFavorites(revertFavs);
+      alert("관심종목 반영에 실패했습니다. 다시 시도해주세요.");
+    }
+  };
+
+  const getTradingAmountLabel = (price, volume) => {
+    if (!price || !volume) return "0원";
+    const amount = parseInt(price) * parseInt(volume);
+    
+    if (amount >= 100000000) {
+      return (amount / 100000000).toFixed(1) + "억원";
+    } else if (amount >= 10000) {
+      return (amount / 10000).toLocaleString() + "만원";
+    }
+    return amount.toLocaleString() + "원";
   };
 
   if (loading) return <div className="loading-spinner">주식 정보를 업데이트하는 중...</div>;
@@ -45,25 +131,50 @@ const StockPage = ({ user }) => {
         현재 시장의 실시간 시세를 확인하세요. 종목을 클릭하면 상세 차트와 함께 매수/매도를 진행할 수 있습니다.
       </p>
 
-      <div className="stock-grid">
+      <div className="stock-list-container">
+        <div className="stock-list-header">
+          <div style={{ textAlign: 'center' }}>관심</div>
+          <div style={{ textAlign: 'center' }}>순번</div>
+          <div style={{ paddingLeft: '15px' }}>종목명</div>
+          <div style={{ textAlign: 'right' }}>현재가</div>
+          <div style={{ textAlign: 'right' }}>등락률</div>
+          <div style={{ textAlign: 'right', paddingRight: '10px' }}>거래대금</div>
+        </div>
+
         {stocks.length === 0 ? (
             <div className="no-data">종목 정보를 가져올 수 없습니다.</div>
         ) : (
-            stocks.map((stock) => (
+            stocks.map((stock, index) => (
                 <div 
                   key={stock.symbol} 
-                  className="mini-stock-card clickable"
+                  className="stock-list-item clickable"
                   onClick={() => handleStockClick(stock)}
                 >
-                  <div className="card-top">
-                    <h4>{stock.name}</h4>
-                    <span className="stock-code">{stock.symbol}</span>
+                  <button 
+                    className={`favorite-btn ${favorites.has(stock.symbol) ? "active" : ""}`}
+                    onClick={(e) => toggleFavorite(e, stock.symbol)}
+                  >
+                    {favorites.has(stock.symbol) ? "❤️" : "🤍"}
+                  </button>
+
+                  <div className="stock-index">{index + 1}</div>
+                  
+                  <div className="stock-name-section">
+                    <span className="stock-name-text">{stock.name}</span>
                   </div>
-                  <div className="card-bottom">
-                    <p className="price">{parseInt(stock.currentPrice).toLocaleString()}원</p>
-                    <span className={`change-pill ${parseFloat(stock.changeRate) >= 0 ? "up" : "down"}`}>
+
+                  <div className="stock-price-section">
+                    {parseInt(stock.currentPrice).toLocaleString()}원
+                  </div>
+
+                  <div className="stock-rate-section">
+                    <span className={`rate-text ${parseFloat(stock.changeRate) >= 0 ? "up" : "down"}`}>
                       {parseFloat(stock.changeRate) >= 0 ? "+" : ""}{stock.changeRate}%
                     </span>
+                  </div>
+
+                  <div className="stock-volume-section">
+                    {getTradingAmountLabel(stock.currentPrice, stock.volume)}
                   </div>
                 </div>
               ))

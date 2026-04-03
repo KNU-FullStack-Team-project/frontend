@@ -11,9 +11,6 @@ const StockDetail = ({ stock, user }) => {
   const [period, setPeriod] = useState("1M");
   const [accountData, setAccountData] = useState(null);
 
-  // 유저 정보에서 accountId 추출 (없으면 기본값 1)
-  const accountId = user?.id || 1;
-
   useEffect(() => {
     const fetchHistory = async () => {
       try {
@@ -112,81 +109,81 @@ const StockDetail = ({ stock, user }) => {
 
       <div className="divider" />
 
-      <div className="chart-container">
-        <div className="section-header">
-          <h4 className="section-title">차트</h4>
-          <div className="period-tabs">
-            {["1D", "1W", "1M", "6M", "1Y"].map((p) => (
-              <button
-                key={p}
-                className={`period-btn ${period === p ? "active" : ""}`}
-                onClick={() => setPeriod(p)}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-        </div>
-        {loading ? (
-          <div className="loading-placeholder">차트 데이터를 불러오는 중...</div>
-        ) : (
-          <CandleChart data={candles} />
-        )}
-      </div>
-
-      <div className="divider" />
-
-      <div className="trading-section">
-        <div className="trading-tabs">
-          <button
-            className={`tab-btn buy ${orderSide === "BUY" ? "active" : ""}`}
-            onClick={() => setOrderSide("BUY")}
-          >
-            매수
-          </button>
-          <button
-            className={`tab-btn sell ${orderSide === "SELL" ? "active" : ""}`}
-            onClick={() => setOrderSide("SELL")}
-          >
-            매도
-          </button>
-        </div>
-
-        <div className="trading-form">
-          <AppInput
-            label="수량 (주)"
-            type="number"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            name="quantity"
-            placeholder="수량 입력"
-          />
-          <div className="order-info">
-            <div className="info-row">
-              <span>{orderSide === "BUY" ? "주문 가능 금액" : "보유 수량"}</span>
-              <strong>
-                {orderSide === "BUY"
-                  ? (accountData ? accountData.cashBalance : "조회 중...")
-                  : (accountData
-                    ? (accountData.holdings.find(h => h.stockName === stock.name)?.quantity || 0) + "주"
-                    : "조회 중...")
-                }
-              </strong>
+      <div className="detail-main-layout">
+        <div className="chart-container">
+          <div className="section-header">
+            <h4 className="section-title">차트</h4>
+            <div className="period-tabs">
+              {["1D", "1W", "1M", "6M", "1Y"].map((p) => (
+                <button
+                  key={p}
+                  className={`period-btn ${period === p ? "active" : ""}`}
+                  onClick={() => setPeriod(p)}
+                >
+                  {p}
+                </button>
+              ))}
             </div>
           </div>
-          <div className="order-preview">
-            <span>주문 금액(예상)</span>
-            <strong className={orderSide === "BUY" ? "up" : "down"}>
-              {(parseInt(stock.currentPrice) * quantity).toLocaleString()}원
-            </strong>
+          {loading ? (
+            <div className="loading-placeholder">차트 데이터를 불러오는 중...</div>
+          ) : (
+            <CandleChart data={candles} />
+          )}
+        </div>
+
+        <div className="trading-section">
+          <div className="trading-tabs">
+            <button
+              className={`tab-btn buy ${orderSide === "BUY" ? "active" : ""}`}
+              onClick={() => setOrderSide("BUY")}
+            >
+              매수
+            </button>
+            <button
+              className={`tab-btn sell ${orderSide === "SELL" ? "active" : ""}`}
+              onClick={() => setOrderSide("SELL")}
+            >
+              매도
+            </button>
           </div>
-          <AppButton
-            variant={orderSide === "BUY" ? "primary" : "danger"}
-            fullWidth
-            onClick={handleOrder}
-          >
-            {stock.name} {orderSide === "BUY" ? "매수하기" : "매도하기"}
-          </AppButton>
+
+          <div className="trading-form">
+            <AppInput
+              label="수량 (주)"
+              type="number"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              name="quantity"
+              placeholder="수량 입력"
+            />
+            <div className="order-info">
+              <div className="info-row">
+                <span>{orderSide === "BUY" ? "주문 가능 금액" : "보유 수량"}</span>
+                <strong>
+                  {orderSide === "BUY"
+                    ? (accountData ? accountData.cashBalance : "조회 중...")
+                    : (accountData
+                      ? (accountData.holdings.find(h => h.stockName === stock.name)?.quantity || 0) + "주"
+                      : "조회 중...")
+                  }
+                </strong>
+              </div>
+            </div>
+            <div className="order-preview">
+              <span>주문 금액(예상)</span>
+              <strong className={orderSide === "BUY" ? "up" : "down"}>
+                {(parseInt(stock.currentPrice) * quantity).toLocaleString()}원
+              </strong>
+            </div>
+            <AppButton
+              variant={orderSide === "BUY" ? "primary" : "danger"}
+              fullWidth
+              onClick={handleOrder}
+            >
+              {stock.name} {orderSide === "BUY" ? "매수하기" : "매도하기"}
+            </AppButton>
+          </div>
         </div>
       </div>
     </div>
