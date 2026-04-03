@@ -121,6 +121,28 @@ const AppController = () => {
       const data = await res.text();
 
       if (data === "회원가입 완료") {
+        if (form.profileImageFile) {
+          const profileFormData = new FormData();
+          profileFormData.append("image", form.profileImageFile);
+
+          const params = new URLSearchParams({ email: form.email.trim() });
+          const imageResponse = await fetch(
+            `http://localhost:8081/users/profile-image?${params.toString()}`,
+            {
+              method: "POST",
+              body: profileFormData,
+            },
+          );
+
+          if (!imageResponse.ok) {
+            const imageError = await imageResponse.text();
+            alert(
+              imageError ||
+                "회원가입은 완료됐지만 프로필 사진 저장에 실패했습니다.",
+            );
+          }
+        }
+
         alert("회원가입이 완료되었습니다. 로그인해 주세요.");
         setAuthMode("login");
         setCurrentPage("auth");

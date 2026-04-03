@@ -88,6 +88,9 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   };
 
   const accountId = profile?.accountId;
+  const profileImageUrl = profile?.profileImageUrl
+    ? `http://localhost:8081${profile.profileImageUrl}`
+    : "";
   const createdAtText = profile?.createdAt?.includes("T")
     ? profile.createdAt.split("T")[0]
     : profile?.createdAt?.slice(0, 10) || "-";
@@ -117,6 +120,16 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
         {error ? <p className="page-desc">{error}</p> : null}
 
         <div className="mypage-info">
+          <div className="mypage-profile-row">
+            <div className="mypage-profile-avatar">
+              {profileImageUrl ? (
+                <img src={profileImageUrl} alt="프로필 사진" />
+              ) : (
+                <span>{profile?.nickname?.[0] || "U"}</span>
+              )}
+            </div>
+          </div>
+
           <div className="mypage-row">
             <span>닉네임</span>
             <strong>{profile?.nickname ?? "-"}</strong>
