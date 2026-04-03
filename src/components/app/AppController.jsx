@@ -70,7 +70,14 @@ const AppController = () => {
         }),
       });
 
-      const data = await res.json();
+      const responseText = await res.text();
+
+      if (!res.ok) {
+        alert(responseText || "로그인에 실패했습니다.");
+        return;
+      }
+
+      const data = JSON.parse(responseText);
 
       if (data.message === "로그인 성공") {
         const loginUser = {
@@ -114,6 +121,7 @@ const AppController = () => {
       const data = await res.text();
 
       if (data === "회원가입 완료") {
+        alert("회원가입이 완료되었습니다. 로그인해 주세요.");
         setAuthMode("login");
         setCurrentPage("auth");
       } else {

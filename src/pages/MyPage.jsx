@@ -2,19 +2,11 @@ import React, { useEffect, useState } from "react";
 import AppButton from "../common/AppButton";
 import OrderHistory from "../components/stock/OrderHistory";
 
-const DEPOSIT_OPTIONS = [
-  { label: "10만원", value: 100000 },
-  { label: "30만원", value: 300000 },
-  { label: "50만원", value: 500000 },
-  { label: "100만원", value: 1000000 },
-];
-
 const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   const [profile, setProfile] = useState(null);
   const [dashboard, setDashboard] = useState(null);
   const [accounts, setAccounts] = useState([]);
-  const [depositAmounts, setDepositAmounts] = useState({});
-  const [depositingAccountId, setDepositingAccountId] = useState(null);
+  const [resettingAccountId, setResettingAccountId] = useState(null);
   const [error, setError] = useState("");
 
   const targetEmail = viewedUser?.email || currentUser?.email;
@@ -53,15 +45,6 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
       setProfile(profileData);
       setDashboard(dashboardData);
       setAccounts(accountsData);
-      setDepositAmounts((prev) => {
-        const nextAmounts = { ...prev };
-        accountsData.forEach((account) => {
-          if (!nextAmounts[account.accountId]) {
-            nextAmounts[account.accountId] = DEPOSIT_OPTIONS[0].value;
-          }
-        });
-        return nextAmounts;
-      });
       setError("");
     } catch {
       setError("마이페이지 정보를 불러오지 못했습니다.");
@@ -72,44 +55,35 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     loadMyPageData();
   }, [targetEmail]);
 
-  const handleDepositAmountChange = (accountId, amount) => {
-    setDepositAmounts((prev) => ({
-      ...prev,
-      [accountId]: Number(amount),
-    }));
-  };
-
-  const handleDeposit = async (accountId) => {
-    if (!accountId || depositingAccountId || !isMyOwnPage) {
+  const handleResetCash = async (accountId) => {
+    if (!accountId || resettingAccountId || !isMyOwnPage) {
       return;
     }
 
-    setDepositingAccountId(accountId);
+    if (!window.confirm("예수금을 기본값인 500만원으로 리셋할까요?")) {
+      return;
+    }
+
+    setResettingAccountId(accountId);
 
     try {
       const response = await fetch(
-        `http://localhost:8081/api/accounts/${accountId}/deposit`,
+        `http://localhost:8081/api/accounts/${accountId}/reset-cash`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            amount: depositAmounts[accountId] || DEPOSIT_OPTIONS[0].value,
-          }),
         },
       );
 
       if (!response.ok) {
         const message = await response.text();
-        throw new Error(message || "자금 추가에 실패했습니다.");
+        throw new Error(message || "예수금 리셋에 실패했습니다.");
       }
 
       await loadMyPageData();
-    } catch (depositError) {
-      alert(depositError.message || "자금 추가에 실패했습니다.");
+    } catch (resetError) {
+      alert(resetError.message || "예수금 리셋에 실패했습니다.");
     } finally {
-      setDepositingAccountId(null);
+      setResettingAccountId(null);
     }
   };
 
@@ -162,37 +136,16 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                   <span>{account.accountName || `계좌 ${index + 1}`}</span>
                   <div className="mypage-balance-controls">
                     {isMyOwnPage && isMainAccount ? (
-                      <>
-                        <select
-                          className="mypage-deposit-select"
-                          value={
-                            depositAmounts[account.accountId] ||
-                            DEPOSIT_OPTIONS[0].value
-                          }
-                          onChange={(event) =>
-                            handleDepositAmountChange(
-                              account.accountId,
-                              event.target.value,
-                            )
-                          }
-                        >
-                          {DEPOSIT_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          className="mypage-deposit-button"
-                          onClick={() => handleDeposit(account.accountId)}
-                          disabled={depositingAccountId === account.accountId}
-                        >
-                          {depositingAccountId === account.accountId
-                            ? "추가 중..."
-                            : "자금추가"}
-                        </button>
-                      </>
+                      <button
+                        type="button"
+                        className="mypage-deposit-button"
+                        onClick={() => handleResetCash(account.accountId)}
+                        disabled={resettingAccountId === account.accountId}
+                      >
+                        {resettingAccountId === account.accountId
+                          ? "초기화 중..."
+                          : "계좌 초기화"}
+                      </button>
                     ) : null}
                     <strong>{account.cashBalance ?? "-"}</strong>
                   </div>

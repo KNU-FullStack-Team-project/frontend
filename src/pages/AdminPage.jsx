@@ -118,13 +118,15 @@ const AdminPage = ({ onOpenUserMyPage }) => {
                 </tr>
               ) : (
                 users.map((user) => {
+                  const isQuitUser = user.status === "QUIT";
                   const editedUser = editedUsers[user.id] || {
                     role: user.role || "USER",
                     status: user.status || "ACTIVE",
                   };
                   const isChanged =
-                    editedUser.role !== user.role ||
-                    editedUser.status !== user.status;
+                    !isQuitUser &&
+                    (editedUser.role !== user.role ||
+                      editedUser.status !== user.status);
 
                   return (
                     <tr key={user.id}>
@@ -134,7 +136,9 @@ const AdminPage = ({ onOpenUserMyPage }) => {
                         <button
                           type="button"
                           className="admin-user-link"
-                          onClick={() => onOpenUserMyPage && onOpenUserMyPage(user)}
+                          onClick={() =>
+                            onOpenUserMyPage && onOpenUserMyPage(user)
+                          }
                         >
                           {user.nickname}
                         </button>
@@ -143,6 +147,7 @@ const AdminPage = ({ onOpenUserMyPage }) => {
                         <select
                           className="admin-inline-select"
                           value={editedUser.role}
+                          disabled={isQuitUser}
                           onChange={(event) =>
                             handleUserFieldChange(
                               user.id,
@@ -161,7 +166,8 @@ const AdminPage = ({ onOpenUserMyPage }) => {
                       <td>
                         <select
                           className="admin-inline-select"
-                          value={editedUser.status}
+                          value={isQuitUser ? "QUIT" : editedUser.status}
+                          disabled={isQuitUser}
                           onChange={(event) =>
                             handleUserFieldChange(
                               user.id,
@@ -170,11 +176,15 @@ const AdminPage = ({ onOpenUserMyPage }) => {
                             )
                           }
                         >
-                          {STATUS_OPTIONS.map((status) => (
-                            <option key={status} value={status}>
-                              {status}
-                            </option>
-                          ))}
+                          {isQuitUser ? (
+                            <option value="QUIT">QUIT</option>
+                          ) : (
+                            STATUS_OPTIONS.map((status) => (
+                              <option key={status} value={status}>
+                                {status}
+                              </option>
+                            ))
+                          )}
                         </select>
                       </td>
                       <td>{user.accountCount ?? 0}</td>
@@ -183,7 +193,9 @@ const AdminPage = ({ onOpenUserMyPage }) => {
                           type="button"
                           className="admin-apply-button"
                           onClick={() => handleApplyUser(user.id)}
-                          disabled={!isChanged || savingUserId === user.id}
+                          disabled={
+                            isQuitUser || !isChanged || savingUserId === user.id
+                          }
                         >
                           {savingUserId === user.id ? "저장 중" : "적용"}
                         </button>
