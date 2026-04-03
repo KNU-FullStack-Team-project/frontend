@@ -11,8 +11,11 @@ const ContestPage = ({
   const [contestList, setContestList] = useState([]);
   const [myCompetitions, setMyCompetitions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showOnlyJoined, setShowOnlyJoined] = useState(false);
   const [deletingCompetitionId, setDeletingCompetitionId] = useState(null);
+
+  const [selectedStatus, setSelectedStatus] = useState("ALL");
+  const [showOnlyJoined, setShowOnlyJoined] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   const isAdmin = currentUser?.role === "admin";
 
@@ -82,33 +85,71 @@ const ContestPage = ({
     switch (status) {
       case "ONGOING":
         return {
-          background: "linear-gradient(135deg, #e8f7ee 0%, #d3f9d8 100%)",
+          background: "#eaf7ee",
           color: "#1f7a45",
+          border: "1px solid #ccebd6",
         };
       case "SCHEDULED":
         return {
-          background: "linear-gradient(135deg, #eef2ff 0%, #dbe4ff 100%)",
+          background: "#eef2ff",
           color: "#3b5bdb",
+          border: "1px solid #dbe4ff",
         };
       case "ENDED":
         return {
-          background: "linear-gradient(135deg, #f1f3f5 0%, #e9ecef 100%)",
-          color: "#555",
+          background: "#f3f4f6",
+          color: "#4b5563",
+          border: "1px solid #e5e7eb",
         };
       default:
         return {
-          background: "linear-gradient(135deg, #f1f3f5 0%, #e9ecef 100%)",
-          color: "#555",
+          background: "#f3f4f6",
+          color: "#4b5563",
+          border: "1px solid #e5e7eb",
         };
     }
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return "-";
+
+    return date.toLocaleDateString("ko-KR");
+  };
+
+  const formatMoney = (value) => {
+    if (value == null) return "-";
+    return `${Number(value).toLocaleString("ko-KR")}원`;
+  };
+
   const filteredContestList = useMemo(() => {
-    if (!showOnlyJoined) return contestList;
-    return contestList.filter((contest) =>
-      myCompetitions.includes(contest.competitionId)
-    );
-  }, [contestList, myCompetitions, showOnlyJoined]);
+    return contestList.filter((contest) => {
+      const matchesJoined = !showOnlyJoined
+        ? true
+        : myCompetitions.includes(contest.competitionId);
+
+      const matchesStatus =
+        selectedStatus === "ALL" ? true : contest.status === selectedStatus;
+
+      const keyword = searchKeyword.trim().toLowerCase();
+      const matchesKeyword =
+        keyword.length === 0
+          ? true
+          : `${contest.title ?? ""} ${contest.description ?? ""}`
+              .toLowerCase()
+              .includes(keyword);
+
+      return matchesJoined && matchesStatus && matchesKeyword;
+    });
+  }, [contestList, myCompetitions, selectedStatus, showOnlyJoined, searchKeyword]);
+
+  const resetFilters = () => {
+    setSelectedStatus("ALL");
+    setShowOnlyJoined(false);
+    setSearchKeyword("");
+  };
 
   if (loading) {
     return (
@@ -118,7 +159,7 @@ const ContestPage = ({
             <div style={styles.heroBadge}>COMPETITION</div>
             <h1 style={styles.heroTitle}>모의투자 대회</h1>
             <p style={styles.heroText}>
-              다양한 대회에 참여하고 다른 참가자들과 수익률을 비교해보세요.
+              다양한 대회를 탐색하고 참여해보세요.
             </p>
           </div>
         </div>
@@ -137,7 +178,7 @@ const ContestPage = ({
           <div style={styles.heroBadge}>COMPETITION</div>
           <h1 style={styles.heroTitle}>모의투자 대회</h1>
           <p style={styles.heroText}>
-            다양한 모의투자 대회에 참여하고 수익률을 비교해보세요.
+            대회 일정과 참가 현황을 확인하고, 원하는 대회에 참여해보세요.
           </p>
         </div>
 
@@ -148,30 +189,94 @@ const ContestPage = ({
         )}
       </div>
 
-      <div style={styles.toolbar}>
-        <button
-          onClick={() => setShowOnlyJoined((prev) => !prev)}
-          style={{
-            ...styles.filterButton,
-            ...(showOnlyJoined ? styles.filterButtonActive : {}),
-          }}
-        >
-          {showOnlyJoined ? "전체 대회 보기" : "참가한 대회만 보기"}
-        </button>
+      <div style={styles.guideBox}>
+        <div style={styles.guideTitle}>안내</div>
+        <div style={styles.guideText}>
+          진행중/예정/종료 상태별로 대회를 확인할 수 있고, 참가한 대회만 따로 모아볼 수 있습니다.
+          검색창에서 대회명 또는 설명으로 원하는 대회를 빠르게 찾을 수 있습니다.
+        </div>
+      </div>
+
+      <div style={styles.filterPanel}>
+        <div style={styles.filterRow}>
+          <div style={styles.filterLabel}>상태</div>
+          <div style={styles.chipGroup}>
+            {[
+              { value: "ALL", label: "전체" },
+              { value: "ONGOING", label: "진행중" },
+              { value: "SCHEDULED", label: "예정" },
+              { value: "ENDED", label: "종료" },
+            ].map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => setSelectedStatus(item.value)}
+                style={{
+                  ...styles.chipButton,
+                  ...(selectedStatus === item.value ? styles.chipButtonActive : {}),
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={styles.filterRow}>
+          <div style={styles.filterLabel}>참가 여부</div>
+          <div style={styles.chipGroup}>
+            <button
+              type="button"
+              onClick={() => setShowOnlyJoined(false)}
+              style={{
+                ...styles.chipButton,
+                ...(!showOnlyJoined ? styles.chipButtonActive : {}),
+              }}
+            >
+              전체 대회
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowOnlyJoined(true)}
+              style={{
+                ...styles.chipButton,
+                ...(showOnlyJoined ? styles.chipButtonActive : {}),
+              }}
+            >
+              참가한 대회만
+            </button>
+          </div>
+        </div>
+
+        <div style={styles.filterRow}>
+          <div style={styles.filterLabel}>검색</div>
+          <div style={styles.searchArea}>
+            <input
+              type="text"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              placeholder="대회명 또는 설명을 입력하세요."
+              style={styles.searchInput}
+            />
+            <button type="button" onClick={resetFilters} style={styles.resetButton}>
+              초기화
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style={styles.resultHeader}>
+        <div style={styles.resultCount}>
+          전체 <strong>{filteredContestList.length}</strong>건
+        </div>
       </div>
 
       {filteredContestList.length === 0 ? (
         <div style={styles.emptyCard}>
           <div style={styles.emptyIcon}>📭</div>
-          <p style={styles.emptyTitle}>
-            {showOnlyJoined
-              ? "참가한 대회가 없습니다."
-              : "현재 등록된 대회가 없습니다."}
-          </p>
+          <p style={styles.emptyTitle}>조건에 맞는 대회가 없습니다.</p>
           <p style={styles.emptyText}>
-            {showOnlyJoined
-              ? "다른 대회에 참가하면 여기에서 바로 확인할 수 있어요."
-              : "새로운 대회를 생성하거나 잠시 후 다시 확인해보세요."}
+            필터를 바꾸거나 검색어를 다시 입력해보세요.
           </p>
         </div>
       ) : (
@@ -181,7 +286,6 @@ const ContestPage = ({
 
             const participantCount = Number(contest.participantCount ?? 0);
             const maxParticipants = Number(contest.maxParticipants ?? 0);
-
             const percent =
               maxParticipants > 0
                 ? Math.min((participantCount / maxParticipants) * 100, 100)
@@ -193,30 +297,34 @@ const ContestPage = ({
                 onClick={() => onSelectCompetition(contest.competitionId)}
                 style={styles.card}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-6px)";
+                  e.currentTarget.style.transform = "translateY(-4px)";
                   e.currentTarget.style.boxShadow =
-                    "0 22px 40px rgba(15, 23, 42, 0.12)";
+                    "0 20px 40px rgba(15, 23, 42, 0.10)";
                   e.currentTarget.style.borderColor = "#dbe4ff";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
                   e.currentTarget.style.boxShadow =
-                    "0 12px 28px rgba(15, 23, 42, 0.08)";
-                  e.currentTarget.style.borderColor = "#edf1f5";
+                    "0 10px 24px rgba(15, 23, 42, 0.06)";
+                  e.currentTarget.style.borderColor = "#e5e7eb";
                 }}
               >
-                <div
-                  style={{
-                    ...styles.statusBadge,
-                    ...getStatusStyle(contest.status),
-                  }}
-                >
-                  {formatStatus(contest.status)}
+                <div style={styles.cardTopRow}>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <span
+                      style={{
+                        ...styles.statusBadge,
+                        ...getStatusStyle(contest.status),
+                      }}
+                    >
+                      {formatStatus(contest.status)}
+                    </span>
+
+                    {isJoined && <span style={styles.joinedBadge}>참가중</span>}
+                  </div>
                 </div>
 
-                {isJoined && <div style={styles.joinedBadge}>참가중</div>}
-
-                <div style={styles.cardTopAccent} />
+                <div style={styles.categoryText}>모의투자 대회</div>
 
                 <h3 style={styles.cardTitle}>{contest.title}</h3>
 
@@ -224,25 +332,34 @@ const ContestPage = ({
                   {contest.description || "대회 설명이 없습니다."}
                 </p>
 
-                <div style={styles.infoRow}>
-                  <div style={styles.infoPill}>
-                    <span style={styles.infoIcon}>👥</span>
-                    <span>{participantCount}명 참여</span>
+                <div style={styles.infoList}>
+                  <div style={styles.infoItem}>
+                    <span style={styles.infoItemLabel}>기간</span>
+                    <span style={styles.infoItemValue}>
+                      {formatDate(contest.startAt)} - {formatDate(contest.endAt)}
+                    </span>
                   </div>
 
-                  <div style={styles.infoPillLight}>
-                    {maxParticipants > 0
-                      ? `정원 ${maxParticipants}명`
-                      : "정원 미설정"}
+                  <div style={styles.infoItem}>
+                    <span style={styles.infoItemLabel}>초기 시드머니</span>
+                    <span style={styles.infoItemValue}>
+                      {formatMoney(contest.initialSeedMoney)}
+                    </span>
+                  </div>
+
+                  <div style={styles.infoItem}>
+                    <span style={styles.infoItemLabel}>참가 현황</span>
+                    <span style={styles.infoItemValue}>
+                      {participantCount}명
+                      {maxParticipants > 0 ? ` / ${maxParticipants}명` : ""}
+                    </span>
                   </div>
                 </div>
 
                 <div style={styles.progressWrap}>
                   <div style={styles.progressHeader}>
                     <span style={styles.progressLabel}>참가율</span>
-                    <span style={styles.progressValue}>
-                      {Math.round(percent)}%
-                    </span>
+                    <span style={styles.progressValue}>{Math.round(percent)}%</span>
                   </div>
 
                   <div style={styles.progressBar}>
@@ -252,9 +369,9 @@ const ContestPage = ({
                         width: `${percent}%`,
                         background:
                           percent >= 100
-                            ? "linear-gradient(90deg, #ff6b6b 0%, #e03131 100%)"
+                            ? "linear-gradient(90deg, #ff8787 0%, #fa5252 100%)"
                             : percent >= 70
-                            ? "linear-gradient(90deg, #fcc419 0%, #f08c00 100%)"
+                            ? "linear-gradient(90deg, #ffd43b 0%, #fab005 100%)"
                             : "linear-gradient(90deg, #748ffc 0%, #4c6ef5 100%)",
                       }}
                     />
@@ -268,12 +385,25 @@ const ContestPage = ({
                     </span>
                     <span>
                       {percent >= 100
-                        ? "마감 임박"
+                        ? "정원 마감"
                         : percent >= 70
-                        ? "참가 열기 높음"
+                        ? "참가 활발"
                         : "참가 가능"}
                     </span>
                   </div>
+                </div>
+
+                <div style={styles.actionRow}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectCompetition(contest.competitionId);
+                    }}
+                    style={styles.detailButtonPrimary}
+                  >
+                    상세보기
+                  </button>
                 </div>
 
                 {isAdmin && (
@@ -346,12 +476,11 @@ const styles = {
     alignItems: "flex-end",
     gap: "16px",
     padding: "28px 30px",
-    borderRadius: "28px",
-    background:
-      "linear-gradient(135deg, #ffffff 0%, #f8faff 45%, #eef3ff 100%)",
-    border: "1px solid #edf1f5",
-    boxShadow: "0 16px 32px rgba(15, 23, 42, 0.06)",
-    marginBottom: "22px",
+    borderRadius: "24px",
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
+    marginBottom: "16px",
   },
   heroBadge: {
     display: "inline-block",
@@ -361,12 +490,12 @@ const styles = {
     color: "#4c6ef5",
     fontSize: "12px",
     fontWeight: "800",
-    letterSpacing: "0.08em",
+    letterSpacing: "0.06em",
     marginBottom: "12px",
   },
   heroTitle: {
     margin: "0 0 10px",
-    fontSize: "34px",
+    fontSize: "32px",
     fontWeight: "800",
     color: "#111827",
   },
@@ -374,48 +503,121 @@ const styles = {
     margin: 0,
     fontSize: "15px",
     lineHeight: "1.7",
-    color: "#667085",
+    color: "#6b7280",
   },
   createButton: {
     padding: "12px 18px",
-    borderRadius: "14px",
+    borderRadius: "12px",
     border: "none",
-    background: "linear-gradient(135deg, #111827 0%, #1f2937 100%)",
+    background: "#111827",
     color: "#fff",
     cursor: "pointer",
     fontWeight: "700",
     fontSize: "14px",
-    boxShadow: "0 10px 20px rgba(17, 24, 39, 0.18)",
     whiteSpace: "nowrap",
   },
-  toolbar: {
-    display: "flex",
-    justifyContent: "flex-end",
-    marginBottom: "20px",
+  guideBox: {
+    border: "1px solid #d1d5db",
+    background: "#fafafa",
+    borderRadius: "14px",
+    padding: "16px 18px",
+    marginBottom: "18px",
   },
-  filterButton: {
-    padding: "11px 16px",
-    borderRadius: "12px",
-    border: "1px solid #dbe1ea",
-    backgroundColor: "#fff",
-    color: "#111827",
+  guideTitle: {
+    fontSize: "14px",
+    fontWeight: "800",
+    color: "#374151",
+    marginBottom: "8px",
+  },
+  guideText: {
+    fontSize: "14px",
+    color: "#6b7280",
+    lineHeight: "1.7",
+  },
+  filterPanel: {
+    background: "#f9fafb",
+    border: "1px solid #e5e7eb",
+    borderRadius: "18px",
+    padding: "20px",
+    marginBottom: "18px",
+  },
+  filterRow: {
+    display: "grid",
+    gridTemplateColumns: "100px 1fr",
+    gap: "14px",
+    alignItems: "center",
+    marginBottom: "16px",
+  },
+  filterLabel: {
+    fontSize: "14px",
+    fontWeight: "700",
+    color: "#374151",
+  },
+  chipGroup: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px",
+  },
+  chipButton: {
+    padding: "10px 14px",
+    borderRadius: "10px",
+    border: "1px solid #d1d5db",
+    background: "#fff",
+    color: "#374151",
+    cursor: "pointer",
+    fontWeight: "600",
+    fontSize: "13px",
+  },
+  chipButtonActive: {
+    background: "#4c6ef5",
+    color: "#fff",
+    border: "1px solid #4c6ef5",
+  },
+  searchArea: {
+    display: "flex",
+    gap: "10px",
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+  searchInput: {
+    flex: 1,
+    minWidth: "260px",
+    height: "42px",
+    borderRadius: "10px",
+    border: "1px solid #d1d5db",
+    padding: "0 14px",
+    fontSize: "14px",
+    outline: "none",
+    background: "#fff",
+  },
+  resetButton: {
+    height: "42px",
+    padding: "0 16px",
+    borderRadius: "10px",
+    border: "1px solid #d1d5db",
+    background: "#fff",
+    color: "#374151",
     cursor: "pointer",
     fontWeight: "700",
-    fontSize: "14px",
-    boxShadow: "0 6px 16px rgba(15, 23, 42, 0.04)",
+    fontSize: "13px",
   },
-  filterButtonActive: {
-    background: "linear-gradient(135deg, #111827 0%, #374151 100%)",
-    color: "#fff",
-    border: "1px solid transparent",
+  resultHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "14px",
+  },
+  resultCount: {
+    fontSize: "14px",
+    color: "#4b5563",
   },
   emptyCard: {
     backgroundColor: "#fff",
-    border: "1px solid #edf1f5",
-    borderRadius: "24px",
+    border: "1px solid #e5e7eb",
+    borderRadius: "18px",
     padding: "52px 24px",
     textAlign: "center",
-    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.06)",
+    boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)",
   },
   emptyIcon: {
     fontSize: "34px",
@@ -430,109 +632,100 @@ const styles = {
   emptyText: {
     margin: 0,
     fontSize: "14px",
-    color: "#667085",
+    color: "#6b7280",
     lineHeight: "1.6",
   },
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-    gap: "22px",
+    gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
+    gap: "18px",
   },
   card: {
-    background: "linear-gradient(180deg, #ffffff 0%, #fcfdff 100%)",
-    borderRadius: "24px",
-    padding: "22px",
-    border: "1px solid #edf1f5",
-    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.08)",
+    background: "#fff",
+    borderRadius: "16px",
+    padding: "20px",
+    border: "1px solid #e5e7eb",
+    boxShadow: "0 10px 24px rgba(15, 23, 42, 0.06)",
     cursor: "pointer",
-    transition: "all 0.22s ease",
-    position: "relative",
-    minHeight: "290px",
-    overflow: "hidden",
+    transition: "all 0.2s ease",
   },
-  cardTopAccent: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "5px",
-    background: "linear-gradient(90deg, #748ffc 0%, #4c6ef5 100%)",
+  cardTopRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: "14px",
   },
   statusBadge: {
-    position: "absolute",
-    top: "18px",
-    right: "18px",
-    padding: "7px 11px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "6px 10px",
     borderRadius: "999px",
     fontSize: "12px",
     fontWeight: "800",
-    boxShadow: "0 6px 14px rgba(0,0,0,0.04)",
   },
   joinedBadge: {
-    position: "absolute",
-    top: "18px",
-    left: "18px",
-    background: "linear-gradient(135deg, #111827 0%, #374151 100%)",
-    color: "#fff",
-    padding: "7px 11px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "6px 10px",
     borderRadius: "999px",
     fontSize: "12px",
     fontWeight: "800",
-    boxShadow: "0 8px 16px rgba(17, 24, 39, 0.14)",
+    background: "#111827",
+    color: "#fff",
+    border: "1px solid #111827",
+  },
+  categoryText: {
+    fontSize: "12px",
+    fontWeight: "700",
+    color: "#4c6ef5",
+    marginBottom: "8px",
   },
   cardTitle: {
-    marginTop: "42px",
-    marginBottom: "12px",
-    fontSize: "27px",
+    margin: "0 0 10px",
+    fontSize: "24px",
     fontWeight: "800",
     color: "#111827",
-    lineHeight: "1.3",
+    lineHeight: "1.35",
     wordBreak: "keep-all",
   },
   cardDescription: {
+    margin: "0 0 16px",
     fontSize: "14px",
-    color: "#667085",
+    color: "#6b7280",
     lineHeight: "1.7",
-    minHeight: "48px",
-    marginBottom: "18px",
+    minHeight: "44px",
   },
-  infoRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
+  infoList: {
+    display: "grid",
     gap: "10px",
-    flexWrap: "wrap",
     marginBottom: "16px",
   },
-  infoPill: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "6px",
-    padding: "8px 12px",
-    borderRadius: "999px",
-    background: "#f5f7fb",
-    color: "#334155",
-    fontSize: "13px",
-    fontWeight: "700",
+  infoItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "12px",
+    paddingBottom: "10px",
+    borderBottom: "1px solid #f0f2f5",
   },
-  infoPillLight: {
-    display: "inline-flex",
-    alignItems: "center",
-    padding: "8px 12px",
-    borderRadius: "999px",
-    background: "#eef2ff",
-    color: "#4c6ef5",
+  infoItemLabel: {
     fontSize: "13px",
+    color: "#6b7280",
     fontWeight: "700",
+    flexShrink: 0,
   },
-  infoIcon: {
-    fontSize: "12px",
+  infoItemValue: {
+    fontSize: "13px",
+    color: "#111827",
+    fontWeight: "700",
+    textAlign: "right",
   },
   progressWrap: {
     marginTop: "4px",
     padding: "14px",
-    borderRadius: "18px",
-    background: "#f8fafc",
+    borderRadius: "14px",
+    background: "#f9fafb",
     border: "1px solid #eef2f7",
   },
   progressHeader: {
@@ -552,8 +745,8 @@ const styles = {
     fontWeight: "800",
   },
   progressBar: {
-    height: "11px",
-    background: "#e9edf5",
+    height: "10px",
+    background: "#e5e7eb",
     borderRadius: "999px",
     overflow: "hidden",
   },
@@ -568,19 +761,36 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     fontSize: "12px",
-    color: "#667085",
+    color: "#6b7280",
     gap: "8px",
     flexWrap: "wrap",
   },
-  adminButtonRow: {
+  actionRow: {
     marginTop: "16px",
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    gap: "10px",
+  },
+  detailButtonPrimary: {
+    height: "44px",
+    borderRadius: "12px",
+    border: "none",
+    background: "#4c6ef5",
+    color: "#fff",
+    fontWeight: "800",
+    fontSize: "14px",
+    cursor: "pointer",
+  },
+  adminButtonRow: {
+    marginTop: "12px",
     display: "flex",
     gap: "8px",
   },
   editButton: {
-    padding: "9px 14px",
+    flex: 1,
+    height: "40px",
     borderRadius: "10px",
-    border: "1px solid #dbe1ea",
+    border: "1px solid #d1d5db",
     backgroundColor: "#fff",
     color: "#111827",
     cursor: "pointer",
@@ -588,20 +798,20 @@ const styles = {
     fontSize: "13px",
   },
   deleteButton: {
-    padding: "9px 14px",
+    flex: 1,
+    height: "40px",
     borderRadius: "10px",
     border: "none",
-    background: "linear-gradient(135deg, #fa5252 0%, #e03131 100%)",
+    background: "#ef4444",
     color: "#fff",
     cursor: "pointer",
     fontWeight: "700",
     fontSize: "13px",
-    boxShadow: "0 8px 18px rgba(224, 49, 49, 0.18)",
   },
   deleteButtonDisabled: {
-    background: "#f1a8a8",
+    background: "#fca5a5",
     cursor: "not-allowed",
-    opacity: 0.85,
+    opacity: 0.9,
     boxShadow: "none",
   },
 };
