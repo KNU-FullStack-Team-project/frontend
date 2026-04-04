@@ -33,9 +33,12 @@ const OrderHistory = ({ accountId }) => {
     if (!window.confirm("정말 주문을 취소하시겠습니까?")) return;
 
     try {
-      const response = await fetch(`/api/orders/${orderId}/cancel?accountId=${accountId}`, {
-        method: "POST",
-      });
+      const response = await fetch(
+        `/api/orders/${orderId}/cancel?accountId=${accountId}`,
+        {
+          method: "POST",
+        },
+      );
       if (!response.ok) {
         const errorMsg = await response.text();
         throw new Error(errorMsg || "Cancel failed");
@@ -49,21 +52,29 @@ const OrderHistory = ({ accountId }) => {
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
-      case "COMPLETED": return "status-completed";
+      case "COMPLETED":
+        return "status-completed";
       case "PENDING":
-      case "QUEUED": return "status-pending";
-      case "CANCELED": return "status-canceled";
-      default: return "";
+      case "QUEUED":
+        return "status-pending";
+      case "CANCELED":
+        return "status-canceled";
+      default:
+        return "";
     }
   };
 
   const getStatusText = (status) => {
     switch (status) {
-      case "COMPLETED": return "체결";
+      case "COMPLETED":
+        return "체결";
       case "PENDING":
-      case "QUEUED": return "미체결";
-      case "CANCELED": return "취소";
-      default: return status;
+      case "QUEUED":
+        return "미체결";
+      case "CANCELED":
+        return "취소";
+      default:
+        return status;
     }
   };
 
@@ -78,7 +89,7 @@ const OrderHistory = ({ accountId }) => {
           새로고침
         </AppButton>
       </div>
-      
+
       <div className="table-responsive">
         <table className="stock-table">
           <thead>
@@ -95,34 +106,56 @@ const OrderHistory = ({ accountId }) => {
           <tbody>
             {!Array.isArray(orders) || orders.length === 0 ? (
               <tr>
-                <td colSpan="7" style={{ textAlign: "center", padding: "40px", color: "#888" }}>
+                <td
+                  colSpan="7"
+                  style={{
+                    textAlign: "center",
+                    padding: "40px",
+                    color: "#888",
+                  }}
+                >
                   주문 내역이 없습니다.
                 </td>
               </tr>
             ) : (
               orders.map((order) => (
                 <tr key={order?.id}>
-                  <td>{order?.orderedAt ? new Date(order.orderedAt).toLocaleString() : "-"}</td>
+                  <td>
+                    {order?.orderedAt
+                      ? new Date(order.orderedAt).toLocaleString()
+                      : "-"}
+                  </td>
                   <td>
                     <div className="stock-info-cell">
-                      <span className="stock-name">{order?.stock?.stockName ?? "알 수 없음"}</span>
-                      <span className="stock-code">{order?.stock?.stockCode ?? "-"}</span>
+                      <span className="stock-name">
+                        {order?.stock?.stockName ?? "알 수 없음"}
+                      </span>
+                      <span className="stock-code">
+                        {order?.stock?.stockCode ?? "-"}
+                      </span>
                     </div>
                   </td>
                   <td className={order?.orderSide === "BUY" ? "up" : "down"}>
                     {order?.orderSide === "BUY" ? "매수" : "매도"}
                   </td>
                   <td>{order?.quantity?.toLocaleString() ?? 0}주</td>
-                  <td>{order?.price ? order.price.toLocaleString() + "원" : "시장가"}</td>
                   <td>
-                    <span className={`status-badge ${getStatusBadgeClass(order?.orderStatus)}`}>
+                    {order?.price
+                      ? order.price.toLocaleString() + "원"
+                      : "시장가"}
+                  </td>
+                  <td>
+                    <span
+                      className={`status-badge ${getStatusBadgeClass(order?.orderStatus)}`}
+                    >
                       {getStatusText(order?.orderStatus)}
                     </span>
                   </td>
                   <td>
-                    {(order?.orderStatus === "PENDING" || order?.orderStatus === "QUEUED") && (
-                      <button 
-                        className="btn-cancel" 
+                    {(order?.orderStatus === "PENDING" ||
+                      order?.orderStatus === "QUEUED") && (
+                      <button
+                        className="btn-cancel"
                         onClick={() => handleCancel(order.id)}
                       >
                         취소
