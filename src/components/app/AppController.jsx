@@ -216,11 +216,16 @@ const AppController = () => {
     setSelectedMyPageUser(null);
   };
 
-  // 🔥 랭킹 이동 함수 추가
-  const handleViewRanking = (competitionId) => {
-    setSelectedCompetitionId(competitionId);
-    setCurrentPage("ranking");
-  };
+  //랭킹페이지 이동 함수
+  const handleViewRanking = (competitionId, status) => {
+  if (status === "SCHEDULED") {
+    alert("예정된 대회는 랭킹을 조회할 수 없습니다.");
+    return;
+  }
+
+  setSelectedCompetitionId(competitionId);
+  setCurrentPage("ranking");
+};
 
   const handleMovePage = (page) => {
     const protectedPages = ["mypage", "admin"];
@@ -361,7 +366,7 @@ const AppController = () => {
           />
         );
 
-      case "ranking": // 🔥 추가
+      case "ranking":
         return (
           <RankingPage
             isLoggedIn={isLoggedIn}
@@ -437,6 +442,7 @@ const AppController = () => {
       </main>
     </div>
   );
+  
 };
 
 export default AppController;
