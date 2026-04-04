@@ -407,17 +407,32 @@ const ContestPage = ({
                   </button>
 
                   <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (onViewRanking) {
-                        onViewRanking(contest.competitionId);
-                      }
-                    }}
-                    style={styles.rankingButton}
-                  >
-                    랭킹보기
-                  </button>
+  type="button"
+  onClick={(e) => {
+    e.stopPropagation();
+
+    if (contest.status === "SCHEDULED") {
+      alert("예정된 대회는 랭킹을 조회할 수 없습니다.");
+      return;
+    }
+
+    if (onViewRanking) {
+      onViewRanking(contest.competitionId);
+    }
+  }}
+  style={{
+    ...styles.rankingButton,
+    ...(contest.status === "SCHEDULED"
+      ? {
+          backgroundColor: "#ccc",
+          cursor: "not-allowed",
+        }
+      : {}),
+  }}
+  disabled={contest.status === "SCHEDULED"}
+>
+  랭킹보기
+</button>
                 </div>
 
                 {isAdmin && (
