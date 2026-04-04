@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
   const [competitions, setCompetitions] = useState([]);
+  const [myCompetitions, setMyCompetitions] = useState([]);
   const [selectedId, setSelectedId] = useState(selectedCompetitionId ?? null);
   const [ranking, setRanking] = useState([]);
 
@@ -20,6 +21,30 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
       setSelectedId(selectedCompetitionId);
     }
   }, [selectedCompetitionId]);
+
+  useEffect(() => {
+    if (!isLoggedIn || !currentUser?.userId) {
+      setMyCompetitions([]);
+      return;
+    }
+
+    fetch(
+      `http://localhost:8081/api/competitions/my?userId=${currentUser.userId}`
+    )
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error("내 참가 대회를 불러오지 못했습니다.");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setMyCompetitions(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error("내 참가 대회 조회 오류:", err);
+        setMyCompetitions([]);
+      });
+  }, [isLoggedIn, currentUser]);
 
   useEffect(() => {
     setCompetitionLoading(true);
@@ -54,14 +79,18 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
           setSelectedId(ongoing[ongoing.length - 1].competitionId);
         } else if (ended.length > 0) {
           setSelectedId(ended[ended.length - 1].competitionId);
-        } else {
+        } else if (scheduled.length > 0) {
           setSelectedId(scheduled[scheduled.length - 1].competitionId);
+        } else {
+          setSelectedId(null);
         }
       })
       .catch((err) => {
         console.error("대회 목록 조회 오류:", err);
         setCompetitions([]);
-        setCompetitionError(err.message || "대회 목록 조회 중 오류가 발생했습니다.");
+        setCompetitionError(
+          err.message || "대회 목록 조회 중 오류가 발생했습니다."
+        );
       })
       .finally(() => {
         setCompetitionLoading(false);
@@ -81,7 +110,8 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
     fetch(`http://localhost:8081/api/competitions/${selectedId}/ranking`)
       .then(async (res) => {
         if (!res.ok) {
-          throw new Error("랭킹 정보를 불러오지 못했습니다.");
+          const text = await res.text();
+          throw new Error(text || "랭킹 정보를 불러오지 못했습니다.");
         }
         return res.json();
       })
@@ -159,12 +189,9 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
       const matchesStatus =
         selectedStatus === "ALL" ? true : contest.status === selectedStatus;
 
-      const matchesJoined =
-        !showOnlyJoined || !isLoggedIn
-          ? !showOnlyJoined || !isLoggedIn
-            ? true
-            : false
-          : false;
+      const matchesJoined = !showOnlyJoined
+        ? true
+        : myCompetitions.includes(contest.competitionId);
 
       const keyword = searchKeyword.trim().toLowerCase();
       const matchesKeyword =
@@ -176,11 +203,29 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
 
       return matchesStatus && matchesKeyword && matchesJoined;
     });
-  }, [competitions, selectedStatus, searchKeyword, showOnlyJoined, isLoggedIn]);
+  }, [
+    competitions,
+    selectedStatus,
+    searchKeyword,
+    showOnlyJoined,
+    myCompetitions,
+  ]);
 
   const selectedCompetition = useMemo(() => {
     return competitions.find((c) => c.competitionId === selectedId) ?? null;
   }, [competitions, selectedId]);
+
+  useEffect(() => {
+    if (filteredCompetitions.length === 0) return;
+
+    const existsInFiltered = filteredCompetitions.some(
+      (contest) => contest.competitionId === selectedId
+    );
+
+    if (!existsInFiltered) {
+      setSelectedId(filteredCompetitions[0].competitionId);
+    }
+  }, [filteredCompetitions, selectedId]);
 
   const top3 = ranking.slice(0, 3);
   const others = ranking.slice(3);
@@ -217,7 +262,9 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
         </div>
         <div style={styles.topNickname}>{user?.nickname || "-"}</div>
         <div style={styles.topReturnRate}>
-          {user?.returnRate != null ? `${Number(user.returnRate).toFixed(2)}%` : "-"}
+          {user?.returnRate != null
+            ? `${Number(user.returnRate).toFixed(2)}%`
+            : "-"}
         </div>
         <div style={styles.topProfit}>
           {user?.profitAmount != null ? formatMoney(user.profitAmount) : "-"}
@@ -272,7 +319,6 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
             {[
               { value: "ALL", label: "전체" },
               { value: "ONGOING", label: "진행중" },
-              { value: "SCHEDULED", label: "예정" },
               { value: "ENDED", label: "종료" },
             ].map((item) => (
               <button
@@ -281,7 +327,9 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
                 onClick={() => setSelectedStatus(item.value)}
                 style={{
                   ...styles.chipButton,
-                  ...(selectedStatus === item.value ? styles.chipButtonActive : {}),
+                  ...(selectedStatus === item.value
+                    ? styles.chipButtonActive
+                    : {}),
                 }}
               >
                 {item.label}
@@ -305,13 +353,17 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
             </button>
             <button
               type="button"
-              onClick={() => setShowOnlyJoined(true)}
+              onClick={() => {
+                if (!isLoggedIn) {
+                  alert("로그인 후 이용해주세요.");
+                  return;
+                }
+                setShowOnlyJoined(true);
+              }}
               style={{
                 ...styles.chipButton,
                 ...(showOnlyJoined ? styles.chipButtonActive : {}),
               }}
-              disabled
-              title="내 참가 대회 필터는 추후 연결 예정"
             >
               참가한 대회만
             </button>
@@ -328,7 +380,11 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
               placeholder="대회명 또는 설명을 입력하세요."
               style={styles.searchInput}
             />
-            <button type="button" onClick={resetFilters} style={styles.resetButton}>
+            <button
+              type="button"
+              onClick={resetFilters}
+              style={styles.resetButton}
+            >
               초기화
             </button>
           </div>
@@ -370,7 +426,9 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
                       : {}),
                   }}
                 >
-                  <div style={styles.competitionSelectorTitle}>{contest.title}</div>
+                  <div style={styles.competitionSelectorTitle}>
+                    {contest.title}
+                  </div>
                   <div style={styles.competitionSelectorMeta}>
                     {formatStatus(contest.status)} · {formatDate(contest.startAt)}
                   </div>
@@ -384,7 +442,9 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
               <div style={styles.summaryTop}>
                 <div>
                   <div style={styles.summaryCategory}>선택된 대회</div>
-                  <h2 style={styles.summaryTitle}>{selectedCompetition.title}</h2>
+                  <h2 style={styles.summaryTitle}>
+                    {selectedCompetition.title}
+                  </h2>
                 </div>
                 <span
                   style={{
@@ -455,36 +515,40 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
                   <span>평가손익</span>
                 </div>
 
-                {(others.length > 0 ? others : top3.slice(0)).map((user, index) => {
-                  const rank = others.length > 0 ? index + 4 : index + 1;
-                  const isMe =
-                    isLoggedIn &&
-                    currentUser?.userId &&
-                    user?.userId === currentUser.userId;
+                {(others.length > 0 ? others : top3.slice(0)).map(
+                  (user, index) => {
+                    const rank = others.length > 0 ? index + 4 : index + 1;
+                    const isMe =
+                      isLoggedIn &&
+                      currentUser?.userId &&
+                      user?.userId === currentUser.userId;
 
-                  return (
-                    <div
-                      key={`${user?.userId ?? "user"}-${rank}`}
-                      style={{
-                        ...styles.listRow,
-                        ...(isMe ? styles.myRow : {}),
-                      }}
-                    >
-                      <span style={styles.rankCell}>{rank}</span>
-                      <span style={styles.nameCell}>{user?.nickname ?? "-"}</span>
-                      <span style={styles.rateCell}>
-                        {user?.returnRate != null
-                          ? `${Number(user.returnRate).toFixed(2)}%`
-                          : "-"}
-                      </span>
-                      <span style={styles.profitCell}>
-                        {user?.profitAmount != null
-                          ? formatMoney(user.profitAmount)
-                          : "-"}
-                      </span>
-                    </div>
-                  );
-                })}
+                    return (
+                      <div
+                        key={`${user?.userId ?? "user"}-${rank}`}
+                        style={{
+                          ...styles.listRow,
+                          ...(isMe ? styles.myRow : {}),
+                        }}
+                      >
+                        <span style={styles.rankCell}>{rank}</span>
+                        <span style={styles.nameCell}>
+                          {user?.nickname ?? "-"}
+                        </span>
+                        <span style={styles.rateCell}>
+                          {user?.returnRate != null
+                            ? `${Number(user.returnRate).toFixed(2)}%`
+                            : "-"}
+                        </span>
+                        <span style={styles.profitCell}>
+                          {user?.profitAmount != null
+                            ? formatMoney(user.profitAmount)
+                            : "-"}
+                        </span>
+                      </div>
+                    );
+                  }
+                )}
               </div>
             </>
           )}
