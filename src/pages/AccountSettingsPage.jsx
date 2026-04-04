@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import AppButton from "../common/AppButton";
 
 const isStrongPassword = (value) => {
@@ -14,6 +14,8 @@ const isStrongPassword = (value) => {
 };
 
 const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
+  const [profileImageUrl, setProfileImageUrl] = useState("");
+  const [isProfileUploading, setIsProfileUploading] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -22,6 +24,7 @@ const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
   const [passwordMessage, setPasswordMessage] = useState("");
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [isWithdrawSaving, setIsWithdrawSaving] = useState(false);
+  const fileInputRef = useRef(null);
 
   const isPasswordValid = isStrongPassword(passwordForm.newPassword);
   const isPasswordMatch =
@@ -34,10 +37,80 @@ const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
     isPasswordMatch &&
     !isPasswordSaving;
 
+  useEffect(() => {
+    if (!currentUser?.email) {
+      return;
+    }
+
+    const loadProfile = async () => {
+      try {
+        const params = new URLSearchParams({ email: currentUser.email });
+        const response = await fetch(
+          `http://localhost:8081/users/profile?${params.toString()}`,
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const profileData = await response.json();
+        setProfileImageUrl(profileData.profileImageUrl || "");
+      } catch {
+        setProfileImageUrl("");
+      }
+    };
+
+    loadProfile();
+  }, [currentUser?.email]);
+
   const handlePasswordFieldChange = (event) => {
     const { name, value } = event.target;
     setPasswordForm((prev) => ({ ...prev, [name]: value }));
     setPasswordMessage("");
+  };
+
+  const handleProfileImageChange = async (event) => {
+    const selectedFile = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!selectedFile || !currentUser?.email || isProfileUploading) {
+      return;
+    }
+
+    if (!["image/png", "image/jpeg", "image/jpg"].includes(selectedFile.type)) {
+      alert("PNG, JPG, JPEG 파일만 업로드할 수 있습니다.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("image", selectedFile);
+
+    setIsProfileUploading(true);
+
+    try {
+      const params = new URLSearchParams({ email: currentUser.email });
+      const response = await fetch(
+        `http://localhost:8081/users/profile-image?${params.toString()}`,
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || "프로필 사진 저장에 실패했습니다.");
+      }
+
+      const profileData = await response.json();
+      setProfileImageUrl(
+        `${profileData.profileImageUrl}?updated=${Date.now()}`,
+      );
+    } catch (uploadError) {
+      alert(uploadError.message || "프로필 사진 저장에 실패했습니다.");
+    } finally {
+      setIsProfileUploading(false);
+    }
   };
 
   const handlePasswordSubmit = async (event) => {
@@ -79,9 +152,7 @@ const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
       });
 
       alert(message || "비밀번호가 변경되었습니다. 다시 로그인해 주세요.");
-      if (onLogout) {
-        onLogout();
-      }
+      onLogout?.();
     } catch (submitError) {
       setPasswordMessage(
         submitError.message || "비밀번호 변경에 실패했습니다.",
@@ -120,9 +191,7 @@ const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
       }
 
       alert(message || "회원탈퇴가 완료되었습니다.");
-      if (onLogout) {
-        onLogout();
-      }
+      onLogout?.();
     } catch (withdrawError) {
       alert(withdrawError.message || "회원탈퇴에 실패했습니다.");
     } finally {
@@ -137,13 +206,52 @@ const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
           <div>
             <h3>회원정보수정</h3>
             <p className="page-desc">
-              비밀번호 변경과 회원탈퇴를 이 페이지에서 관리합니다.
+              프로필 사진, 비밀번호 변경, 회원탈퇴 등 회원정보를 관리합니다.
             </p>
           </div>
 
           <AppButton type="button" variant="outline" onClick={onBackToMyPage}>
             마이페이지로 돌아가기
           </AppButton>
+        </div>
+      </div>
+
+      <div className="content-card">
+        <div className="section-header">
+          <div>
+            <h3>프로필 사진</h3>
+            <p className="page-desc">PNG/JPG/JPEG 파일을 업로드 해주세요</p>
+          </div>
+        </div>
+
+        <div className="profile-image-editor">
+          <div className="profile-image-preview">
+            {profileImageUrl ? (
+              <img
+                src={`http://localhost:8081${profileImageUrl}`}
+                alt="프로필 사진"
+              />
+            ) : (
+              <span>{currentUser?.nickname?.[0] || "U"}</span>
+            )}
+          </div>
+
+          <div className="profile-image-actions">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg"
+              onChange={handleProfileImageChange}
+              style={{ display: "none" }}
+            />
+            <AppButton
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isProfileUploading}
+            >
+              {isProfileUploading ? "업로드 중..." : "프로필 사진 변경"}
+            </AppButton>
+          </div>
         </div>
       </div>
 
@@ -212,7 +320,8 @@ const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
           <div>
             <h3>회원탈퇴</h3>
             <p className="page-desc">
-              회원탈퇴를 진행하면 계정 상태가 QUIT으로 변경되고, 다시 로그인할 수 없습니다.
+              회원탈퇴를 진행하면 계정 상태가 QUIT으로 변경되고, 다시 로그인할
+              수 없습니다.
             </p>
           </div>
         </div>
