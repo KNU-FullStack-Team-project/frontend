@@ -15,7 +15,9 @@ const StockDetail = ({ stock, user }) => {
     const fetchHistory = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/stocks/${stock.symbol}/history?period=${period}`);
+        const response = await fetch(
+          `http://localhost:8081/api/stocks/${stock.symbol}/history?period=${period}`,
+        );
         if (!response.ok) throw new Error("Failed to fetch history");
         const data = await response.json();
         setCandles(data);
@@ -31,7 +33,9 @@ const StockDetail = ({ stock, user }) => {
   const fetchAccountData = async () => {
     if (!user?.email) return;
     try {
-      const response = await fetch(`/api/accounts/my/dashboard?email=${user.email}`);
+      const response = await fetch(
+        `/api/accounts/my/dashboard?email=${user.email}`,
+      );
       if (response.ok) {
         const data = await response.json();
         setAccountData(data);
@@ -63,15 +67,22 @@ const StockDetail = ({ stock, user }) => {
     }
 
     // 매수 시 잔고 확인
-    if (orderSide === "BUY" && accountData && (parseInt(stock.currentPrice) * quantity) > accountData.rawCashBalance) {
+    if (
+      orderSide === "BUY" &&
+      accountData &&
+      parseInt(stock.currentPrice) * quantity > accountData.rawCashBalance
+    ) {
       alert("잔고가 부족합니다.");
       return;
     }
 
     try {
-      const response = await fetch("/api/orders", {
+      const response = await fetch("http://localhost:8081/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user?.token}`,
+        },
         body: JSON.stringify({
           accountId: accountData.id || accountData.accountId || 1, // DTO 구조에 따라 조정 필요
           stockCode: stock.symbol,
@@ -86,7 +97,9 @@ const StockDetail = ({ stock, user }) => {
         throw new Error(msg);
       }
 
-      alert(`${stock.name} ${quantity}주 ${orderSide === "BUY" ? "매수" : "매도"} 주문이 성공적으로 접수되었습니다.`);
+      alert(
+        `${stock.name} ${quantity}주 ${orderSide === "BUY" ? "매수" : "매도"} 주문이 성공적으로 접수되었습니다.`,
+      );
       fetchAccountData(); // 주문 후 잔고 갱신
     } catch (err) {
       alert("주문 실패: " + err.message);
@@ -99,12 +112,19 @@ const StockDetail = ({ stock, user }) => {
     <div className="stock-detail-content">
       <div className="stock-detail-header">
         <div className="price-section">
-          <span className="price-big">{parseInt(stock.currentPrice).toLocaleString()}원</span>
-          <div className={`price-change ${parseFloat(stock.changeRate) >= 0 ? "up" : "down"}`}>
-            {parseFloat(stock.changeRate) >= 0 ? "▲" : "▼"} {stock.changeAmount} ({stock.changeRate}%)
+          <span className="price-big">
+            {parseInt(stock.currentPrice).toLocaleString()}원
+          </span>
+          <div
+            className={`price-change ${parseFloat(stock.changeRate) >= 0 ? "up" : "down"}`}
+          >
+            {parseFloat(stock.changeRate) >= 0 ? "▲" : "▼"} {stock.changeAmount}{" "}
+            ({stock.changeRate}%)
           </div>
         </div>
-        <div className="stat-pill">거래량: {parseInt(stock.volume).toLocaleString()}</div>
+        <div className="stat-pill">
+          거래량: {parseInt(stock.volume).toLocaleString()}
+        </div>
       </div>
 
       <div className="divider" />
@@ -126,7 +146,9 @@ const StockDetail = ({ stock, user }) => {
             </div>
           </div>
           {loading ? (
-            <div className="loading-placeholder">차트 데이터를 불러오는 중...</div>
+            <div className="loading-placeholder">
+              차트 데이터를 불러오는 중...
+            </div>
           ) : (
             <CandleChart data={candles} />
           )}
@@ -159,14 +181,19 @@ const StockDetail = ({ stock, user }) => {
             />
             <div className="order-info">
               <div className="info-row">
-                <span>{orderSide === "BUY" ? "주문 가능 금액" : "보유 수량"}</span>
+                <span>
+                  {orderSide === "BUY" ? "주문 가능 금액" : "보유 수량"}
+                </span>
                 <strong>
                   {orderSide === "BUY"
-                    ? (accountData ? accountData.cashBalance : "조회 중...")
-                    : (accountData
-                      ? (accountData.holdings.find(h => h.stockName === stock.name)?.quantity || 0) + "주"
-                      : "조회 중...")
-                  }
+                    ? accountData
+                      ? accountData.cashBalance
+                      : "조회 중..."
+                    : accountData
+                      ? (accountData.holdings.find(
+                          (h) => h.stockName === stock.name,
+                        )?.quantity || 0) + "주"
+                      : "조회 중..."}
                 </strong>
               </div>
             </div>

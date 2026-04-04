@@ -13,7 +13,7 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
         setLoading(true);
         try {
           const response = await fetch(
-            `/api/accounts/my/dashboard?email=${currentUser.email}`,
+            `http://localhost:8081/api/accounts/my/dashboard?email=${currentUser.email}`,
             {
               headers: { Authorization: `Bearer ${currentUser.token}` },
             },

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import AppButton from "../../common/AppButton";
 
-const OrderHistory = ({ accountId }) => {
+const OrderHistory = ({ accountId, currentUser }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -9,8 +9,15 @@ const OrderHistory = ({ accountId }) => {
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
-      // 백엔드 API 호출: 계좌 ID 기준 주문 내역 조회
-      const response = await fetch(`/api/orders?accountId=${accountId}`);
+      // 절대 경로 및 Authorization 헤더 추가
+      const response = await fetch(
+        `http://localhost:8081/api/orders?accountId=${accountId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        },
+      );
       if (!response.ok) throw new Error("Order data fetch failed");
       const data = await response.json();
       setOrders(data);
@@ -21,7 +28,7 @@ const OrderHistory = ({ accountId }) => {
     } finally {
       setLoading(false);
     }
-  }, [accountId]);
+  }, [accountId, currentUser]);
 
   useEffect(() => {
     if (accountId) {
@@ -34,9 +41,12 @@ const OrderHistory = ({ accountId }) => {
 
     try {
       const response = await fetch(
-        `/api/orders/${orderId}/cancel?accountId=${accountId}`,
+        `http://localhost:8081/api/orders/${orderId}/cancel?accountId=${accountId}`,
         {
           method: "POST",
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
         },
       );
       if (!response.ok) {

@@ -11,6 +11,8 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
 
   const targetEmail = viewedUser?.email || currentUser?.email;
   const isMyOwnPage = !viewedUser || viewedUser.email === currentUser?.email;
+  const targetUserId =
+    viewedUser?.id || viewedUser?.userId || currentUser?.userId;
 
   const loadMyPageData = async () => {
     if (!targetEmail) {
@@ -18,14 +20,31 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     }
 
     try {
-      const params = new URLSearchParams({ email: targetEmail });
+      // 프로필은 이메일로 조회 (UserService 기준)
+      const profileParams = new URLSearchParams({ email: targetEmail });
+      // 계좌 관련도 백엔드 Controller 기준에 맞춰 email로 조회
+      const accountParams = new URLSearchParams({ email: targetEmail });
+
       const [profileResponse, dashboardResponse, accountsResponse] =
         await Promise.all([
-          fetch(`http://localhost:8081/users/profile?${params.toString()}`),
           fetch(
-            `http://localhost:8081/api/accounts/my/dashboard?${params.toString()}`,
+            `http://localhost:8081/users/profile?${profileParams.toString()}`,
+            {
+              headers: { Authorization: `Bearer ${currentUser?.token}` },
+            },
           ),
-          fetch(`http://localhost:8081/api/accounts/my?${params.toString()}`),
+          fetch(
+            `http://localhost:8081/api/accounts/my/dashboard?${accountParams.toString()}`,
+            {
+              headers: { Authorization: `Bearer ${currentUser?.token}` },
+            },
+          ),
+          fetch(
+            `http://localhost:8081/api/accounts/my?${accountParams.toString()}`,
+            {
+              headers: { Authorization: `Bearer ${currentUser?.token}` },
+            },
+          ),
         ]);
 
       if (
@@ -33,6 +52,11 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
         !dashboardResponse.ok ||
         !accountsResponse.ok
       ) {
+        console.error("API 응답 에러:", {
+          profile: profileResponse.status,
+          dashboard: dashboardResponse.status,
+          accounts: accountsResponse.status,
+        });
         throw new Error("failed");
       }
 
@@ -71,6 +95,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
         `http://localhost:8081/api/accounts/${accountId}/reset-cash`,
         {
           method: "POST",
+          headers: { Authorization: `Bearer ${currentUser?.token}` },
         },
       );
 
@@ -227,7 +252,9 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
         </div>
       </div>
 
-      {accountId ? <OrderHistory accountId={accountId} /> : null}
+      {accountId ? (
+        <OrderHistory accountId={accountId} currentUser={currentUser} />
+      ) : null}
     </div>
   );
 };

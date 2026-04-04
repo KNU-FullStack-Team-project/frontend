@@ -29,7 +29,12 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
     }
 
     fetch(
-      `http://localhost:8081/api/competitions/my?userId=${currentUser.userId}`
+      `http://localhost:8081/api/competitions/my?userId=${currentUser.userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${currentUser?.token}`,
+        },
+      },
     )
       .then(async (res) => {
         if (!res.ok) {
@@ -50,7 +55,11 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
     setCompetitionLoading(true);
     setCompetitionError("");
 
-    fetch("http://localhost:8081/api/competitions")
+    fetch("http://localhost:8081/api/competitions", {
+      headers: {
+        Authorization: `Bearer ${currentUser?.token}`,
+      },
+    })
       .then(async (res) => {
         if (!res.ok) {
           throw new Error("대회 목록을 불러오지 못했습니다.");
@@ -89,7 +98,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
         console.error("대회 목록 조회 오류:", err);
         setCompetitions([]);
         setCompetitionError(
-          err.message || "대회 목록 조회 중 오류가 발생했습니다."
+          err.message || "대회 목록 조회 중 오류가 발생했습니다.",
         );
       })
       .finally(() => {
@@ -107,7 +116,11 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
     setRankingLoading(true);
     setRankingError("");
 
-    fetch(`http://localhost:8081/api/competitions/${selectedId}/ranking`)
+    fetch(`http://localhost:8081/api/competitions/${selectedId}/ranking`, {
+      headers: {
+        Authorization: `Bearer ${currentUser?.token}`,
+      },
+    })
       .then(async (res) => {
         if (!res.ok) {
           const text = await res.text();
@@ -219,7 +232,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
     if (filteredCompetitions.length === 0) return;
 
     const existsInFiltered = filteredCompetitions.some(
-      (contest) => contest.competitionId === selectedId
+      (contest) => contest.competitionId === selectedId,
     );
 
     if (!existsInFiltered) {
@@ -241,8 +254,8 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
       displayRank === 1
         ? styles.firstCard
         : displayRank === 2
-        ? styles.secondCard
-        : styles.thirdCard;
+          ? styles.secondCard
+          : styles.thirdCard;
 
     return (
       <div key={displayRank} style={{ ...styles.topCard, ...medalStyle }}>
@@ -308,7 +321,8 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
       <div style={styles.guideBox}>
         <div style={styles.guideTitle}>안내</div>
         <div style={styles.guideText}>
-          헤더 메뉴로 들어오면 기본 대회가 자동 선택되고, 아래 필터에서 다른 대회를 선택해 랭킹을 확인할 수 있습니다.
+          헤더 메뉴로 들어오면 기본 대회가 자동 선택되고, 아래 필터에서 다른
+          대회를 선택해 랭킹을 확인할 수 있습니다.
         </div>
       </div>
 
@@ -430,7 +444,8 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
                     {contest.title}
                   </div>
                   <div style={styles.competitionSelectorMeta}>
-                    {formatStatus(contest.status)} · {formatDate(contest.startAt)}
+                    {formatStatus(contest.status)} ·{" "}
+                    {formatDate(contest.startAt)}
                   </div>
                 </button>
               ))}
@@ -547,7 +562,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
                         </span>
                       </div>
                     );
-                  }
+                  },
                 )}
               </div>
             </>

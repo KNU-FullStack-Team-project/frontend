@@ -17,7 +17,9 @@ const StockPage = ({ user }) => {
   const fetchStocks = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/stocks?page=1&size=60");
+      const response = await fetch(
+        "http://localhost:8081/api/stocks?page=1&size=60",
+      );
       if (!response.ok) throw new Error("Stock list fetch failed");
       const data = await response.json();
       setStocks(data.content);
@@ -32,11 +34,14 @@ const StockPage = ({ user }) => {
     const userId = user?.userId || user?.id;
     if (!userId) return;
     try {
-      const response = await fetch(`/api/favorites?userId=${userId}`, {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
+      const response = await fetch(
+        `http://localhost:8081/api/favorites?userId=${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
         },
-      });
+      );
       if (response.ok) {
         const data = await response.json();
         setFavorites(new Set(data));
@@ -93,7 +98,7 @@ const StockPage = ({ user }) => {
     try {
       const method = isFavorite ? "DELETE" : "POST";
       const response = await fetch(
-        `/api/favorites/${symbol}?userId=${userId}`,
+        `http://localhost:8081/api/favorites/${symbol}?userId=${userId}`,
         {
           method: method,
           headers: {
@@ -152,12 +157,14 @@ const StockPage = ({ user }) => {
 
       <div className="stock-list-container">
         <div className="stock-list-header">
-          <div style={{ textAlign: 'center' }}>관심</div>
-          <div style={{ textAlign: 'center' }}>순번</div>
-          <div style={{ paddingLeft: '15px' }}>종목명</div>
-          <div style={{ textAlign: 'right' }}>현재가</div>
-          <div style={{ textAlign: 'right' }}>등락률</div>
-          <div style={{ textAlign: 'right', paddingRight: '10px' }}>거래대금</div>
+          <div style={{ textAlign: "center" }}>관심</div>
+          <div style={{ textAlign: "center" }}>순번</div>
+          <div style={{ paddingLeft: "15px" }}>종목명</div>
+          <div style={{ textAlign: "right" }}>현재가</div>
+          <div style={{ textAlign: "right" }}>등락률</div>
+          <div style={{ textAlign: "right", paddingRight: "10px" }}>
+            거래대금
+          </div>
         </div>
 
         {stocks.length === 0 ? (
