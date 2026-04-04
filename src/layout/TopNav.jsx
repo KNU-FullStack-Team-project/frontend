@@ -5,6 +5,7 @@ const menus = [
   { key: "home", label: "홈" },
   { key: "stock", label: "주식" },
   { key: "contest", label: "대회" },
+  { key: "ranking", label: "랭킹" },
   { key: "mypage", label: "마이페이지" },
 ];
 
@@ -19,7 +20,11 @@ const TopNav = ({
   return (
     <header className="top-nav">
       <div className="top-nav-inner">
-        <div className="top-nav-logo" onClick={() => onMovePage("home")}>
+        <div
+          className="top-nav-logo"
+          onClick={() => onMovePage("home")}
+          style={{ cursor: "pointer" }}
+        >
           Mock Invest
         </div>
 
@@ -27,8 +32,11 @@ const TopNav = ({
           {menus.map((menu) => (
             <button
               key={menu.key}
-              className={`top-nav-link ${currentPage === menu.key ? "active" : ""}`}
+              className={`top-nav-link ${
+                currentPage === menu.key ? "active" : ""
+              }`}
               onClick={() => onMovePage(menu.key)}
+              type="button"
             >
               {menu.label}
             </button>
@@ -39,10 +47,14 @@ const TopNav = ({
           {isLoggedIn ? (
             <>
               {isAdmin ? (
-                <AppButton variant="primary" onClick={() => onMovePage("admin")}>
+                <AppButton
+                  variant="primary"
+                  onClick={() => onMovePage("admin")}
+                >
                   관리자
                 </AppButton>
               ) : null}
+
               <AppButton variant="danger" onClick={onLogout}>
                 로그아웃
               </AppButton>

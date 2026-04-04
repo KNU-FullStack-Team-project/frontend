@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 const ContestPage = ({
   onSelectCompetition,
+  onViewRanking,
   currentUser,
   isLoggedIn,
   onCreateCompetition,
@@ -404,6 +405,19 @@ const ContestPage = ({
                   >
                     상세보기
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onViewRanking) {
+                        onViewRanking(contest.competitionId);
+                      }
+                    }}
+                    style={styles.rankingButton}
+                  >
+                    랭킹보기
+                  </button>
                 </div>
 
                 {isAdmin && (
@@ -768,7 +782,7 @@ const styles = {
   actionRow: {
     marginTop: "16px",
     display: "grid",
-    gridTemplateColumns: "1fr",
+    gridTemplateColumns: "1fr 1fr",
     gap: "10px",
   },
   detailButtonPrimary: {
@@ -777,6 +791,16 @@ const styles = {
     border: "none",
     background: "#4c6ef5",
     color: "#fff",
+    fontWeight: "800",
+    fontSize: "14px",
+    cursor: "pointer",
+  },
+  rankingButton: {
+    height: "44px",
+    borderRadius: "12px",
+    border: "1px solid #d1d5db",
+    background: "#fff",
+    color: "#111827",
     fontWeight: "800",
     fontSize: "14px",
     cursor: "pointer",

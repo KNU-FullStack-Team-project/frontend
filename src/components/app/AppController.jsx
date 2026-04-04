@@ -10,6 +10,7 @@ import MyPage from "../../pages/MyPage";
 import AccountSettingsPage from "../../pages/AccountSettingsPage";
 import AuthPage from "../../pages/AuthPage";
 import AdminPage from "../../pages/AdminPage";
+import RankingPage from "../../pages/RankingPage"; // 🔥 추가
 
 import TopNav from "../../layout/TopNav";
 
@@ -141,6 +142,12 @@ const AppController = () => {
     setSelectedMyPageUser(null);
   };
 
+  // 🔥 랭킹 이동 함수 추가
+  const handleViewRanking = (competitionId) => {
+    setSelectedCompetitionId(competitionId);
+    setCurrentPage("ranking");
+  };
+
   const handleMovePage = (page) => {
     const protectedPages = ["mypage", "admin"];
 
@@ -155,6 +162,11 @@ const AppController = () => {
 
     if (page === "mypage") {
       setSelectedMyPageUser(null);
+    }
+
+    // 🔥 랭킹 메뉴 클릭 시 기본 상태 초기화
+    if (page === "ranking") {
+      setSelectedCompetitionId(null);
     }
 
     setCurrentPage(page);
@@ -193,7 +205,7 @@ const AppController = () => {
     try {
       const res = await fetch(
         `http://localhost:8081/api/admin/competitions/${competitionId}`,
-        { method: "DELETE" },
+        { method: "DELETE" }
       );
 
       const text = await res.text();
@@ -239,6 +251,7 @@ const AppController = () => {
             onCreateCompetition={handleCreateCompetition}
             onEditCompetition={handleEditCompetition}
             onDeleteCompetition={handleDeleteCompetition}
+            onViewRanking={handleViewRanking} // 🔥 추가
           />
         );
 
@@ -268,6 +281,15 @@ const AppController = () => {
             currentUser={currentUser}
             onBack={handleBackToContestList}
             onSuccess={handleCompetitionSaved}
+          />
+        );
+
+      case "ranking": // 🔥 추가
+        return (
+          <RankingPage
+            selectedCompetitionId={selectedCompetitionId}
+            currentUser={currentUser}
+            isLoggedIn={isLoggedIn}
           />
         );
 
