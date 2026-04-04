@@ -32,7 +32,11 @@ const StockPage = ({ user }) => {
     const userId = user?.userId || user?.id;
     if (!userId) return;
     try {
-      const response = await fetch(`/api/favorites?userId=${userId}`);
+      const response = await fetch(`/api/favorites?userId=${userId}`, {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         setFavorites(new Set(data));
@@ -57,7 +61,7 @@ const StockPage = ({ user }) => {
 
   const toggleFavorite = async (e, symbol) => {
     e.stopPropagation();
-    
+
     const userId = user?.userId || user?.id;
     if (!userId) {
       // 로그인하지 않은 경우 기존 로컬스토리지 방식 유지
@@ -68,7 +72,10 @@ const StockPage = ({ user }) => {
         newFavs.add(symbol);
       }
       setFavorites(newFavs);
-      localStorage.setItem("favoriteStocks", JSON.stringify(Array.from(newFavs)));
+      localStorage.setItem(
+        "favoriteStocks",
+        JSON.stringify(Array.from(newFavs)),
+      );
       alert("로그인이 필요한 기능입니다. (현재는 로컬에만 저장됩니다)");
       return;
     }
@@ -85,9 +92,15 @@ const StockPage = ({ user }) => {
 
     try {
       const method = isFavorite ? "DELETE" : "POST";
-      const response = await fetch(`/api/favorites/${symbol}?userId=${userId}`, {
-        method: method
-      });
+      const response = await fetch(
+        `/api/favorites/${symbol}?userId=${userId}`,
+        {
+          method: method,
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        },
+      );
 
       if (!response.ok) {
         throw new Error("서버 응답 오류");
@@ -109,7 +122,7 @@ const StockPage = ({ user }) => {
   const getTradingAmountLabel = (price, volume) => {
     if (!price || !volume) return "0원";
     const amount = parseInt(price) * parseInt(volume);
-    
+
     if (amount >= 100000000) {
       return (amount / 100000000).toFixed(1) + "억원";
     } else if (amount >= 10000) {
@@ -118,17 +131,23 @@ const StockPage = ({ user }) => {
     return amount.toLocaleString() + "원";
   };
 
-  if (loading) return <div className="loading-spinner">주식 정보를 업데이트하는 중...</div>;
+  if (loading)
+    return (
+      <div className="loading-spinner">주식 정보를 업데이트하는 중...</div>
+    );
 
   return (
     <div className="content-card">
       <div className="section-header">
         <h3>실시간 주식 정보</h3>
-        <button className="refresh-btn" onClick={fetchStocks}>새로고침</button>
+        <button className="refresh-btn" onClick={fetchStocks}>
+          새로고침
+        </button>
       </div>
-      
+
       <p className="page-desc">
-        현재 시장의 실시간 시세를 확인하세요. 종목을 클릭하면 상세 차트와 함께 매수/매도를 진행할 수 있습니다.
+        현재 시장의 실시간 시세를 확인하세요. 종목을 클릭하면 상세 차트와 함께
+        매수/매도를 진행할 수 있습니다.
       </p>
 
       <div className="stock-list-container">
@@ -142,48 +161,51 @@ const StockPage = ({ user }) => {
         </div>
 
         {stocks.length === 0 ? (
-            <div className="no-data">종목 정보를 가져올 수 없습니다.</div>
+          <div className="no-data">종목 정보를 가져올 수 없습니다.</div>
         ) : (
-            stocks.map((stock, index) => (
-                <div 
-                  key={stock.symbol} 
-                  className="stock-list-item clickable"
-                  onClick={() => handleStockClick(stock)}
+          stocks.map((stock, index) => (
+            <div
+              key={stock.symbol}
+              className="stock-list-item clickable"
+              onClick={() => handleStockClick(stock)}
+            >
+              <button
+                className={`favorite-btn ${favorites.has(stock.symbol) ? "active" : ""}`}
+                onClick={(e) => toggleFavorite(e, stock.symbol)}
+              >
+                {favorites.has(stock.symbol) ? "❤️" : "🤍"}
+              </button>
+
+              <div className="stock-index">{index + 1}</div>
+
+              <div className="stock-name-section">
+                <span className="stock-name-text">{stock.name}</span>
+              </div>
+
+              <div className="stock-price-section">
+                {parseInt(stock.currentPrice).toLocaleString()}원
+              </div>
+
+              <div className="stock-rate-section">
+                <span
+                  className={`rate-text ${parseFloat(stock.changeRate) >= 0 ? "up" : "down"}`}
                 >
-                  <button 
-                    className={`favorite-btn ${favorites.has(stock.symbol) ? "active" : ""}`}
-                    onClick={(e) => toggleFavorite(e, stock.symbol)}
-                  >
-                    {favorites.has(stock.symbol) ? "❤️" : "🤍"}
-                  </button>
+                  {parseFloat(stock.changeRate) >= 0 ? "+" : ""}
+                  {stock.changeRate}%
+                </span>
+              </div>
 
-                  <div className="stock-index">{index + 1}</div>
-                  
-                  <div className="stock-name-section">
-                    <span className="stock-name-text">{stock.name}</span>
-                  </div>
-
-                  <div className="stock-price-section">
-                    {parseInt(stock.currentPrice).toLocaleString()}원
-                  </div>
-
-                  <div className="stock-rate-section">
-                    <span className={`rate-text ${parseFloat(stock.changeRate) >= 0 ? "up" : "down"}`}>
-                      {parseFloat(stock.changeRate) >= 0 ? "+" : ""}{stock.changeRate}%
-                    </span>
-                  </div>
-
-                  <div className="stock-volume-section">
-                    {getTradingAmountLabel(stock.currentPrice, stock.volume)}
-                  </div>
-                </div>
-              ))
+              <div className="stock-volume-section">
+                {getTradingAmountLabel(stock.currentPrice, stock.volume)}
+              </div>
+            </div>
+          ))
         )}
       </div>
 
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
         title={selectedStock?.name}
       >
         <StockDetail stock={selectedStock} user={user} />

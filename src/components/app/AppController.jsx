@@ -37,6 +37,10 @@ const pageTexts = {
     title: "모의투자 시작하기",
     description: "가상 자산으로 안전하게 투자 연습을 시작해보세요.",
   },
+  ranking: {
+    title: "대회 랭킹",
+    description: "현재 진행 중인 대회의 순위를 확인하세요.",
+  },
 };
 
 const AppController = () => {
@@ -50,13 +54,57 @@ const AppController = () => {
 
   useEffect(() => {
     const savedUser = localStorage.getItem("currentUser");
+    try {
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
 
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      setCurrentUser(parsedUser);
-      setIsLoggedIn(true);
+        // 자동 로그아웃 체크: 토큰 만료 여부 확인
+        if (parsedUser && parsedUser.token) {
+          const isExpired = checkTokenExpiration(parsedUser.token);
+          if (isExpired) {
+            handleLogout();
+          } else {
+            setCurrentUser(parsedUser);
+            setIsLoggedIn(true);
+            setupAutoLogout(parsedUser.token);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Local storage user parsing error:", e);
+      localStorage.removeItem("currentUser");
     }
   }, []);
+
+  // 토큰 만료 여부 확인 (JWT 디코딩 로직 포함)
+  const checkTokenExpiration = (token) => {
+    try {
+      if (!token || token.split(".").length !== 3) return true;
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const payload = JSON.parse(window.atob(base64));
+      return payload.exp * 1000 < Date.now();
+    } catch (e) {
+      return true; // 에러 시 만료된 것으로 처리
+    }
+  };
+
+  // 자동 로그아웃 타이머 설정
+  const setupAutoLogout = (token) => {
+    try {
+      if (!token || token.split(".").length !== 3) return;
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const payload = JSON.parse(window.atob(base64));
+      const remainingTime = payload.exp * 1000 - Date.now();
+      if (remainingTime > 0) {
+        setTimeout(() => {
+          alert("세션이 만료되어 자동으로 로그아웃되었습니다.");
+          handleLogout();
+        }, remainingTime);
+      }
+    } catch (e) {}
+  };
 
   const handleLogin = async (form) => {
     try {
@@ -71,26 +119,28 @@ const AppController = () => {
         }),
       });
 
-      const responseText = await res.text();
-
       if (!res.ok) {
+        const responseText = await res.text();
         alert(responseText || "로그인에 실패했습니다.");
         return;
       }
 
-      const data = JSON.parse(responseText);
+      const data = await res.json();
 
       if (data.message === "로그인 성공") {
         const loginUser = {
-          userId: data.userId,
+          userId: data.id || data.userId, // 백엔드에서 id로 보낼 경우를 대비
           email: data.email,
           nickname: data.nickname,
           role: data.role === "ADMIN" ? "admin" : "user",
+          accountId: data.accountId, // 계좌 ID 저장
+          token: data.token, // 서버에서 받은 JWT 저장
         };
 
         setCurrentUser(loginUser);
         setIsLoggedIn(true);
         localStorage.setItem("currentUser", JSON.stringify(loginUser));
+        setupAutoLogout(data.token); // 로그인 성공 시 타이머 시작
 
         if (pendingPage) {
           setCurrentPage(pendingPage);
@@ -102,6 +152,7 @@ const AppController = () => {
         alert(data.message || "로그인 실패");
       }
     } catch (error) {
+      console.error("로그인 fetch 중 에러 발생:", error);
       alert("로그인 오류");
     }
   };
@@ -147,6 +198,7 @@ const AppController = () => {
         alert("회원가입이 완료되었습니다. 로그인해 주세요.");
         setAuthMode("login");
         setCurrentPage("auth");
+        return "success"; // SignupForm에서 성공 처리를 인식할 수 있도록 반환
       } else {
         alert(data);
       }
@@ -227,7 +279,10 @@ const AppController = () => {
     try {
       const res = await fetch(
         `http://localhost:8081/api/admin/competitions/${competitionId}`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${currentUser?.token}` },
+        },
       );
 
       const text = await res.text();
@@ -309,9 +364,10 @@ const AppController = () => {
       case "ranking": // 🔥 추가
         return (
           <RankingPage
-            selectedCompetitionId={selectedCompetitionId}
-            currentUser={currentUser}
             isLoggedIn={isLoggedIn}
+            currentUser={currentUser}
+            selectedCompetitionId={selectedCompetitionId}
+            onBack={() => setCurrentPage("contest")}
           />
         );
 
@@ -320,29 +376,28 @@ const AppController = () => {
           <MyPage
             currentUser={currentUser}
             viewedUser={selectedMyPageUser}
-            onMoveAccountSettings={() => setCurrentPage("accountSettings")}
+            onMoveAccountSettings={() => {
+              setCurrentPage("accountSettings");
+            }}
           />
         );
 
       case "accountSettings":
         return (
           <AccountSettingsPage
-            currentUser={currentUser}
-            onLogout={handleLogout}
-            onBackToMyPage={() => setCurrentPage("mypage")}
-          />
-        );
-
-      case "admin":
-        return (
-          <AdminPage
-            onOpenUserMyPage={(user) => {
-              setSelectedMyPageUser(user);
-              setCurrentPage("mypage");
+            user={currentUser}
+            onUpdateUser={(updatedUser) => {
+              const newUser = { ...currentUser, ...updatedUser };
+              setCurrentUser(newUser);
+              localStorage.setItem("currentUser", JSON.stringify(newUser));
             }}
           />
         );
 
+      case "admin":
+        return <AdminPage currentUser={currentUser} />;
+
+      case "home":
       default:
         return (
           <HomePage
@@ -355,17 +410,31 @@ const AppController = () => {
   };
 
   return (
-    <div className="site-layout">
+    <div className="app-container">
       <TopNav
-        currentPage={currentPage}
-        onMovePage={handleMovePage}
         isLoggedIn={isLoggedIn}
         isAdmin={currentUser?.role === "admin"}
+        currentUser={currentUser}
+        currentPage={currentPage}
+        onMovePage={handleMovePage}
         onOpenLogin={handleOpenLogin}
         onLogout={handleLogout}
       />
-
-      <main className="site-main">{renderPage()}</main>
+      <main className="main-content">
+        <div className="container">
+          {currentPage !== "home" && (
+            <header className="page-header">
+              <h2 className="page-title">
+                {pageTexts[currentPage]?.title || "페이지"}
+              </h2>
+              <p className="page-description">
+                {pageTexts[currentPage]?.description || ""}
+              </p>
+            </header>
+          )}
+          {renderPage()}
+        </div>
+      </main>
     </div>
   );
 };
