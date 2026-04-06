@@ -414,7 +414,15 @@ const AppController = () => {
         );
 
       case "admin":
-        return <AdminPage currentUser={currentUser} />;
+        return (
+          <AdminPage
+            currentUser={currentUser}
+            onOpenUserMyPage={(user) => {
+              setSelectedMyPageUser(user);
+              setCurrentPage("mypage");
+            }}
+          />
+        );
 
       case "home":
       default:
