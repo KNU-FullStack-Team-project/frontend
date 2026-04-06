@@ -9,9 +9,11 @@ const StockPage = ({ user }) => {
   const [selectedStock, setSelectedStock] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [favorites, setFavorites] = useState(new Set());
+  const [favoriteStocksData, setFavoriteStocksData] = useState([]);
   const [activeTab, setActiveTab] = useState("all"); // 'all' or 'favorites'
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [isFavoritesLoading, setIsFavoritesLoading] = useState(false);
   const observerTarget = useRef(null);
 
   const handleStockClick = (stock) => {
@@ -68,6 +70,31 @@ const StockPage = ({ user }) => {
     }
   }, [user?.userId, user?.id, user?.token]);
 
+  const fetchFavoriteDetails = useCallback(async () => {
+    const userId = user?.userId || user?.id;
+    if (!userId) return;
+    
+    try {
+      setIsFavoritesLoading(true);
+      const response = await fetch(
+        `http://localhost:8081/api/favorites/details?userId=${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        },
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setFavoriteStocksData(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch favorite details:", err);
+    } finally {
+      setIsFavoritesLoading(false);
+    }
+  }, [user?.userId, user?.id, user?.token]);
+
   useEffect(() => {
     setPage(1);
     fetchStocks(1, true);
@@ -82,6 +109,12 @@ const StockPage = ({ user }) => {
       }
     }
   }, [user?.userId, user?.id, fetchStocks, fetchFavorites]);
+
+  useEffect(() => {
+    if (activeTab === "favorites") {
+      fetchFavoriteDetails();
+    }
+  }, [activeTab, fetchFavoriteDetails]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -103,7 +136,7 @@ const StockPage = ({ user }) => {
     return () => {
       if (currentTarget) observer.unobserve(currentTarget);
     };
-  }, [hasMore, loading, page, fetchStocks]);
+  }, [hasMore, loading, page, fetchStocks, activeTab]);
 
   const toggleFavorite = async (e, symbol) => {
     e.stopPropagation();
@@ -224,10 +257,14 @@ const StockPage = ({ user }) => {
         </div>
 
         {(() => {
+          if (activeTab === "favorites" && isFavoritesLoading) {
+            return <div className="no-data">관심종목을 불러오는 중...</div>;
+          }
+
           const displayedStocks =
             activeTab === "all"
               ? stocks
-              : stocks.filter((s) => favorites.has(s.symbol));
+              : favoriteStocksData; // 필터링 대신 서버에서 가져온 전체 관심종목 데이터 사용
 
           if (displayedStocks.length === 0) {
             return (
@@ -286,12 +323,12 @@ const StockPage = ({ user }) => {
           </div>
         )}
         
-        {/* 무한 스크롤 트리거 요소 */}
-        {!loading && hasMore && (
+        {/* 무한 스크롤 트리거 요소: 전체보기 탭에서만 동작 */}
+        {activeTab === "all" && !loading && hasMore && (
           <div ref={observerTarget} style={{ height: "40px", width: "100%" }}></div>
         )}
 
-        {!hasMore && stocks.length > 0 && activeTab === "all" && (
+        {activeTab === "all" && !hasMore && stocks.length > 0 && (
           <div className="end-of-list">모든 종목을 불러왔습니다.</div>
         )}
       </div>
