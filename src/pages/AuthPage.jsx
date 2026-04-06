@@ -3,6 +3,7 @@ import LoginForm from "../auth/LoginForm";
 import SignupForm from "../auth/SignupForm";
 import SocialAuth from "../auth/SocialAuth";
 import PageHero from "../common/PageHero";
+import FindPasswordForm from "../auth/FindPasswordForm";
 
 const messages = [
   "실수해도 괜찮습니다.\n여기는 연습하는 곳이니까요.",
@@ -18,13 +19,14 @@ const AuthPage = ({
   onSignup,
   initialMode = "login",
   onChangeMode,
+  authMessage,
 }) => {
-  const [isLogin, setIsLogin] = useState(initialMode === "login");
+  const [mode, setMode] = useState(initialMode);
   const [messageIndex, setMessageIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    setIsLogin(initialMode === "login");
+    setMode(initialMode);
   }, [initialMode]);
 
   useEffect(() => {
@@ -40,12 +42,10 @@ const AuthPage = ({
     return () => clearInterval(interval);
   }, []);
 
-  const handleSwitchMode = () => {
-    const nextIsLogin = !isLogin;
-    setIsLogin(nextIsLogin);
-
+  const changeMode = (nextMode) => {
+    setMode(nextMode);
     if (onChangeMode) {
-      onChangeMode(nextIsLogin ? "login" : "signup");
+      onChangeMode(nextMode);
     }
   };
 
@@ -64,21 +64,69 @@ const AuthPage = ({
         </PageHero>
 
         <div className="auth-card">
-          <div className="auth-switch-text">
-            {isLogin ? "처음이신가요?" : "이미 계정이 있으신가요?"}
-            <button
-              type="button"
-              className="switch-button"
-              onClick={handleSwitchMode}
-            >
-              {isLogin ? "회원가입" : "로그인"}
-            </button>
-          </div>
+          {mode === "login" && (
+            <>
+              <div className="auth-switch-text">
+                처음이신가요?
+                <button
+                  type="button"
+                  className="switch-button"
+                  onClick={() => changeMode("signup")}
+                >
+                  회원가입
+                </button>
+              </div>
 
-          {isLogin ? (
-            <LoginForm onLogin={onLogin} />
-          ) : (
-            <SignupForm onSignup={onSignup} />
+              {authMessage && (
+                <p className="auth-success-message">{authMessage}</p>
+              )}
+
+              <LoginForm onLogin={onLogin} />
+
+              <div className="auth-help-row">
+                <button
+                  type="button"
+                  className="auth-text-link"
+                  onClick={() => changeMode("findPassword")}
+                >
+                  비밀번호를 잊으셨나요?
+                </button>
+              </div>
+            </>
+          )}
+
+          {mode === "signup" && (
+            <>
+              <div className="auth-switch-text">
+                이미 계정이 있으신가요?
+                <button
+                  type="button"
+                  className="switch-button"
+                  onClick={() => changeMode("login")}
+                >
+                  로그인
+                </button>
+              </div>
+
+              <SignupForm onSignup={onSignup} />
+            </>
+          )}
+
+          {mode === "findPassword" && (
+            <>
+              <div className="auth-switch-text">
+                로그인 화면으로 돌아가기
+                <button
+                  type="button"
+                  className="switch-button"
+                  onClick={() => changeMode("login")}
+                >
+                  로그인
+                </button>
+              </div>
+
+              <FindPasswordForm />
+            </>
           )}
 
           <SocialAuth />
