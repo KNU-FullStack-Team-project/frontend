@@ -218,6 +218,14 @@ const AppController = () => {
 
   //랭킹페이지 이동 함수
   const handleViewRanking = (competitionId, status) => {
+    if (!isLoggedIn) {
+      setPendingPage("ranking");
+      setSelectedCompetitionId(competitionId);
+      setAuthMode("login");
+      setCurrentPage("auth");
+      return;
+    }
+
   if (status === "SCHEDULED") {
     alert("예정된 대회는 랭킹을 조회할 수 없습니다.");
     return;
@@ -228,9 +236,11 @@ const AppController = () => {
 };
 
   const handleMovePage = (page) => {
-    const protectedPages = ["mypage", "admin"];
+    // 공개 페이지: 홈, 주식, 인증(로그인/회원가입)
+    const publicPages = ["home", "stock", "auth"];
+    const isPublic = publicPages.includes(page);
 
-    if (!isLoggedIn && protectedPages.includes(page)) {
+    if (!isLoggedIn && !isPublic) {
       setPendingPage(page);
       setAuthMode("login");
       setCurrentPage("auth");
@@ -257,6 +267,13 @@ const AppController = () => {
   };
 
   const handleSelectCompetition = (competitionId) => {
+    if (!isLoggedIn) {
+      setPendingPage("contestDetail");
+      setSelectedCompetitionId(competitionId);
+      setAuthMode("login");
+      setCurrentPage("auth");
+      return;
+    }
     setSelectedCompetitionId(competitionId);
     setCurrentPage("contestDetail");
   };
@@ -390,12 +407,9 @@ const AppController = () => {
       case "accountSettings":
         return (
           <AccountSettingsPage
-            user={currentUser}
-            onUpdateUser={(updatedUser) => {
-              const newUser = { ...currentUser, ...updatedUser };
-              setCurrentUser(newUser);
-              localStorage.setItem("currentUser", JSON.stringify(newUser));
-            }}
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            onBackToMyPage={() => handleMovePage("mypage")}
           />
         );
 
@@ -442,7 +456,6 @@ const AppController = () => {
       </main>
     </div>
   );
-  
 };
 
 export default AppController;
