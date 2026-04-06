@@ -263,7 +263,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
         <div style={styles.profileCircle}>
           {user?.profileImageUrl ? (
             <img
-              src={user.profileImageUrl}
+              src={`http://localhost:8081${user.profileImageUrl}`}
               alt={user.nickname}
               style={styles.profileImage}
             />
@@ -309,12 +309,21 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
   return (
     <section style={styles.page}>
       <div style={styles.hero}>
-        <div>
+        <div style={styles.heroContentLeft}>
           <div style={styles.heroBadge}>RANKING</div>
           <h1 style={styles.heroTitle}>대회 랭킹</h1>
           <p style={styles.heroText}>
             대회별 참가자들의 수익률 순위를 확인해보세요.
           </p>
+        </div>
+        <div style={styles.heroContentRight}>
+          {isLoggedIn && currentUser?.profileImageUrl && (
+            <img
+              src={`http://localhost:8081${currentUser.profileImageUrl}`}
+              alt="내 프로필"
+              style={styles.userProfileImage}
+            />
+          )}
         </div>
       </div>
 
@@ -613,6 +622,35 @@ const styles = {
     fontSize: "15px",
     lineHeight: "1.7",
     color: "#6b7280",
+  },
+  heroContentLeft: {
+    flex: 1,
+  },
+  heroContentRight: {
+    display: "flex",
+    alignItems: "center",
+  },
+  userProfileCircle: {
+    width: "65px",
+    height: "65px",
+    borderRadius: "50%",
+    background: "#eef2ff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "3px solid #f3f4f6",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+    overflow: "hidden",
+  },
+  userProfileImage: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+  },
+  userProfileFallback: {
+    fontSize: "24px",
+    fontWeight: "800",
+    color: "#4c6ef5",
   },
   guideBox: {
     border: "1px solid #d1d5db",

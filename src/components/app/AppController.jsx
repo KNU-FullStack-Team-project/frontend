@@ -134,6 +134,7 @@ const AppController = () => {
           nickname: data.nickname,
           role: data.role === "ADMIN" ? "admin" : "user",
           accountId: data.accountId, // 계좌 ID 저장
+          profileImageUrl: data.profileImageUrl, // 프로필 이미지 URL 저장
           token: data.token, // 서버에서 받은 JWT 저장
         };
 
