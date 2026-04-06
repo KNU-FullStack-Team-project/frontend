@@ -1,11 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const ContestEditPage = ({
-  competitionId,
-  currentUser,
-  onBack,
-  onSuccess,
-}) => {
+const ContestEditPage = ({ competitionId, currentUser, onBack, onSuccess }) => {
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -23,7 +18,11 @@ const ContestEditPage = ({
       return;
     }
 
-    fetch(`http://localhost:8081/api/competitions/${competitionId}`)
+    fetch(`http://localhost:8081/api/competitions/${competitionId}`, {
+      headers: {
+        Authorization: `Bearer ${currentUser?.token}`,
+      },
+    })
       .then((res) => {
         if (!res.ok) {
           throw new Error("대회 정보를 불러오지 못했습니다.");
@@ -93,9 +92,10 @@ const ContestEditPage = ({
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${currentUser?.token}`,
           },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       const text = await res.text();

@@ -19,7 +19,11 @@ const ContestDetailPage = ({
 
     setLoading(true);
 
-    fetch(`http://localhost:8081/api/competitions/${competitionId}`)
+    fetch(`http://localhost:8081/api/competitions/${competitionId}`, {
+      headers: {
+        Authorization: `Bearer ${currentUser?.token}`,
+      },
+    })
       .then((res) => {
         if (!res.ok) {
           throw new Error("대회 상세 정보를 불러오지 못했습니다.");
@@ -45,7 +49,14 @@ const ContestDetailPage = ({
 
     setParticipantLoading(true);
 
-    fetch(`http://localhost:8081/api/competitions/${competitionId}/participants`)
+    fetch(
+      `http://localhost:8081/api/competitions/${competitionId}/participants`,
+      {
+        headers: {
+          Authorization: `Bearer ${currentUser?.token}`,
+        },
+      },
+    )
       .then((res) => {
         if (!res.ok) {
           throw new Error("참가자 목록을 불러오지 못했습니다.");
@@ -102,6 +113,31 @@ const ContestDetailPage = ({
     }
   };
 
+  const getParticipantStatusStyle = (status) => {
+    switch (status) {
+      case "JOINED":
+        return {
+          backgroundColor: "#eef2ff",
+          color: "#364fc7",
+        };
+      case "CANCELED":
+        return {
+          backgroundColor: "#fff5f5",
+          color: "#c92a2a",
+        };
+      case "ENDED":
+        return {
+          backgroundColor: "#f1f3f5",
+          color: "#495057",
+        };
+      default:
+        return {
+          backgroundColor: "#f1f3f5",
+          color: "#495057",
+        };
+    }
+  };
+
   const formatDate = (dateTimeString) => {
     if (!dateTimeString) return "-";
     return new Date(dateTimeString).toLocaleString("ko-KR");
@@ -113,44 +149,45 @@ const ContestDetailPage = ({
   };
 
   const handleJoin = async () => {
-  if (joining) return;
+    if (joining) return;
 
-  if (!isLoggedIn) {
-    alert("로그인 후 참가할 수 있습니다.");
-    return;
-  }
-
-  if (!currentUser?.userId) {
-    alert("사용자 정보가 없습니다.");
-    return;
-  }
-
-  setJoining(true); // 🔥 요청 시작
-
-  try {
-    const response = await fetch(
-      `http://localhost:8081/api/competitions/${competitionId}/join?userId=${currentUser.userId}`,
-      {
-        method: "POST",
-      }
-    );
-
-    const text = await response.text();
-
-    if (!response.ok) {
-      alert(text || "대회 참가에 실패했습니다.");
+    if (!isLoggedIn) {
+      alert("로그인 후 참가할 수 있습니다.");
       return;
     }
 
-    alert(text || "대회 참가 완료!");
-    onBack();
-  } catch (error) {
-    console.error("대회 참가 오류:", error);
-    alert("참가 처리 중 오류가 발생했습니다.");
-  } finally {
-    setJoining(false);
-  }
-};
+    if (!currentUser?.userId) {
+      alert("사용자 정보가 없습니다.");
+      return;
+    }
+
+    setJoining(true);
+
+    try {
+      const response = await fetch(
+        `http://localhost:8081/api/competitions/${competitionId}/join?userId=${currentUser.userId}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${currentUser.token}` },
+        },
+      );
+
+      const text = await response.text();
+
+      if (!response.ok) {
+        alert(text || "대회 참가에 실패했습니다.");
+        return;
+      }
+
+      alert(text || "대회 참가 완료!");
+      onBack();
+    } catch (error) {
+      console.error("대회 참가 오류:", error);
+      alert("참가 처리 중 오류가 발생했습니다.");
+    } finally {
+      setJoining(false);
+    }
+  };
 
   if (loading) {
     return <p>대회 정보를 불러오는 중입니다...</p>;
@@ -264,15 +301,35 @@ const ContestDetailPage = ({
             marginBottom: "24px",
           }}
         >
-          <h3
+          <div
             style={{
-              marginTop: 0,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "12px",
               marginBottom: "16px",
-              fontSize: "20px",
+              flexWrap: "wrap",
             }}
           >
-            참가자 목록
-          </h3>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: "20px",
+              }}
+            >
+              참가자 목록
+            </h3>
+
+            <span
+              style={{
+                fontSize: "14px",
+                color: "#666",
+                fontWeight: "600",
+              }}
+            >
+              총 {participants.length}명
+            </span>
+          </div>
 
           {participantLoading ? (
             <p style={{ color: "#666", margin: 0 }}>
@@ -283,52 +340,65 @@ const ContestDetailPage = ({
               현재 참가한 사용자가 없습니다.
             </p>
           ) : (
-            <div style={{ display: "grid", gap: "12px" }}>
-              {participants.map((participant) => (
-                <div
-                  key={`${participant.userId}-${participant.accountId}`}
-                  style={{
-                    border: "1px solid #ececec",
-                    borderRadius: "14px",
-                    padding: "16px",
-                    backgroundColor: "#fafafa",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "10px",
-                      gap: "12px",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <strong style={{ fontSize: "16px", color: "#111" }}>
-                      {participant.nickname}
-                    </strong>
-
-                    <span
+            <div
+              style={{
+                overflowX: "auto",
+                border: "1px solid #ececec",
+                borderRadius: "14px",
+              }}
+            >
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  minWidth: "720px",
+                  backgroundColor: "#fff",
+                }}
+              >
+                <thead>
+                  <tr style={{ backgroundColor: "#f8f9fa" }}>
+                    <th style={tableHeadStyle}>닉네임</th>
+                    <th style={tableHeadStyle}>이메일</th>
+                    <th style={tableHeadStyle}>계좌 ID</th>
+                    <th style={tableHeadStyle}>참가일</th>
+                    <th style={tableHeadStyle}>상태</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {participants.map((participant, index) => (
+                    <tr
+                      key={`${participant.userId}-${participant.accountId}`}
                       style={{
-                        padding: "6px 10px",
-                        borderRadius: "999px",
-                        backgroundColor: "#f1f3f5",
-                        fontSize: "12px",
-                        fontWeight: "700",
-                        color: "#495057",
+                        backgroundColor:
+                          index % 2 === 0 ? "#ffffff" : "#fcfcfc",
                       }}
                     >
-                      {participant.status}
-                    </span>
-                  </div>
-
-                  <div style={{ fontSize: "14px", color: "#555", lineHeight: "1.7" }}>
-                    <div>이메일: {participant.email}</div>
-                    <div>계좌 ID: {participant.accountId}</div>
-                    <div>참가일: {formatDate(participant.joinedAt)}</div>
-                  </div>
-                </div>
-              ))}
+                      <td style={tableCellStyleStrong}>
+                        {participant.nickname}
+                      </td>
+                      <td style={tableCellStyle}>{participant.email}</td>
+                      <td style={tableCellStyle}>{participant.accountId}</td>
+                      <td style={tableCellStyle}>
+                        {formatDate(participant.joinedAt)}
+                      </td>
+                      <td style={tableCellStyle}>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "6px 10px",
+                            borderRadius: "999px",
+                            fontSize: "12px",
+                            fontWeight: "700",
+                            ...getParticipantStatusStyle(participant.status),
+                          }}
+                        >
+                          {participant.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -362,31 +432,56 @@ const ContestDetailPage = ({
               lineHeight: "1.6",
             }}
           >
-            참가하면 대회 전용 계좌가 생성되고, 해당 대회에서 모의투자를 진행할 수 있습니다.
+            참가하면 대회 전용 계좌가 생성되고, 해당 대회에서 모의투자를 진행할
+            수 있습니다.
           </p>
 
           <button
-  type="button"
-  onClick={handleJoin}
-  disabled={joining} // 🔥 핵심
-  style={{
-    padding: "14px 22px",
-    border: "none",
-    borderRadius: "12px",
-    backgroundColor: joining ? "#999" : "#111", // 시각적으로도 표시
-    color: "#fff",
-    cursor: joining ? "not-allowed" : "pointer",
-    fontWeight: "700",
-    fontSize: "15px",
-    boxShadow: "0 10px 20px rgba(0,0,0,0.12)",
-  }}
->
-  {joining ? "참가 중..." : "참가하기"} {/* UX 개선 */}
-</button>
+            type="button"
+            onClick={handleJoin}
+            disabled={joining}
+            style={{
+              padding: "14px 22px",
+              border: "none",
+              borderRadius: "12px",
+              backgroundColor: joining ? "#999" : "#111",
+              color: "#fff",
+              cursor: joining ? "not-allowed" : "pointer",
+              fontWeight: "700",
+              fontSize: "15px",
+              boxShadow: "0 10px 20px rgba(0,0,0,0.12)",
+            }}
+          >
+            {joining ? "참가 중..." : "참가하기"}
+          </button>
         </div>
       )}
     </section>
   );
+};
+
+const tableHeadStyle = {
+  padding: "14px 16px",
+  textAlign: "left",
+  fontSize: "13px",
+  fontWeight: "700",
+  color: "#495057",
+  borderBottom: "1px solid #ececec",
+  whiteSpace: "nowrap",
+};
+
+const tableCellStyle = {
+  padding: "16px",
+  fontSize: "14px",
+  color: "#555",
+  borderBottom: "1px solid #f1f3f5",
+  verticalAlign: "middle",
+};
+
+const tableCellStyleStrong = {
+  ...tableCellStyle,
+  fontWeight: "700",
+  color: "#111",
 };
 
 const InfoCard = ({ label, value }) => {

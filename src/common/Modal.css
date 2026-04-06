@@ -15,8 +15,8 @@
 .modal-content {
   background-color: var(--bg);
   border-radius: 12px;
-  width: 90%;
-  max-width: 800px;
+  width: 95%;
+  max-width: 1100px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: var(--shadow);

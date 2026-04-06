@@ -12,7 +12,12 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
       const fetchDashboard = async () => {
         setLoading(true);
         try {
-          const response = await fetch(`/api/accounts/my/dashboard?email=${currentUser.email}`);
+          const response = await fetch(
+            `http://localhost:8081/api/accounts/my/dashboard?email=${currentUser.email}`,
+            {
+              headers: { Authorization: `Bearer ${currentUser.token}` },
+            },
+          );
           if (response.ok) {
             const data = await response.json();
             setAccountData(data);
@@ -71,33 +76,62 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
     <div className="dashboard-grid">
       <InfoCard title="총 자산" value={accountData?.totalAsset || "₩0"} />
       <InfoCard title="보유 현금" value={accountData?.cashBalance || "₩0"} />
-      <InfoCard title="평가 손익" value={accountData?.totalProfitAmount || "₩0"} valueClassName={accountData?.totalProfitAmount?.startsWith("+") ? "up" : "down"} />
-      <InfoCard title="수익률" value={accountData?.totalReturnRate || "0%"} valueClassName={accountData?.totalReturnRate?.startsWith("+") ? "up" : "down"} />
+      <InfoCard
+        title="평가 손익"
+        value={accountData?.totalProfitAmount || "₩0"}
+        valueClassName={
+          accountData?.totalProfitAmount?.startsWith("+") ? "up" : "down"
+        }
+      />
+      <InfoCard
+        title="수익률"
+        value={accountData?.totalReturnRate || "0%"}
+        valueClassName={
+          accountData?.totalReturnRate?.startsWith("+") ? "up" : "down"
+        }
+      />
 
       <div className="content-card large">
-        <SectionTitle>관심 종목</SectionTitle>
-        <ul className="stock-list">
-          <li>
-            <span>삼성전자</span>
-            <strong className="up">+1.42%</strong>
-          </li>
-          <li>
-            <span>SK하이닉스</span>
-            <strong className="up">+2.31%</strong>
-          </li>
-          <li>
-            <span>NAVER</span>
-            <strong className="down">-0.82%</strong>
-          </li>
-          <li>
-            <span>카카오</span>
-            <strong className="up">+0.56%</strong>
-          </li>
-        </ul>
+        <SectionTitle title="관심 종목" />
+        <table className="stock-table">
+          <thead>
+            <tr>
+              <th>종목명</th>
+              <th>현재가</th>
+              <th>등락률</th>
+              <th>거래량</th>
+            </tr>
+          </thead>
+          <tbody>
+            {accountData?.favoriteStocks &&
+            accountData.favoriteStocks.length > 0 ? (
+              accountData.favoriteStocks.map((s, i) => (
+                <tr key={i}>
+                  <td>{s.name}</td>
+                  <td>{parseInt(s.currentPrice).toLocaleString()}원</td>
+                  <td className={parseFloat(s.changeRate) >= 0 ? "up" : "down"}>
+                    {parseFloat(s.changeRate) >= 0 ? "+" : ""}
+                    {s.changeRate}%
+                  </td>
+                  <td>{parseInt(s.volume).toLocaleString()}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan="4"
+                  style={{ textAlign: "center", padding: "20px" }}
+                >
+                  관심 종목이 없습니다.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
       <div className="content-card large">
-        <SectionTitle>보유 종목</SectionTitle>
+        <SectionTitle title="보유 종목" />
         <table className="stock-table">
           <thead>
             <tr>
@@ -119,7 +153,12 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
               ))
             ) : (
               <tr>
-                <td colSpan="4" style={{ textAlign: "center", padding: "20px" }}>보유 중인 종목이 없습니다.</td>
+                <td
+                  colSpan="4"
+                  style={{ textAlign: "center", padding: "20px" }}
+                >
+                  보유 중인 종목이 없습니다.
+                </td>
               </tr>
             )}
           </tbody>
