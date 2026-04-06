@@ -226,14 +226,14 @@ const AppController = () => {
       return;
     }
 
-  if (status === "SCHEDULED") {
-    alert("예정된 대회는 랭킹을 조회할 수 없습니다.");
-    return;
-  }
+    if (status === "SCHEDULED") {
+      alert("예정된 대회는 랭킹을 조회할 수 없습니다.");
+      return;
+    }
 
-  setSelectedCompetitionId(competitionId);
-  setCurrentPage("ranking");
-};
+    setSelectedCompetitionId(competitionId);
+    setCurrentPage("ranking");
+  };
 
   const handleMovePage = (page) => {
     // 공개 페이지: 홈, 주식, 인증(로그인/회원가입)
