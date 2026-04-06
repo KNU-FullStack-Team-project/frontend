@@ -84,7 +84,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
       return;
     }
 
-    if (!window.confirm("예수금을 기본값인 500만원으로 리셋할까요?")) {
+    if (!window.confirm("예수금과 보유중인 주식을 초기화할까요?")) {
       return;
     }
 
