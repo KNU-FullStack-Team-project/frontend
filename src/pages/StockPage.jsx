@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+
 import Modal from "../common/Modal";
 import StockDetail from "../components/stock/StockDetail";
 
@@ -8,29 +9,45 @@ const StockPage = ({ user }) => {
   const [selectedStock, setSelectedStock] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [favorites, setFavorites] = useState(new Set());
+  const [activeTab, setActiveTab] = useState("all"); // 'all' or 'favorites'
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const observerTarget = useRef(null);
 
   const handleStockClick = (stock) => {
     setSelectedStock(stock);
     setIsModalOpen(true);
   };
 
-  const fetchStocks = async () => {
+  const fetchStocks = useCallback(async (pageNum = 1, isReset = false) => {
     try {
       setLoading(true);
       const response = await fetch(
-        "http://localhost:8081/api/stocks?page=1&size=60",
+        `http://localhost:8081/api/stocks?page=${pageNum}&size=20`,
       );
       if (!response.ok) throw new Error("Stock list fetch failed");
       const data = await response.json();
-      setStocks(data.content);
+      
+      if (isReset) {
+        setStocks(data.content);
+      } else {
+        setStocks((prev) => {
+          // 중복 방지를 위한 간단한 로직
+          const existingSymbols = new Set(prev.map(s => s.symbol));
+          const newStocks = data.content.filter(s => !existingSymbols.has(s.symbol));
+          return [...prev, ...newStocks];
+        });
+      }
+      
+      setHasMore(data.content.length > 0 && data.currentPage < data.totalPages);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchFavorites = async () => {
+  const fetchFavorites = useCallback(async () => {
     const userId = user?.userId || user?.id;
     if (!userId) return;
     try {
@@ -49,10 +66,12 @@ const StockPage = ({ user }) => {
     } catch (err) {
       console.error("Failed to fetch favorites:", err);
     }
-  };
+  }, [user?.userId, user?.id, user?.token]);
 
   useEffect(() => {
-    fetchStocks();
+    setPage(1);
+    fetchStocks(1, true);
+    
     const userId = user?.userId || user?.id;
     if (userId) {
       fetchFavorites();
@@ -62,7 +81,29 @@ const StockPage = ({ user }) => {
         setFavorites(new Set(JSON.parse(savedFavs)));
       }
     }
-  }, [user?.userId, user?.id]);
+  }, [user?.userId, user?.id, fetchStocks, fetchFavorites]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          const nextPage = page + 1;
+          setPage(nextPage);
+          fetchStocks(nextPage, false);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) observer.unobserve(currentTarget);
+    };
+  }, [hasMore, loading, page, fetchStocks]);
 
   const toggleFavorite = async (e, symbol) => {
     e.stopPropagation();
@@ -136,7 +177,7 @@ const StockPage = ({ user }) => {
     return amount.toLocaleString() + "원";
   };
 
-  if (loading)
+  if (loading && page === 1 && stocks.length === 0)
     return (
       <div className="loading-spinner">주식 정보를 업데이트하는 중...</div>
     );
@@ -155,6 +196,21 @@ const StockPage = ({ user }) => {
         매수/매도를 진행할 수 있습니다.
       </p>
 
+      <div className="stock-tabs">
+        <button
+          className={`stock-tab ${activeTab === "all" ? "active" : ""}`}
+          onClick={() => setActiveTab("all")}
+        >
+          전체보기
+        </button>
+        <button
+          className={`stock-tab ${activeTab === "favorites" ? "active" : ""}`}
+          onClick={() => setActiveTab("favorites")}
+        >
+          관심종목
+        </button>
+      </div>
+
       <div className="stock-list-container">
         <div className="stock-list-header">
           <div style={{ textAlign: "center" }}>관심</div>
@@ -167,10 +223,23 @@ const StockPage = ({ user }) => {
           </div>
         </div>
 
-        {stocks.length === 0 ? (
-          <div className="no-data">종목 정보를 가져올 수 없습니다.</div>
-        ) : (
-          stocks.map((stock, index) => (
+        {(() => {
+          const displayedStocks =
+            activeTab === "all"
+              ? stocks
+              : stocks.filter((s) => favorites.has(s.symbol));
+
+          if (displayedStocks.length === 0) {
+            return (
+              <div className="no-data">
+                {activeTab === "favorites"
+                  ? "관심종목이 없습니다. 별표를 눌러 추가해보세요!"
+                  : "종목 정보를 가져올 수 없습니다."}
+              </div>
+            );
+          }
+
+          return displayedStocks.map((stock, index) => (
             <div
               key={stock.symbol}
               className="stock-list-item clickable"
@@ -206,7 +275,24 @@ const StockPage = ({ user }) => {
                 {getTradingAmountLabel(stock.currentPrice, stock.volume)}
               </div>
             </div>
-          ))
+          ));
+        })()}
+
+        {loading && page > 1 && (
+          <div className="loading-more">
+            <span className="dot"></span>
+            <span className="dot"></span>
+            <span className="dot"></span>
+          </div>
+        )}
+        
+        {/* 무한 스크롤 트리거 요소 */}
+        {!loading && hasMore && (
+          <div ref={observerTarget} style={{ height: "40px", width: "100%" }}></div>
+        )}
+
+        {!hasMore && stocks.length > 0 && activeTab === "all" && (
+          <div className="end-of-list">모든 종목을 불러왔습니다.</div>
         )}
       </div>
 
