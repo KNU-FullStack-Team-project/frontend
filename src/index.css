@@ -209,6 +209,53 @@ p {
   border-radius: 12px;
   border: 1px solid var(--border);
   padding: 10px;
+  overflow-x: hidden;
+  user-select: none;
+  cursor: grab;
+  transition: box-shadow 0.2s;
+}
+
+.candle-chart-wrapper:active {
+  cursor: grabbing;
+}
+
+.candle-chart-wrapper.dragging {
+  cursor: grabbing;
+}
+
+/* 차트 기간 선택 버튼 */
+.period-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--code-bg);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.period-btn {
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.period-btn:hover {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.period-btn.active {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 4px 10px rgba(170, 59, 255, 0.25);
+  transform: translateY(-1px);
 }
 
 /* 매수/매도 */
@@ -260,4 +307,444 @@ p {
     min-width: 100%;
     position: static;
   }
+}
+/* 상세 페이지 레이아웃 (가로 분할) */
+.detail-main-layout {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  margin-top: 20px;
+}
+
+.chart-container {
+  flex: 1.8; /* 차트 영역을 더 넓게 */
+  min-width: 0;
+  padding-right: 32px;
+  border-right: 1px solid var(--border); /* 우측 경계선 추가 */
+}
+
+.trading-section {
+  flex: 1; /* 매수/매도 섹션 */
+  background: var(--code-bg);
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  position: sticky;
+  top: 20px;
+}
+
+/* 주식 탭 (미니멀 스타일) */
+.stock-tabs {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.stock-tab {
+  padding: 12px 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+  position: relative;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+
+.stock-tab:hover {
+  color: var(--accent);
+}
+
+.stock-tab.active {
+  color: var(--accent);
+}
+
+.stock-tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--accent);
+}
+
+/* 관심 버튼 (심플 하트) */
+.favorite-btn {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+  opacity: 0.7;
+}
+
+.favorite-btn:hover {
+  transform: scale(1.2);
+  opacity: 1;
+}
+
+.favorite-btn.active {
+  opacity: 1;
+}
+
+/* 주식 리스트 데이터 스타일 */
+.stock-index {
+  color: var(--text);
+  font-size: 0.85rem;
+  text-align: center;
+  opacity: 0.6;
+}
+
+.stock-name-text {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.stock-price-section {
+  text-align: right;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.stock-rate-section {
+  text-align: right;
+}
+
+.rate-text {
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.rate-text.up, .up {
+  color: #f43f5e;
+}
+
+.rate-text.down, .down {
+  color: #3b82f6;
+}
+
+.stock-volume-section {
+  text-align: right;
+  padding-right: 10px;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+/* 상세 헤더 */
+.stock-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+
+.price-big {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-h);
+  margin-right: 12px;
+}
+
+.price-change {
+  display: inline-block;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.stat-pill {
+  font-size: 0.9rem;
+  color: var(--text);
+  background: var(--code-bg);
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+/* 반응형 */
+@media (max-width: 900px) {
+  .detail-main-layout {
+    flex-direction: column;
+  }
+  
+  .trading-section {
+    position: static;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 20px;
+  }
+
+  .chart-container {
+    padding-right: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+  }
+}
+
+/* 상세 보기 전용 카드 스타일 (모달 내부에서 사용) */
+.detail-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); /* 부드러운 그림자 */
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.detail-main-layout {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  margin-top: 20px;
+}
+
+.chart-container.detail-card {
+  flex: 1.8; /* 차트 영역을 더 넓게 */
+  min-width: 0;
+  padding-right: 32px;
+  border-right: 1px solid var(--border); /* 구분선 역할 */
+  overflow: hidden; /* 영역 이탈 방지 */
+}
+
+.trading-section.detail-card {
+  flex: 1;
+  background: var(--bg); /* 명시적으로 화이트 배경 유지 */
+  position: sticky;
+  top: 0;
+}
+
+/* 주문 폼 고도화 스타일 */
+.trading-form-header {
+  margin-bottom: 24px;
+}
+
+.trading-form-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-h);
+}
+
+.input-with-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.input-with-controls .input-group {
+  flex: 1;
+  margin: 0;
+}
+
+.control-btn {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+}
+
+.control-btn:hover {
+  background: var(--code-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ratio-btn-group {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+.ratio-btn {
+  flex: 1;
+  padding: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ratio-btn:hover {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.order-summary {
+  margin: 24px 0;
+  padding: 16px;
+  background: var(--code-bg);
+  border-radius: 10px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.summary-row:last-child {
+  margin-bottom: 0;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+/* 주식창 새로고침 스타일 강화 */
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.refresh-btn::before {
+  content: "↻";
+  font-size: 1.1rem;
+}
+
+.refresh-btn:hover {
+  background: var(--accent);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(170, 59, 255, 0.2);
+}
+
+/* 반응형 모바일 대응 */
+@media (max-width: 900px) {
+  .detail-main-layout {
+    flex-direction: column;
+  }
+  
+  .chart-container.detail-card {
+    padding-right: 24px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+}
+/* 차트 툴팁 스타일 */
+.chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 15px;
+  font-size: 0.85rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+  min-width: 170px;
+  backdrop-filter: blur(8px);
+}
+
+.tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  gap: 15px;
+}
+
+.tooltip-row:last-child {
+  margin-bottom: 0;
+}
+
+.tooltip-label {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.tooltip-value {
+  font-weight: 700;
+  color: var(--text-h);
+  font-family: var(--mono);
+}
+
+/* 주문 유형 선택 탭 */
+.order-type-tabs {
+  display: flex;
+  background: var(--bg-a);
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  gap: 4px;
+}
+
+.type-tab {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.type-tab.active {
+  background: var(--white);
+  color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.price-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-h);
+  margin-top: -10px;
+  margin-bottom: 15px;
+  opacity: 0.8;
+  text-align: right;
+}
+
+.control-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.control-input-wrapper .control-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
