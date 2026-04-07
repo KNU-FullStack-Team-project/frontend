@@ -9,30 +9,23 @@ const OrderHistory = ({ accountId, currentUser }) => {
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
-<<<<<<< HEAD
 
-      const token = localStorage.getItem("accessToken");
+      const token =
+        localStorage.getItem("accessToken") || currentUser?.token;
+
       if (!token) {
         throw new Error("로그인 토큰이 없습니다.");
       }
 
-      const response = await fetch(`/api/orders?accountId=${accountId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-=======
-      // 절대 경로 및 Authorization 헤더 추가
       const response = await fetch(
         `http://localhost:8081/api/orders?accountId=${accountId}`,
         {
           headers: {
-            Authorization: `Bearer ${currentUser?.token}`,
+            Authorization: `Bearer ${token}`,
           },
-        },
+        }
       );
->>>>>>> 1142808bf877b5e3d72ed4ce7e96cdb819997e41
+
       if (!response.ok) throw new Error("Order data fetch failed");
 
       const data = await response.json();
@@ -56,7 +49,9 @@ const OrderHistory = ({ accountId, currentUser }) => {
     if (!window.confirm("정말 주문을 취소하시겠습니까?")) return;
 
     try {
-      const token = localStorage.getItem("accessToken");
+      const token =
+        localStorage.getItem("accessToken") || currentUser?.token;
+
       if (!token) {
         throw new Error("로그인 토큰이 없습니다.");
       }
@@ -66,15 +61,9 @@ const OrderHistory = ({ accountId, currentUser }) => {
         {
           method: "POST",
           headers: {
-<<<<<<< HEAD
             Authorization: `Bearer ${token}`,
           },
         }
-=======
-            Authorization: `Bearer ${currentUser?.token}`,
-          },
-        },
->>>>>>> 1142808bf877b5e3d72ed4ce7e96cdb819997e41
       );
 
       if (!response.ok) {
