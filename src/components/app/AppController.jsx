@@ -10,7 +10,10 @@ import MyPage from "../../pages/MyPage";
 import AccountSettingsPage from "../../pages/AccountSettingsPage";
 import AuthPage from "../../pages/AuthPage";
 import AdminPage from "../../pages/AdminPage";
-import RankingPage from "../../pages/RankingPage"; // 🔥 추가
+import RankingPage from "../../pages/RankingPage";
+import CommunityPage from "../../pages/CommunityPage";
+import StockCommunityPage from "../../pages/StockCommunityPage";
+import CommunityPostDetailPage from "../../pages/CommunityPostDetailPage";
 
 import TopNav from "../../layout/TopNav";
 
@@ -46,12 +49,15 @@ const AppController = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedMyPageUser, setSelectedMyPageUser] = useState(null);
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
+  const [selectedCommunitySymbol, setSelectedCommunitySymbol] = useState(null);
+  const [selectedCommunityPostId, setSelectedCommunityPostId] = useState(null);
   const [authMode, setAuthMode] = useState("login");
 
   useEffect(() => {
     const savedUser = localStorage.getItem("currentUser");
+    const savedToken = localStorage.getItem("accessToken");
 
-    if (savedUser) {
+    if (savedUser && savedToken) {
       const parsedUser = JSON.parse(savedUser);
       setCurrentUser(parsedUser);
       setIsLoggedIn(true);
@@ -71,14 +77,12 @@ const AppController = () => {
         }),
       });
 
-      const responseText = await res.text();
+      const data = await res.json();
 
       if (!res.ok) {
-        alert(responseText || "로그인에 실패했습니다.");
+        alert(data?.message || "로그인에 실패했습니다.");
         return;
       }
-
-      const data = JSON.parse(responseText);
 
       if (data.message === "로그인 성공") {
         const loginUser = {
@@ -86,11 +90,14 @@ const AppController = () => {
           email: data.email,
           nickname: data.nickname,
           role: data.role === "ADMIN" ? "admin" : "user",
+          accountId: data.accountId,
         };
 
         setCurrentUser(loginUser);
         setIsLoggedIn(true);
+
         localStorage.setItem("currentUser", JSON.stringify(loginUser));
+        localStorage.setItem("accessToken", data.token || "");
 
         if (pendingPage) {
           setCurrentPage(pendingPage);
@@ -102,6 +109,7 @@ const AppController = () => {
         alert(data.message || "로그인 실패");
       }
     } catch (error) {
+      console.error("로그인 오류:", error);
       alert("로그인 오류");
     }
   };
@@ -132,14 +140,14 @@ const AppController = () => {
             {
               method: "POST",
               body: profileFormData,
-            },
+            }
           );
 
           if (!imageResponse.ok) {
             const imageError = await imageResponse.text();
             alert(
               imageError ||
-                "회원가입은 완료됐지만 프로필 사진 저장에 실패했습니다.",
+                "회원가입은 완료됐지만 프로필 사진 저장에 실패했습니다."
             );
           }
         }
@@ -157,23 +165,25 @@ const AppController = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
+    localStorage.removeItem("accessToken");
     setCurrentUser(null);
     setIsLoggedIn(false);
     setCurrentPage("home");
     setSelectedCompetitionId(null);
     setSelectedMyPageUser(null);
+    setSelectedCommunitySymbol(null);
+    setSelectedCommunityPostId(null);
   };
 
-  //랭킹페이지 이동 함수
   const handleViewRanking = (competitionId, status) => {
-  if (status === "SCHEDULED") {
-    alert("예정된 대회는 랭킹을 조회할 수 없습니다.");
-    return;
-  }
+    if (status === "SCHEDULED") {
+      alert("예정된 대회는 랭킹을 조회할 수 없습니다.");
+      return;
+    }
 
-  setSelectedCompetitionId(competitionId);
-  setCurrentPage("ranking");
-};
+    setSelectedCompetitionId(competitionId);
+    setCurrentPage("ranking");
+  };
 
   const handleMovePage = (page) => {
     const protectedPages = ["mypage", "admin"];
@@ -191,9 +201,13 @@ const AppController = () => {
       setSelectedMyPageUser(null);
     }
 
-    // 🔥 랭킹 메뉴 클릭 시 기본 상태 초기화
     if (page === "ranking") {
       setSelectedCompetitionId(null);
+    }
+
+    if (page === "community") {
+      setSelectedCommunitySymbol(null);
+      setSelectedCommunityPostId(null);
     }
 
     setCurrentPage(page);
@@ -230,9 +244,16 @@ const AppController = () => {
 
   const handleDeleteCompetition = async (competitionId) => {
     try {
+      const token = localStorage.getItem("accessToken");
+
       const res = await fetch(
         `http://localhost:8081/api/admin/competitions/${competitionId}`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       const text = await res.text();
@@ -251,6 +272,28 @@ const AppController = () => {
     }
   };
 
+  const handleMoveToStockCommunity = (symbol) => {
+    setSelectedCommunitySymbol(symbol);
+    setSelectedCommunityPostId(null);
+    setCurrentPage("stockCommunity");
+  };
+
+  const handleBackToCommunityMain = () => {
+    setCurrentPage("community");
+    setSelectedCommunitySymbol(null);
+    setSelectedCommunityPostId(null);
+  };
+
+  const handleOpenCommunityPostDetail = (postId) => {
+    setSelectedCommunityPostId(postId);
+    setCurrentPage("communityPostDetail");
+  };
+
+  const handleBackToStockCommunity = () => {
+    setCurrentPage("stockCommunity");
+    setSelectedCommunityPostId(null);
+  };
+
   if (currentPage === "auth") {
     return (
       <AuthPage
@@ -267,7 +310,13 @@ const AppController = () => {
   const renderPage = () => {
     switch (currentPage) {
       case "stock":
-        return <StockPage isLoggedIn={isLoggedIn} user={currentUser} />;
+        return (
+          <StockPage
+            isLoggedIn={isLoggedIn}
+            user={currentUser}
+            onOpenCommunity={handleMoveToStockCommunity}
+          />
+        );
 
       case "contest":
         return (
@@ -278,7 +327,7 @@ const AppController = () => {
             onCreateCompetition={handleCreateCompetition}
             onEditCompetition={handleEditCompetition}
             onDeleteCompetition={handleDeleteCompetition}
-            onViewRanking={handleViewRanking} // 🔥 추가
+            onViewRanking={handleViewRanking}
           />
         );
 
@@ -317,6 +366,34 @@ const AppController = () => {
             selectedCompetitionId={selectedCompetitionId}
             currentUser={currentUser}
             isLoggedIn={isLoggedIn}
+          />
+        );
+
+      case "community":
+        return (
+          <CommunityPage
+            onSelectStockCommunity={handleMoveToStockCommunity}
+          />
+        );
+
+      case "stockCommunity":
+        return (
+          <StockCommunityPage
+            symbol={selectedCommunitySymbol}
+            currentUser={currentUser}
+            isLoggedIn={isLoggedIn}
+            onBack={handleBackToCommunityMain}
+            onSelectPost={handleOpenCommunityPostDetail}
+          />
+        );
+
+      case "communityPostDetail":
+        return (
+          <CommunityPostDetailPage
+            postId={selectedCommunityPostId}
+            currentUser={currentUser}
+            isLoggedIn={isLoggedIn}
+            onBack={handleBackToStockCommunity}
           />
         );
 
@@ -373,7 +450,6 @@ const AppController = () => {
       <main className="site-main">{renderPage()}</main>
     </div>
   );
-  
 };
 
 export default AppController;

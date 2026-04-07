@@ -9,9 +9,20 @@ const OrderHistory = ({ accountId }) => {
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
-      // 백엔드 API 호출: 계좌 ID 기준 주문 내역 조회
-      const response = await fetch(`/api/orders?accountId=${accountId}`);
+
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        throw new Error("로그인 토큰이 없습니다.");
+      }
+
+      const response = await fetch(`/api/orders?accountId=${accountId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       if (!response.ok) throw new Error("Order data fetch failed");
+
       const data = await response.json();
       setOrders(data);
       setError(null);
@@ -33,18 +44,28 @@ const OrderHistory = ({ accountId }) => {
     if (!window.confirm("정말 주문을 취소하시겠습니까?")) return;
 
     try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        throw new Error("로그인 토큰이 없습니다.");
+      }
+
       const response = await fetch(
         `/api/orders/${orderId}/cancel?accountId=${accountId}`,
         {
           method: "POST",
-        },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
+
       if (!response.ok) {
         const errorMsg = await response.text();
         throw new Error(errorMsg || "Cancel failed");
       }
+
       alert("주문이 취소되었습니다.");
-      fetchOrders(); // 목록 새로고침
+      fetchOrders();
     } catch (err) {
       alert("취소 실패: " + err.message);
     }
@@ -146,7 +167,9 @@ const OrderHistory = ({ accountId }) => {
                   </td>
                   <td>
                     <span
-                      className={`status-badge ${getStatusBadgeClass(order?.orderStatus)}`}
+                      className={`status-badge ${getStatusBadgeClass(
+                        order?.orderStatus
+                      )}`}
                     >
                       {getStatusText(order?.orderStatus)}
                     </span>

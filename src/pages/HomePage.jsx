@@ -12,9 +12,21 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
       const fetchDashboard = async () => {
         setLoading(true);
         try {
+          const token = localStorage.getItem("accessToken");
+          if (!token) {
+            setLoading(false);
+            return;
+          }
+
           const response = await fetch(
             `/api/accounts/my/dashboard?email=${currentUser.email}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
           );
+
           if (response.ok) {
             const data = await response.json();
             setAccountData(data);
@@ -25,9 +37,11 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
           setLoading(false);
         }
       };
+
       fetchDashboard();
     }
   }, [isLoggedIn, currentUser?.email]);
+
   if (!isLoggedIn) {
     return (
       <div className="landing-page">

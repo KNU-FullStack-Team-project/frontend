@@ -6,6 +6,7 @@ const menus = [
   { key: "stock", label: "주식" },
   { key: "contest", label: "대회" },
   { key: "ranking", label: "랭킹" },
+  { key: "community", label: "커뮤니티" },
   { key: "mypage", label: "마이페이지" },
 ];
 

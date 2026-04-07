@@ -18,14 +18,32 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     }
 
     try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        setError("로그인 토큰이 없습니다. 다시 로그인해주세요.");
+        return;
+      }
+
       const params = new URLSearchParams({ email: targetEmail });
+
+      const commonHeaders = {
+        Authorization: `Bearer ${token}`,
+      };
+
       const [profileResponse, dashboardResponse, accountsResponse] =
         await Promise.all([
-          fetch(`http://localhost:8081/users/profile?${params.toString()}`),
+          fetch(`http://localhost:8081/users/profile?${params.toString()}`, {
+            headers: commonHeaders,
+          }),
           fetch(
             `http://localhost:8081/api/accounts/my/dashboard?${params.toString()}`,
+            {
+              headers: commonHeaders,
+            }
           ),
-          fetch(`http://localhost:8081/api/accounts/my?${params.toString()}`),
+          fetch(`http://localhost:8081/api/accounts/my?${params.toString()}`, {
+            headers: commonHeaders,
+          }),
         ]);
 
       if (
@@ -46,7 +64,8 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
       setDashboard(dashboardData);
       setAccounts(accountsData);
       setError("");
-    } catch {
+    } catch (loadError) {
+      console.error("마이페이지 조회 오류:", loadError);
       setError("마이페이지 정보를 불러오지 못했습니다.");
     }
   };
@@ -67,11 +86,19 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     setResettingAccountId(accountId);
 
     try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        throw new Error("로그인 토큰이 없습니다. 다시 로그인해주세요.");
+      }
+
       const response = await fetch(
         `http://localhost:8081/api/accounts/${accountId}/reset-cash`,
         {
           method: "POST",
-        },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       if (!response.ok) {
