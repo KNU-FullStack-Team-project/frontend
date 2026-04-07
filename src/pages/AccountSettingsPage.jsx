@@ -13,9 +13,18 @@ const isStrongPassword = (value) => {
   return hasLetter && hasDigit && hasSpecial;
 };
 
-const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
+const AccountSettingsPage = ({
+  currentUser,
+  onLogout,
+  onBackToMyPage,
+  onUpdateCurrentUser,
+}) => {
   const [profileImageUrl, setProfileImageUrl] = useState("");
   const [isProfileUploading, setIsProfileUploading] = useState(false);
+  const [nickname, setNickname] = useState(currentUser?.nickname || "");
+  const [nicknameMessage, setNicknameMessage] = useState("");
+  const [isNicknameDuplicate, setIsNicknameDuplicate] = useState(false);
+  const [isNicknameSaving, setIsNicknameSaving] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -30,6 +39,13 @@ const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
   const isPasswordMatch =
     passwordForm.newPassword.length > 0 &&
     passwordForm.newPassword === passwordForm.confirmPassword;
+  const isNicknameChanged = nickname.trim() !== (currentUser?.nickname || "");
+  const canChangeNickname =
+    Boolean(currentUser?.email) &&
+    Boolean(nickname.trim()) &&
+    isNicknameChanged &&
+    !isNicknameDuplicate &&
+    !isNicknameSaving;
   const canChangePassword =
     Boolean(currentUser?.email) &&
     Boolean(passwordForm.currentPassword.trim()) &&
@@ -64,10 +80,125 @@ const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
     loadProfile();
   }, [currentUser?.email]);
 
+  useEffect(() => {
+    setNickname(currentUser?.nickname || "");
+  }, [currentUser?.nickname]);
+
+  useEffect(() => {
+    if (!currentUser?.email) {
+      return;
+    }
+
+    const trimmedNickname = nickname.trim();
+    const currentNickname = currentUser?.nickname || "";
+
+    if (!trimmedNickname || trimmedNickname === currentNickname) {
+      setIsNicknameDuplicate(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const timer = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({
+          nickname: trimmedNickname,
+          email: currentUser.email,
+        });
+        const response = await fetch(
+          `http://localhost:8081/users/check-nickname?${params.toString()}`,
+          { headers: { Authorization: `Bearer ${currentUser.token}` } },
+        );
+
+        const message = await response.text();
+
+        if (cancelled) {
+          return;
+        }
+
+        const isDuplicate = message === "이미 사용 중인 닉네임입니다.";
+        setIsNicknameDuplicate(isDuplicate);
+        if (isDuplicate) {
+          setNicknameMessage(message);
+        } else if (nicknameMessage === "이미 사용 중인 닉네임입니다.") {
+          setNicknameMessage("");
+        }
+      } catch {
+        if (!cancelled) {
+          setIsNicknameDuplicate(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [nickname, currentUser?.email, currentUser?.nickname, currentUser?.token]);
+
+  const handleNicknameChange = (event) => {
+    setNickname(event.target.value);
+    if (nicknameMessage !== "이미 사용 중인 닉네임입니다.") {
+      setNicknameMessage("");
+    }
+  };
+
   const handlePasswordFieldChange = (event) => {
     const { name, value } = event.target;
     setPasswordForm((prev) => ({ ...prev, [name]: value }));
     setPasswordMessage("");
+  };
+
+  const handleNicknameSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!canChangeNickname) {
+      setNicknameMessage("닉네임을 다시 확인해 주세요.");
+      return;
+    }
+
+    setIsNicknameSaving(true);
+
+    try {
+      const response = await fetch(
+        "http://localhost:8081/users/change-nickname",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${currentUser.token}`,
+          },
+          body: JSON.stringify({
+            email: currentUser.email,
+            nickname: nickname.trim(),
+          }),
+        },
+      );
+
+      const bodyText = await response.text();
+      let profileData = null;
+
+      try {
+        profileData = JSON.parse(bodyText);
+      } catch {
+        profileData = null;
+      }
+
+      if (!response.ok || !profileData) {
+        throw new Error(bodyText || "닉네임 변경에 실패했습니다.");
+      }
+
+      const nextNickname = profileData.nickname || nickname.trim();
+      setNickname(nextNickname);
+      setNicknameMessage("닉네임이 변경되었습니다.");
+      onUpdateCurrentUser?.({ nickname: nextNickname });
+    } catch (submitError) {
+      setNicknameMessage(
+        submitError.message || "닉네임 변경에 실패했습니다.",
+      );
+    } finally {
+      setIsNicknameSaving(false);
+    }
   };
 
   const handleProfileImageChange = async (event) => {
@@ -257,6 +388,40 @@ const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
             </AppButton>
           </div>
         </div>
+      </div>
+
+      <div className="content-card">
+        <div className="section-header">
+          <div>
+            <h3>닉네임 변경</h3>
+            <p className="page-desc">
+              현재 닉네임을 새로운 닉네임으로 변경할 수 있습니다.
+            </p>
+          </div>
+        </div>
+
+        <form className="password-form" onSubmit={handleNicknameSubmit}>
+          <label className="password-form__field">
+            <span>새 닉네임</span>
+            <input
+              type="text"
+              name="nickname"
+              value={nickname}
+              onChange={handleNicknameChange}
+              placeholder="새 닉네임"
+            />
+          </label>
+
+          {nicknameMessage ? (
+            <p className="password-form__message">{nicknameMessage}</p>
+          ) : null}
+
+          <div className="password-form__actions">
+            <AppButton type="submit" disabled={!canChangeNickname}>
+              {isNicknameSaving ? "저장 중..." : "닉네임 변경"}
+            </AppButton>
+          </div>
+        </form>
       </div>
 
       <div className="content-card">

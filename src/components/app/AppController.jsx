@@ -217,6 +217,15 @@ const AppController = () => {
     setSelectedMyPageUser(null);
   };
 
+  const handleUpdateCurrentUser = (updates) => {
+    setCurrentUser((prev) => {
+      if (!prev) return prev;
+      const nextUser = { ...prev, ...updates };
+      localStorage.setItem("currentUser", JSON.stringify(nextUser));
+      return nextUser;
+    });
+  };
+
   //랭킹페이지 이동 함수
   const handleViewRanking = (competitionId, status) => {
     if (!isLoggedIn) {
@@ -411,6 +420,7 @@ const AppController = () => {
             currentUser={currentUser}
             onLogout={handleLogout}
             onBackToMyPage={() => handleMovePage("mypage")}
+            onUpdateCurrentUser={handleUpdateCurrentUser}
           />
         );
 
