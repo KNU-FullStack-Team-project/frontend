@@ -9,6 +9,9 @@ const TermsSection = ({
   onToggleService,
   onTogglePrivacy,
   onToggleMarketing,
+  onOpenServiceTerms,
+  onOpenPrivacyTerms,
+  onOpenMarketingTerms,
 }) => {
   return (
     <div className="terms-box">
@@ -26,9 +29,7 @@ const TermsSection = ({
         <button
           type="button"
           className="terms-link-button"
-          onClick={() => {
-            if (!agreeService) onToggleService();
-          }}
+          onClick={onOpenServiceTerms}
         >
           [필수] 서비스 이용약관 동의
         </button>
@@ -43,9 +44,7 @@ const TermsSection = ({
         <button
           type="button"
           className="terms-link-button"
-          onClick={() => {
-            if (!agreePrivacy) onTogglePrivacy();
-          }}
+          onClick={onOpenPrivacyTerms}
         >
           [필수] 개인정보 처리방침 동의
         </button>
@@ -60,9 +59,7 @@ const TermsSection = ({
         <button
           type="button"
           className="terms-link-button"
-          onClick={() => {
-            if (!agreeMarketing) onToggleMarketing();
-          }}
+          onClick={onOpenMarketingTerms}
         >
           [선택] 마케팅 정보 수신 동의
         </button>

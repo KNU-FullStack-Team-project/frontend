@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import AppInput from "../common/AppInput";
 import AppButton from "../common/AppButton";
+import TermsSection from "./agreement/TermsSection";
+import TermsModal from "./agreement/TermsModal";
+import { TERMS_CONTENT } from "./agreement/termsData";
 
 const SignupForm = ({ onSignup }) => {
   const [email, setEmail] = useState("");
@@ -9,6 +12,9 @@ const SignupForm = ({ onSignup }) => {
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [marketingConsent, setMarketingConsent] = useState(false);
+  const [agreeService, setAgreeService] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [activeTermsKey, setActiveTermsKey] = useState(null);
 
   const [isEmailAvailable, setIsEmailAvailable] = useState(false);
   const [hasCheckedEmail, setHasCheckedEmail] = useState(false);
@@ -24,6 +30,8 @@ const SignupForm = ({ onSignup }) => {
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const agreeAll = agreeService && agreePrivacy && marketingConsent;
 
   const validatePassword = (value) =>
     /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/.test(
@@ -56,6 +64,49 @@ const SignupForm = ({ onSignup }) => {
     const minutes = Math.floor(seconds / 60);
     const remainSeconds = seconds % 60;
     return `${minutes}:${String(remainSeconds).padStart(2, "0")}`;
+  };
+
+  const handleAgreeAllChange = () => {
+    const nextValue = !agreeAll;
+    setAgreeService(nextValue);
+    setAgreePrivacy(nextValue);
+    setMarketingConsent(nextValue);
+  };
+
+  const handleToggleService = () => {
+    setAgreeService((prev) => !prev);
+  };
+
+  const handleTogglePrivacy = () => {
+    setAgreePrivacy((prev) => !prev);
+  };
+
+  const handleToggleMarketing = () => {
+    setMarketingConsent((prev) => !prev);
+  };
+
+  const openTermsModal = (termsKey) => {
+    setActiveTermsKey(termsKey);
+  };
+
+  const closeTermsModal = () => {
+    setActiveTermsKey(null);
+  };
+
+  const handleAgreeFromModal = () => {
+    if (activeTermsKey === "service") {
+      setAgreeService(true);
+    }
+
+    if (activeTermsKey === "privacy") {
+      setAgreePrivacy(true);
+    }
+
+    if (activeTermsKey === "marketing") {
+      setMarketingConsent(true);
+    }
+
+    closeTermsModal();
   };
 
   const resetEmailFlow = () => {
@@ -220,6 +271,12 @@ const SignupForm = ({ onSignup }) => {
       return;
     }
 
+    if (!agreeService || !agreePrivacy) {
+      setMessage("필수 약관에 동의해 주세요.");
+      setIsMessageSuccess(false);
+      return;
+    }
+
     if (!validatePassword(password)) {
       setMessage("비밀번호는 8자 이상이며 영문, 숫자, 특수문자를 포함해야 합니다.");
       setIsMessageSuccess(false);
@@ -372,18 +429,31 @@ const SignupForm = ({ onSignup }) => {
         onChange={(e) => setPasswordConfirm(e.target.value)}
       />
 
-      <label className="signup-checkbox">
-        <input
-          type="checkbox"
-          checked={marketingConsent}
-          onChange={(e) => setMarketingConsent(e.target.checked)}
-        />
-        <span>마케팅 정보 수신에 동의합니다. (선택)</span>
-      </label>
+      <TermsSection
+        agreeAll={agreeAll}
+        agreeService={agreeService}
+        agreePrivacy={agreePrivacy}
+        agreeMarketing={marketingConsent}
+        onAgreeAllChange={handleAgreeAllChange}
+        onToggleService={handleToggleService}
+        onTogglePrivacy={handleTogglePrivacy}
+        onToggleMarketing={handleToggleMarketing}
+        onOpenServiceTerms={() => openTermsModal("service")}
+        onOpenPrivacyTerms={() => openTermsModal("privacy")}
+        onOpenMarketingTerms={() => openTermsModal("marketing")}
+      />
 
       <AppButton type="submit" variant="primary" fullWidth disabled={isSubmitting}>
         {isSubmitting ? "처리 중..." : "회원가입"}
       </AppButton>
+
+      <TermsModal
+        open={!!activeTermsKey}
+        title={activeTermsKey ? TERMS_CONTENT[activeTermsKey].title : ""}
+        content={activeTermsKey ? TERMS_CONTENT[activeTermsKey].content : ""}
+        onClose={closeTermsModal}
+        onAgree={handleAgreeFromModal}
+      />
     </form>
   );
 };
