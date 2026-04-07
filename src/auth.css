@@ -301,6 +301,96 @@ input {
   gap: 10px;
 }
 
+.signup-form {
+  gap: 16px;
+}
+
+.signup-inline-group {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.signup-inline-field {
+  flex: 1;
+}
+
+.inline-action-button {
+  height: 48px;
+  padding: 0 18px;
+  border-radius: 14px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+  white-space: nowrap;
+}
+
+.inline-action-button:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.inline-action-button:disabled {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.signup-action-row {
+  margin-top: -4px;
+}
+
+.signup-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 20px;
+  margin-top: -8px;
+}
+
+.signup-status {
+  margin: -2px 0 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.signup-status--success {
+  background: #ecfdf3;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.signup-status--error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.signup-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+  font-size: 13px;
+  color: #475569;
+}
+
+.signup-checkbox input {
+  width: 16px;
+  height: 16px;
+}
+
 .verify-input {
   padding-left: 14px;
   text-align: center;
@@ -941,6 +1031,15 @@ input {
   .auth-card {
     max-width: 100%;
     padding: 28px;
+  }
+
+  .signup-inline-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .inline-action-button {
+    width: 100%;
   }
 
   .top-nav-inner {

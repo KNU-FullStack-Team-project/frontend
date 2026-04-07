@@ -88,7 +88,6 @@ const AppController = () => {
     }
   }, []);
 
-  // 토큰 만료 여부 확인 (JWT 디코딩 로직 포함)
   const checkTokenExpiration = (token) => {
     try {
       if (!token || token.split(".").length !== 3) return true;
@@ -101,7 +100,6 @@ const AppController = () => {
     }
   };
 
-  // 자동 로그아웃 타이머 설정
   const setupAutoLogout = (token) => {
     try {
       if (!token || token.split(".").length !== 3) return;
@@ -248,6 +246,15 @@ const AppController = () => {
     setSelectedMyPageUser(null);
     setSelectedCommunitySymbol(null);
     setSelectedCommunityPostId(null);
+  };
+
+  const handleUpdateCurrentUser = (updates) => {
+    setCurrentUser((prev) => {
+      if (!prev) return prev;
+      const nextUser = { ...prev, ...updates };
+      localStorage.setItem("currentUser", JSON.stringify(nextUser));
+      return nextUser;
+    });
   };
 
   const handleViewRanking = (competitionId, status) => {
@@ -506,6 +513,7 @@ const AppController = () => {
             currentUser={currentUser}
             onLogout={handleLogout}
             onBackToMyPage={() => handleMovePage("mypage")}
+            onUpdateCurrentUser={handleUpdateCurrentUser}
           />
         );
 
