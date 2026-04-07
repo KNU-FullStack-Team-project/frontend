@@ -3,17 +3,13 @@ import CandleChart from "./CandleChart";
 import AppButton from "../../common/AppButton";
 import AppInput from "../../common/AppInput";
 
-<<<<<<< HEAD
-const StockDetail = ({ stock, user, onOpenCommunity }) => {
-=======
 const cleanNumber = (val) => {
   if (!val) return 0;
   if (typeof val === "number") return val;
   return parseInt(String(val).replace(/,/g, "")) || 0;
 };
 
-const StockDetail = ({ stock, user }) => {
->>>>>>> 1142808bf877b5e3d72ed4ce7e96cdb819997e41
+const StockDetail = ({ stock, user, onOpenCommunity }) => {
   const [candles, setCandles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -33,18 +29,14 @@ const StockDetail = ({ stock, user }) => {
         setTargetPrice(price);
       }
     }
-  }, [stock, orderType]);
+  }, [stock, orderType, targetPrice]);
 
   useEffect(() => {
     const fetchHistory = async () => {
       try {
         setLoading(true);
         const response = await fetch(
-<<<<<<< HEAD
-          `/api/stocks/${stock.symbol}/history?period=${period}`
-=======
-          `http://localhost:8081/api/stocks/${stock.symbol}/history?period=${period}`,
->>>>>>> 1142808bf877b5e3d72ed4ce7e96cdb819997e41
+          `http://localhost:8081/api/stocks/${stock.symbol}/history?period=${period}`
         );
         if (!response.ok) throw new Error("Failed to fetch history");
         const data = await response.json();
@@ -62,27 +54,19 @@ const StockDetail = ({ stock, user }) => {
   const fetchAccountData = async () => {
     if (!user?.email) return;
 
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("accessToken") || user?.token;
     if (!token) return;
 
     try {
-<<<<<<< HEAD
-      const response = await fetch(`/api/accounts/my/dashboard?email=${user.email}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-=======
       const response = await fetch(
         `http://localhost:8081/api/accounts/my/dashboard?email=${user.email}`,
         {
           headers: {
-            Authorization: `Bearer ${user.token}`,
+            Authorization: `Bearer ${token}`,
           },
-        },
+        }
       );
->>>>>>> 1142808bf877b5e3d72ed4ce7e96cdb819997e41
+
       if (response.ok) {
         const data = await response.json();
         setAccountData(data);
@@ -97,7 +81,9 @@ const StockDetail = ({ stock, user }) => {
   }, [user?.email, user?.token]);
 
   const handleOrder = async () => {
-    if (!user) {
+    const token = localStorage.getItem("accessToken") || user?.token;
+
+    if (!user || !token) {
       alert("로그인이 필요합니다.");
       return;
     }
@@ -107,42 +93,23 @@ const StockDetail = ({ stock, user }) => {
       return;
     }
 
-<<<<<<< HEAD
-    if (quantity <= 0) {
-      alert("수량은 1주 이상이어야 합니다.");
-      return;
-    }
-
-    if (
-      orderSide === "BUY" &&
-      accountData &&
-      parseInt(stock.currentPrice) * quantity > accountData.rawCashBalance
-    ) {
-      alert("잔고가 부족합니다.");
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem("accessToken");
-
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-=======
     if (!quantity || quantity <= 0) {
       alert("수량을 입력해주세요.");
       return;
     }
 
     if (orderType === "LIMIT") {
-      const current = Number(stock.currentPrice);
-      const base = Number(stock.basePrice) || current;
+      const current = cleanNumber(stock.currentPrice);
+      const base = cleanNumber(stock.basePrice) || current;
       const lower = base * 0.7;
       const upper = base * 1.3;
+
       if (targetPrice < lower || targetPrice > upper) {
-        alert(`지정가는 전일 종가 기준 ±30% 이내여야 합니다.\n(가능 범위: ${Math.floor(lower).toLocaleString()} ~ ${Math.ceil(upper).toLocaleString()})`);
+        alert(
+          `지정가는 전일 종가 기준 ±30% 이내여야 합니다.\n(가능 범위: ${Math.floor(
+            lower
+          ).toLocaleString()} ~ ${Math.ceil(upper).toLocaleString()})`
+        );
         return;
       }
     }
@@ -152,8 +119,7 @@ const StockDetail = ({ stock, user }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${user?.token}`,
->>>>>>> 1142808bf877b5e3d72ed4ce7e96cdb819997e41
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           accountId: accountData.id || accountData.accountId || 1,
@@ -161,7 +127,7 @@ const StockDetail = ({ stock, user }) => {
           orderSide,
           orderType,
           quantity: parseInt(quantity),
-          price: targetPrice
+          price: targetPrice,
         }),
       });
 
@@ -171,13 +137,9 @@ const StockDetail = ({ stock, user }) => {
       }
 
       alert(
-<<<<<<< HEAD
         `${stock.name} ${quantity}주 ${
           orderSide === "BUY" ? "매수" : "매도"
         } 주문이 성공적으로 접수되었습니다.`
-=======
-        `${stock.name} ${quantity}주 ${orderSide === "BUY" ? "매수" : "매도"} 주문이 성공적으로 접수되었습니다.`,
->>>>>>> 1142808bf877b5e3d72ed4ce7e96cdb819997e41
       );
       fetchAccountData();
     } catch (err) {
@@ -185,16 +147,6 @@ const StockDetail = ({ stock, user }) => {
     }
   };
 
-<<<<<<< HEAD
-  const handleMoveCommunity = () => {
-    if (!stock?.symbol) {
-      alert("종목 정보가 없습니다.");
-      return;
-    }
-
-    if (onOpenCommunity) {
-      onOpenCommunity(stock.symbol);
-=======
   const handleQuantityChange = (delta) => {
     setQuantity((prev) => Math.max(1, parseInt(prev || 0) + delta));
   };
@@ -205,18 +157,29 @@ const StockDetail = ({ stock, user }) => {
 
   const applyRatio = (ratio) => {
     if (!accountData || !targetPrice) return;
+
     const available =
       orderSide === "BUY"
         ? accountData.rawCashBalance
-        : (accountData.holdings.find((h) => h.stockName === stock.name)
-            ?.quantity || 0);
+        : accountData.holdings?.find((h) => h.stockName === stock.name)
+            ?.quantity || 0;
 
     if (orderSide === "BUY") {
       const maxQty = Math.floor(available / targetPrice);
-      setQuantity(Math.floor(maxQty * ratio));
+      setQuantity(Math.max(1, Math.floor(maxQty * ratio)));
     } else {
-      setQuantity(Math.floor(available * ratio));
->>>>>>> 1142808bf877b5e3d72ed4ce7e96cdb819997e41
+      setQuantity(Math.max(1, Math.floor(available * ratio)));
+    }
+  };
+
+  const handleMoveCommunity = () => {
+    if (!stock?.symbol) {
+      alert("종목 정보가 없습니다.");
+      return;
+    }
+
+    if (onOpenCommunity) {
+      onOpenCommunity(stock.symbol);
     }
   };
 
@@ -227,20 +190,19 @@ const StockDetail = ({ stock, user }) => {
       <div className="stock-detail-header">
         <div className="price-section">
           <span className="price-big">
-<<<<<<< HEAD
-            {parseInt(stock.currentPrice).toLocaleString()}원
+            {cleanNumber(stock.currentPrice).toLocaleString()}원
           </span>
           <div
             className={`price-change ${
-              parseFloat(stock.changeRate) >= 0 ? "up" : "down"
+              parseFloat(stock.changeRate || 0) >= 0 ? "up" : "down"
             }`}
           >
-            {parseFloat(stock.changeRate) >= 0 ? "▲" : "▼"} {stock.changeAmount} (
-            {stock.changeRate}%)
+            {parseFloat(stock.changeRate || 0) >= 0 ? "▲" : "▼"}{" "}
+            {stock.changeAmount || 0} ({stock.changeRate || 0}%)
           </div>
         </div>
         <div className="stat-pill">
-          거래량: {parseInt(stock.volume).toLocaleString()}
+          거래량: {cleanNumber(stock.volume).toLocaleString()}
         </div>
       </div>
 
@@ -261,7 +223,10 @@ const StockDetail = ({ stock, user }) => {
           style={{
             padding: "10px 16px",
             borderRadius: "10px",
-            border: detailTab === "trade" ? "1px solid #111827" : "1px solid #d1d5db",
+            border:
+              detailTab === "trade"
+                ? "1px solid #111827"
+                : "1px solid #d1d5db",
             background: detailTab === "trade" ? "#111827" : "#fff",
             color: detailTab === "trade" ? "#fff" : "#374151",
             cursor: "pointer",
@@ -295,22 +260,26 @@ const StockDetail = ({ stock, user }) => {
 
       {detailTab === "trade" ? (
         <div className="detail-main-layout">
-          <div className="chart-container">
+          <div className="chart-container detail-card">
             <div className="section-header">
               <h4 className="section-title">차트</h4>
               <div className="period-tabs">
-                {["1D", "1W", "1M", "6M", "1Y"].map((p) => (
+                {[
+                  { code: "1D", label: "일" },
+                  { code: "1W", label: "주" },
+                  { code: "1M", label: "월" },
+                  { code: "1Y", label: "년" },
+                ].map((p) => (
                   <button
-                    key={p}
-                    className={`period-btn ${period === p ? "active" : ""}`}
-                    onClick={() => setPeriod(p)}
+                    key={p.code}
+                    className={`period-btn ${period === p.code ? "active" : ""}`}
+                    onClick={() => setPeriod(p.code)}
                   >
-                    {p}
+                    {p.label}
                   </button>
                 ))}
               </div>
             </div>
-
             {loading ? (
               <div className="loading-placeholder">
                 차트 데이터를 불러오는 중...
@@ -320,7 +289,11 @@ const StockDetail = ({ stock, user }) => {
             )}
           </div>
 
-          <div className="trading-section">
+          <div className="trading-section detail-card">
+            <div className="trading-form-header">
+              <h4>주문하기</h4>
+            </div>
+
             <div className="trading-tabs">
               <button
                 className={`tab-btn buy ${orderSide === "BUY" ? "active" : ""}`}
@@ -329,45 +302,127 @@ const StockDetail = ({ stock, user }) => {
                 매수
               </button>
               <button
-                className={`tab-btn sell ${orderSide === "SELL" ? "active" : ""}`}
+                className={`tab-btn sell ${
+                  orderSide === "SELL" ? "active" : ""
+                }`}
                 onClick={() => setOrderSide("SELL")}
               >
                 매도
               </button>
             </div>
 
-            <div className="trading-form">
-              <AppInput
-                label="수량 (주)"
-                type="number"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                name="quantity"
-                placeholder="수량 입력"
-              />
+            <div className="order-type-tabs">
+              <button
+                className={`type-tab ${
+                  orderType === "MARKET" ? "active" : ""
+                }`}
+                onClick={() => setOrderType("MARKET")}
+              >
+                시장가
+              </button>
+              <button
+                className={`type-tab ${
+                  orderType === "LIMIT" ? "active" : ""
+                }`}
+                onClick={() => setOrderType("LIMIT")}
+              >
+                지정가
+              </button>
+            </div>
 
-              <div className="order-info">
-                <div className="info-row">
-                  <span>{orderSide === "BUY" ? "주문 가능 금액" : "보유 수량"}</span>
-                  <strong>
-                    {orderSide === "BUY"
-                      ? accountData
-                        ? accountData.cashBalance
-                        : "조회 중..."
-                      : accountData
-                      ? (accountData.holdings.find(
-                          (h) => h.stockName === stock.name
-                        )?.quantity || 0) + "주"
-                      : "조회 중..."}
-                  </strong>
+            <div className="trading-form">
+              <div className="input-group">
+                <label>가격</label>
+                <div className="control-input-wrapper">
+                  <button
+                    className="control-btn"
+                    onClick={() => handlePriceChange(-100)}
+                    disabled={orderType === "MARKET"}
+                  >
+                    -
+                  </button>
+                  <AppInput
+                    type="number"
+                    value={targetPrice}
+                    onChange={(e) => setTargetPrice(Number(e.target.value))}
+                    placeholder="가격을 입력하세요"
+                    disabled={orderType === "MARKET"}
+                  />
+                  <button
+                    className="control-btn"
+                    onClick={() => handlePriceChange(100)}
+                    disabled={orderType === "MARKET"}
+                  >
+                    +
+                  </button>
                 </div>
+                {orderType === "LIMIT" && (
+                  <span className="price-hint">
+                    전일 종가 대비 ±30% 설정 가능
+                  </span>
+                )}
               </div>
 
-              <div className="order-preview">
-                <span>주문 금액(예상)</span>
-                <strong className={orderSide === "BUY" ? "up" : "down"}>
-                  {(parseInt(stock.currentPrice) * quantity).toLocaleString()}원
-                </strong>
+              <div className="input-with-controls">
+                <AppInput
+                  label="수량 (주)"
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  name="quantity"
+                  placeholder="수량 입력"
+                />
+                <button
+                  className="control-btn"
+                  onClick={() => handleQuantityChange(-1)}
+                >
+                  -
+                </button>
+                <button
+                  className="control-btn"
+                  onClick={() => handleQuantityChange(1)}
+                >
+                  +
+                </button>
+              </div>
+
+              <div className="ratio-btn-group">
+                <button className="ratio-btn" onClick={() => applyRatio(0.1)}>
+                  10%
+                </button>
+                <button className="ratio-btn" onClick={() => applyRatio(0.25)}>
+                  25%
+                </button>
+                <button className="ratio-btn" onClick={() => applyRatio(0.5)}>
+                  50%
+                </button>
+                <button className="ratio-btn" onClick={() => applyRatio(1)}>
+                  최대
+                </button>
+              </div>
+
+              <div className="order-summary">
+                <div className="summary-row">
+                  <span>
+                    {orderSide === "BUY" ? "주문 가능 금액" : "보유 수량"}
+                  </span>
+                  <span>
+                    {orderSide === "BUY"
+                      ? accountData?.cashBalance || "조회 중..."
+                      : (accountData?.holdings?.find(
+                          (h) => h.stockName === stock.name
+                        )?.quantity || 0) + "주"}
+                  </span>
+                </div>
+                <div className="summary-row">
+                  <span>총 주문 금액</span>
+                  <span className={orderSide === "BUY" ? "up" : "down"}>
+                    {(
+                      Number(targetPrice || 0) * (Number(quantity) || 0)
+                    ).toLocaleString()}
+                    원
+                  </span>
+                </div>
               </div>
 
               <AppButton
@@ -378,160 +433,6 @@ const StockDetail = ({ stock, user }) => {
                 {stock.name} {orderSide === "BUY" ? "매수하기" : "매도하기"}
               </AppButton>
             </div>
-=======
-            {cleanNumber(stock.currentPrice).toLocaleString()}원
-          </span>
-          <div
-            className={`price-change ${parseFloat(stock.changeRate || 0) >= 0 ? "up" : "down"}`}
-          >
-            {parseFloat(stock.changeRate || 0) >= 0 ? "▲" : "▼"} {stock.changeAmount || 0}{" "}
-            ({stock.changeRate || 0}%)
-          </div>
-        </div>
-        <div className="stat-pill">
-          거래량: {cleanNumber(stock.volume).toLocaleString()}
-        </div>
-      </div>
-
-      <div className="detail-main-layout">
-        <div className="chart-container detail-card">
-          <div className="section-header">
-            <h4 className="section-title">차트</h4>
-            <div className="period-tabs">
-              {[
-                { code: "1D", label: "일" },
-                { code: "1W", label: "주" },
-                { code: "1M", label: "월" },
-                { code: "1Y", label: "년" }
-              ].map((p) => (
-                <button
-                  key={p.code}
-                  className={`period-btn ${period === p.code ? "active" : ""}`}
-                  onClick={() => setPeriod(p.code)}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          {loading ? (
-            <div className="loading-placeholder">
-              차트 데이터를 불러오는 중...
-            </div>
-          ) : (
-            <CandleChart data={candles} />
-          )}
-        </div>
-
-        <div className="trading-section detail-card">
-          <div className="trading-form-header">
-            <h4>주문하기</h4>
-          </div>
-
-          <div className="trading-tabs">
-            <button
-              className={`tab-btn buy ${orderSide === "BUY" ? "active" : ""}`}
-              onClick={() => setOrderSide("BUY")}
-            >
-              매수
-            </button>
-            <button
-              className={`tab-btn sell ${orderSide === "SELL" ? "active" : ""}`}
-              onClick={() => setOrderSide("SELL")}
-            >
-              매도
-            </button>
-          </div>
-
-          <div className="order-type-tabs">
-            <button 
-                className={`type-tab ${orderType === "MARKET" ? "active" : ""}`}
-                onClick={() => setOrderType("MARKET")}
-            >
-                시장가
-            </button>
-            <button 
-                className={`type-tab ${orderType === "LIMIT" ? "active" : ""}`}
-                onClick={() => setOrderType("LIMIT")}
-            >
-                지정가
-            </button>
-          </div>
-
-          <div className="trading-form">
-            <div className="input-group">
-              <label>가격</label>
-              <div className="control-input-wrapper">
-                <button 
-                    className="control-btn" 
-                    onClick={() => handlePriceChange(-100)}
-                    disabled={orderType === "MARKET"}
-                >-</button>
-                <AppInput
-                    type="number"
-                    value={targetPrice}
-                    onChange={(e) => setTargetPrice(Number(e.target.value))}
-                    placeholder="가격을 입력하세요"
-                    disabled={orderType === "MARKET"}
-                />
-                <button 
-                    className="control-btn" 
-                    onClick={() => handlePriceChange(100)}
-                    disabled={orderType === "MARKET"}
-                >+</button>
-              </div>
-              {orderType === "LIMIT" && (
-                  <span className="price-hint">
-                      전일 종가 대비 ±30% 설정 가능
-                  </span>
-              )}
-            </div>
-
-            <div className="input-with-controls">
-              <AppInput
-                label="수량 (주)"
-                type="number"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                name="quantity"
-                placeholder="수량 입력"
-              />
-              <button className="control-btn" onClick={() => handleQuantityChange(-1)}>-</button>
-              <button className="control-btn" onClick={() => handleQuantityChange(1)}>+</button>
-            </div>
-
-            <div className="ratio-btn-group">
-              <button className="ratio-btn" onClick={() => applyRatio(0.1)}>10%</button>
-              <button className="ratio-btn" onClick={() => applyRatio(0.25)}>25%</button>
-              <button className="ratio-btn" onClick={() => applyRatio(0.5)}>50%</button>
-              <button className="ratio-btn" onClick={() => applyRatio(1)}>최대</button>
-            </div>
-
-            <div className="order-summary">
-              <div className="summary-row">
-                <span>{orderSide === "BUY" ? "주문 가능 금액" : "보유 수량"}</span>
-                <span>
-                  {orderSide === "BUY"
-                    ? (accountData?.cashBalance || "조회 중...")
-                    : ((accountData?.holdings?.find((h) => h.stockName === stock.name)?.quantity || 0) + "주")}
-                </span>
-              </div>
-              <div className="summary-row">
-                <span>총 주문 금액</span>
-                <span className={orderSide === "BUY" ? "up" : "down"}>
-                  {(Number(targetPrice || 0) * (Number(quantity) || 0)).toLocaleString()}원
-                </span>
-              </div>
-            </div>
-
-            <AppButton
-              variant={orderSide === "BUY" ? "primary" : "danger"}
-              fullWidth
-              onClick={handleOrder}
-            >
-              {stock.name} {orderSide === "BUY" ? "매수하기" : "매도하기"}
-            </AppButton>
->>>>>>> 1142808bf877b5e3d72ed4ce7e96cdb819997e41
           </div>
         </div>
       ) : (
@@ -582,10 +483,22 @@ const StockDetail = ({ stock, user }) => {
                 padding: "14px",
               }}
             >
-              <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "6px" }}>
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#6b7280",
+                  marginBottom: "6px",
+                }}
+              >
                 종목명
               </div>
-              <div style={{ fontSize: "15px", fontWeight: "800", color: "#111827" }}>
+              <div
+                style={{
+                  fontSize: "15px",
+                  fontWeight: "800",
+                  color: "#111827",
+                }}
+              >
                 {stock.name}
               </div>
             </div>
@@ -598,10 +511,22 @@ const StockDetail = ({ stock, user }) => {
                 padding: "14px",
               }}
             >
-              <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "6px" }}>
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#6b7280",
+                  marginBottom: "6px",
+                }}
+              >
                 종목코드
               </div>
-              <div style={{ fontSize: "15px", fontWeight: "800", color: "#111827" }}>
+              <div
+                style={{
+                  fontSize: "15px",
+                  fontWeight: "800",
+                  color: "#111827",
+                }}
+              >
                 {stock.symbol}
               </div>
             </div>
@@ -614,11 +539,23 @@ const StockDetail = ({ stock, user }) => {
                 padding: "14px",
               }}
             >
-              <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "6px" }}>
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#6b7280",
+                  marginBottom: "6px",
+                }}
+              >
                 현재가
               </div>
-              <div style={{ fontSize: "15px", fontWeight: "800", color: "#111827" }}>
-                {parseInt(stock.currentPrice).toLocaleString()}원
+              <div
+                style={{
+                  fontSize: "15px",
+                  fontWeight: "800",
+                  color: "#111827",
+                }}
+              >
+                {cleanNumber(stock.currentPrice).toLocaleString()}원
               </div>
             </div>
           </div>
