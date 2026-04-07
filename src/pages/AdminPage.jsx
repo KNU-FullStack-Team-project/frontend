@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 const ROLE_OPTIONS = ["USER", "ADMIN"];
 const STATUS_OPTIONS = ["ACTIVE", "SUSPENDED"];
 
-const AdminPage = ({ onOpenUserMyPage }) => {
+const AdminPage = ({ onOpenUserMyPage, currentUser }) => {
   const [users, setUsers] = useState([]);
   const [editedUsers, setEditedUsers] = useState({});
   const [savingUserId, setSavingUserId] = useState(null);
@@ -12,7 +12,11 @@ const AdminPage = ({ onOpenUserMyPage }) => {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const response = await fetch("http://localhost:8081/api/admin/users");
+        const response = await fetch("http://localhost:8081/api/admin/users", {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        });
         if (!response.ok) {
           throw new Error("failed");
         }
@@ -61,6 +65,7 @@ const AdminPage = ({ onOpenUserMyPage }) => {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${currentUser?.token}`,
           },
           body: JSON.stringify(nextUser),
         },
@@ -93,7 +98,9 @@ const AdminPage = ({ onOpenUserMyPage }) => {
   return (
     <div className="content-card">
       <h3>관리자 페이지</h3>
-      <p className="page-desc">회원 계정 정보를 확인하고 권한/상태를 설정합니다.</p>
+      <p className="page-desc">
+        회원 계정 정보를 확인하고 권한/상태를 설정합니다.
+      </p>
 
       {error ? <p className="page-desc">{error}</p> : null}
 

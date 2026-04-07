@@ -23,7 +23,11 @@ const ContestPage = ({
   const fetchCompetitions = () => {
     setLoading(true);
 
-    fetch("http://localhost:8081/api/competitions")
+    fetch("http://localhost:8081/api/competitions", {
+      headers: {
+        Authorization: `Bearer ${currentUser?.token}`,
+      },
+    })
       .then((res) => {
         if (!res.ok) {
           throw new Error("대회 목록을 불러오지 못했습니다.");
@@ -52,7 +56,12 @@ const ContestPage = ({
     }
 
     fetch(
-      `http://localhost:8081/api/competitions/my?userId=${currentUser.userId}`
+      `http://localhost:8081/api/competitions/my?userId=${currentUser.userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${currentUser?.token}`,
+        },
+      },
     )
       .then((res) => {
         if (!res.ok) {
@@ -144,7 +153,13 @@ const ContestPage = ({
 
       return matchesJoined && matchesStatus && matchesKeyword;
     });
-  }, [contestList, myCompetitions, selectedStatus, showOnlyJoined, searchKeyword]);
+  }, [
+    contestList,
+    myCompetitions,
+    selectedStatus,
+    showOnlyJoined,
+    searchKeyword,
+  ]);
 
   const resetFilters = () => {
     setSelectedStatus("ALL");
@@ -159,9 +174,7 @@ const ContestPage = ({
           <div>
             <div style={styles.heroBadge}>COMPETITION</div>
             <h1 style={styles.heroTitle}>모의투자 대회</h1>
-            <p style={styles.heroText}>
-              다양한 대회를 탐색하고 참여해보세요.
-            </p>
+            <p style={styles.heroText}>다양한 대회를 탐색하고 참여해보세요.</p>
           </div>
         </div>
 
@@ -193,8 +206,9 @@ const ContestPage = ({
       <div style={styles.guideBox}>
         <div style={styles.guideTitle}>안내</div>
         <div style={styles.guideText}>
-          진행중/예정/종료 상태별로 대회를 확인할 수 있고, 참가한 대회만 따로 모아볼 수 있습니다.
-          검색창에서 대회명 또는 설명으로 원하는 대회를 빠르게 찾을 수 있습니다.
+          진행중/예정/종료 상태별로 대회를 확인할 수 있고, 참가한 대회만 따로
+          모아볼 수 있습니다. 검색창에서 대회명 또는 설명으로 원하는 대회를
+          빠르게 찾을 수 있습니다.
         </div>
       </div>
 
@@ -214,7 +228,9 @@ const ContestPage = ({
                 onClick={() => setSelectedStatus(item.value)}
                 style={{
                   ...styles.chipButton,
-                  ...(selectedStatus === item.value ? styles.chipButtonActive : {}),
+                  ...(selectedStatus === item.value
+                    ? styles.chipButtonActive
+                    : {}),
                 }}
               >
                 {item.label}
@@ -259,7 +275,11 @@ const ContestPage = ({
               placeholder="대회명 또는 설명을 입력하세요."
               style={styles.searchInput}
             />
-            <button type="button" onClick={resetFilters} style={styles.resetButton}>
+            <button
+              type="button"
+              onClick={resetFilters}
+              style={styles.resetButton}
+            >
               초기화
             </button>
           </div>
@@ -311,7 +331,9 @@ const ContestPage = ({
                 }}
               >
                 <div style={styles.cardTopRow}>
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  <div
+                    style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}
+                  >
                     <span
                       style={{
                         ...styles.statusBadge,
@@ -337,7 +359,8 @@ const ContestPage = ({
                   <div style={styles.infoItem}>
                     <span style={styles.infoItemLabel}>기간</span>
                     <span style={styles.infoItemValue}>
-                      {formatDate(contest.startAt)} - {formatDate(contest.endAt)}
+                      {formatDate(contest.startAt)} -{" "}
+                      {formatDate(contest.endAt)}
                     </span>
                   </div>
 
@@ -360,7 +383,9 @@ const ContestPage = ({
                 <div style={styles.progressWrap}>
                   <div style={styles.progressHeader}>
                     <span style={styles.progressLabel}>참가율</span>
-                    <span style={styles.progressValue}>{Math.round(percent)}%</span>
+                    <span style={styles.progressValue}>
+                      {Math.round(percent)}%
+                    </span>
                   </div>
 
                   <div style={styles.progressBar}>
@@ -372,8 +397,8 @@ const ContestPage = ({
                           percent >= 100
                             ? "linear-gradient(90deg, #ff8787 0%, #fa5252 100%)"
                             : percent >= 70
-                            ? "linear-gradient(90deg, #ffd43b 0%, #fab005 100%)"
-                            : "linear-gradient(90deg, #748ffc 0%, #4c6ef5 100%)",
+                              ? "linear-gradient(90deg, #ffd43b 0%, #fab005 100%)"
+                              : "linear-gradient(90deg, #748ffc 0%, #4c6ef5 100%)",
                       }}
                     />
                   </div>
@@ -388,8 +413,8 @@ const ContestPage = ({
                       {percent >= 100
                         ? "정원 마감"
                         : percent >= 70
-                        ? "참가 활발"
-                        : "참가 가능"}
+                          ? "참가 활발"
+                          : "참가 가능"}
                     </span>
                   </div>
                 </div>
@@ -451,16 +476,15 @@ const ContestPage = ({
                       onClick={async (e) => {
                         e.stopPropagation();
 
-                        const confirmDelete = window.confirm(
-                          "정말 삭제하시겠습니까?"
-                        );
+                        const confirmDelete =
+                          window.confirm("정말 삭제하시겠습니까?");
                         if (!confirmDelete) return;
 
                         try {
                           setDeletingCompetitionId(contest.competitionId);
 
                           const success = await onDeleteCompetition(
-                            contest.competitionId
+                            contest.competitionId,
                           );
 
                           if (success) {

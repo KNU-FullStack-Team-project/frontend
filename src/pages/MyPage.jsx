@@ -18,7 +18,9 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     }
 
     try {
-      const token = localStorage.getItem("accessToken");
+      const token =
+        localStorage.getItem("accessToken") || currentUser?.token;
+
       if (!token) {
         setError("로그인 토큰이 없습니다. 다시 로그인해주세요.");
         return;
@@ -51,6 +53,11 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
         !dashboardResponse.ok ||
         !accountsResponse.ok
       ) {
+        console.error("API 응답 에러:", {
+          profile: profileResponse.status,
+          dashboard: dashboardResponse.status,
+          accounts: accountsResponse.status,
+        });
         throw new Error("failed");
       }
 
@@ -72,21 +79,23 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
 
   useEffect(() => {
     loadMyPageData();
-  }, [targetEmail]);
+  }, [targetEmail, currentUser]);
 
   const handleResetCash = async (accountId) => {
     if (!accountId || resettingAccountId || !isMyOwnPage) {
       return;
     }
 
-    if (!window.confirm("예수금을 기본값인 500만원으로 리셋할까요?")) {
+    if (!window.confirm("예수금과 보유중인 주식을 초기화할까요?")) {
       return;
     }
 
     setResettingAccountId(accountId);
 
     try {
-      const token = localStorage.getItem("accessToken");
+      const token =
+        localStorage.getItem("accessToken") || currentUser?.token;
+
       if (!token) {
         throw new Error("로그인 토큰이 없습니다. 다시 로그인해주세요.");
       }
@@ -254,7 +263,9 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
         </div>
       </div>
 
-      {accountId ? <OrderHistory accountId={accountId} /> : null}
+      {accountId ? (
+        <OrderHistory accountId={accountId} currentUser={currentUser} />
+      ) : null}
     </div>
   );
 };

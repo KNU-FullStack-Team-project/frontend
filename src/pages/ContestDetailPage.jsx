@@ -19,7 +19,11 @@ const ContestDetailPage = ({
 
     setLoading(true);
 
-    fetch(`http://localhost:8081/api/competitions/${competitionId}`)
+    fetch(`http://localhost:8081/api/competitions/${competitionId}`, {
+      headers: {
+        Authorization: `Bearer ${currentUser?.token}`,
+      },
+    })
       .then((res) => {
         if (!res.ok) {
           throw new Error("대회 상세 정보를 불러오지 못했습니다.");
@@ -45,7 +49,14 @@ const ContestDetailPage = ({
 
     setParticipantLoading(true);
 
-    fetch(`http://localhost:8081/api/competitions/${competitionId}/participants`)
+    fetch(
+      `http://localhost:8081/api/competitions/${competitionId}/participants`,
+      {
+        headers: {
+          Authorization: `Bearer ${currentUser?.token}`,
+        },
+      },
+    )
       .then((res) => {
         if (!res.ok) {
           throw new Error("참가자 목록을 불러오지 못했습니다.");
@@ -157,7 +168,8 @@ const ContestDetailPage = ({
         `http://localhost:8081/api/competitions/${competitionId}/join?userId=${currentUser.userId}`,
         {
           method: "POST",
-        }
+          headers: { Authorization: `Bearer ${currentUser.token}` },
+        },
       );
 
       const text = await response.text();
@@ -357,13 +369,18 @@ const ContestDetailPage = ({
                     <tr
                       key={`${participant.userId}-${participant.accountId}`}
                       style={{
-                        backgroundColor: index % 2 === 0 ? "#ffffff" : "#fcfcfc",
+                        backgroundColor:
+                          index % 2 === 0 ? "#ffffff" : "#fcfcfc",
                       }}
                     >
-                      <td style={tableCellStyleStrong}>{participant.nickname}</td>
+                      <td style={tableCellStyleStrong}>
+                        {participant.nickname}
+                      </td>
                       <td style={tableCellStyle}>{participant.email}</td>
                       <td style={tableCellStyle}>{participant.accountId}</td>
-                      <td style={tableCellStyle}>{formatDate(participant.joinedAt)}</td>
+                      <td style={tableCellStyle}>
+                        {formatDate(participant.joinedAt)}
+                      </td>
                       <td style={tableCellStyle}>
                         <span
                           style={{
@@ -415,7 +432,8 @@ const ContestDetailPage = ({
               lineHeight: "1.6",
             }}
           >
-            참가하면 대회 전용 계좌가 생성되고, 해당 대회에서 모의투자를 진행할 수 있습니다.
+            참가하면 대회 전용 계좌가 생성되고, 해당 대회에서 모의투자를 진행할
+            수 있습니다.
           </p>
 
           <button

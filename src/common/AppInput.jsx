@@ -8,6 +8,7 @@ const AppInput = ({
   value,
   onChange,
   name,
+  disabled = false,
 }) => {
   return (
     <div className="input-group">
@@ -21,6 +22,7 @@ const AppInput = ({
           value={value}
           onChange={onChange}
           name={name}
+          disabled={disabled}
         />
       </div>
     </div>

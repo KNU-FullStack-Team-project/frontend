@@ -40,6 +40,10 @@ const pageTexts = {
     title: "모의투자 시작하기",
     description: "가상 자산으로 안전하게 투자 연습을 시작해보세요.",
   },
+  ranking: {
+    title: "대회 랭킹",
+    description: "현재 진행 중인 대회의 순위를 확인하세요.",
+  },
 };
 
 const AppController = () => {
@@ -57,12 +61,65 @@ const AppController = () => {
     const savedUser = localStorage.getItem("currentUser");
     const savedToken = localStorage.getItem("accessToken");
 
-    if (savedUser && savedToken) {
-      const parsedUser = JSON.parse(savedUser);
-      setCurrentUser(parsedUser);
-      setIsLoggedIn(true);
+    try {
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        const token = savedToken || parsedUser?.token;
+
+        if (parsedUser && token) {
+          const isExpired = checkTokenExpiration(token);
+
+          if (isExpired) {
+            handleLogout();
+          } else {
+            const restoredUser = { ...parsedUser, token };
+            setCurrentUser(restoredUser);
+            setIsLoggedIn(true);
+            localStorage.setItem("currentUser", JSON.stringify(restoredUser));
+            localStorage.setItem("accessToken", token);
+            setupAutoLogout(token);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Local storage user parsing error:", e);
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("accessToken");
     }
   }, []);
+
+  // 토큰 만료 여부 확인 (JWT 디코딩 로직 포함)
+  const checkTokenExpiration = (token) => {
+    try {
+      if (!token || token.split(".").length !== 3) return true;
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const payload = JSON.parse(window.atob(base64));
+      return payload.exp * 1000 < Date.now();
+    } catch (e) {
+      return true;
+    }
+  };
+
+  // 자동 로그아웃 타이머 설정
+  const setupAutoLogout = (token) => {
+    try {
+      if (!token || token.split(".").length !== 3) return;
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const payload = JSON.parse(window.atob(base64));
+      const remainingTime = payload.exp * 1000 - Date.now();
+
+      if (remainingTime > 0) {
+        setTimeout(() => {
+          alert("세션이 만료되어 자동으로 로그아웃되었습니다.");
+          handleLogout();
+        }, remainingTime);
+      }
+    } catch (e) {
+      console.error("자동 로그아웃 설정 오류:", e);
+    }
+  };
 
   const handleLogin = async (form) => {
     try {
@@ -77,27 +134,44 @@ const AppController = () => {
         }),
       });
 
-      const data = await res.json();
+      let data = null;
+      let responseText = "";
+
+      const contentType = res.headers.get("content-type") || "";
+
+      if (contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        responseText = await res.text();
+      }
 
       if (!res.ok) {
-        alert(data?.message || "로그인에 실패했습니다.");
+        alert(data?.message || responseText || "로그인에 실패했습니다.");
         return;
       }
 
-      if (data.message === "로그인 성공") {
+      if (data?.message === "로그인 성공") {
+        const token = data.token || "";
+
         const loginUser = {
-          userId: data.userId,
+          userId: data.id || data.userId,
           email: data.email,
           nickname: data.nickname,
           role: data.role === "ADMIN" ? "admin" : "user",
           accountId: data.accountId,
+          profileImageUrl: data.profileImageUrl,
+          token,
         };
 
         setCurrentUser(loginUser);
         setIsLoggedIn(true);
 
         localStorage.setItem("currentUser", JSON.stringify(loginUser));
-        localStorage.setItem("accessToken", data.token || "");
+        localStorage.setItem("accessToken", token);
+
+        if (token) {
+          setupAutoLogout(token);
+        }
 
         if (pendingPage) {
           setCurrentPage(pendingPage);
@@ -106,10 +180,10 @@ const AppController = () => {
           setCurrentPage("home");
         }
       } else {
-        alert(data.message || "로그인 실패");
+        alert(data?.message || "로그인 실패");
       }
     } catch (error) {
-      console.error("로그인 오류:", error);
+      console.error("로그인 fetch 중 에러 발생:", error);
       alert("로그인 오류");
     }
   };
@@ -155,6 +229,7 @@ const AppController = () => {
         alert("회원가입이 완료되었습니다. 로그인해 주세요.");
         setAuthMode("login");
         setCurrentPage("auth");
+        return "success";
       } else {
         alert(data);
       }
@@ -176,6 +251,14 @@ const AppController = () => {
   };
 
   const handleViewRanking = (competitionId, status) => {
+    if (!isLoggedIn) {
+      setPendingPage("ranking");
+      setSelectedCompetitionId(competitionId);
+      setAuthMode("login");
+      setCurrentPage("auth");
+      return;
+    }
+
     if (status === "SCHEDULED") {
       alert("예정된 대회는 랭킹을 조회할 수 없습니다.");
       return;
@@ -186,9 +269,10 @@ const AppController = () => {
   };
 
   const handleMovePage = (page) => {
-    const protectedPages = ["mypage", "admin"];
+    const publicPages = ["home", "stock", "auth"];
+    const isPublic = publicPages.includes(page);
 
-    if (!isLoggedIn && protectedPages.includes(page)) {
+    if (!isLoggedIn && !isPublic) {
       setPendingPage(page);
       setAuthMode("login");
       setCurrentPage("auth");
@@ -219,6 +303,13 @@ const AppController = () => {
   };
 
   const handleSelectCompetition = (competitionId) => {
+    if (!isLoggedIn) {
+      setPendingPage("contestDetail");
+      setSelectedCompetitionId(competitionId);
+      setAuthMode("login");
+      setCurrentPage("auth");
+      return;
+    }
     setSelectedCompetitionId(competitionId);
     setCurrentPage("contestDetail");
   };
@@ -244,7 +335,7 @@ const AppController = () => {
 
   const handleDeleteCompetition = async (competitionId) => {
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
 
       const res = await fetch(
         `http://localhost:8081/api/admin/competitions/${competitionId}`,
@@ -363,9 +454,10 @@ const AppController = () => {
       case "ranking":
         return (
           <RankingPage
-            selectedCompetitionId={selectedCompetitionId}
-            currentUser={currentUser}
             isLoggedIn={isLoggedIn}
+            currentUser={currentUser}
+            selectedCompetitionId={selectedCompetitionId}
+            onBack={() => setCurrentPage("contest")}
           />
         );
 
@@ -402,7 +494,9 @@ const AppController = () => {
           <MyPage
             currentUser={currentUser}
             viewedUser={selectedMyPageUser}
-            onMoveAccountSettings={() => setCurrentPage("accountSettings")}
+            onMoveAccountSettings={() => {
+              setCurrentPage("accountSettings");
+            }}
           />
         );
 
@@ -411,13 +505,14 @@ const AppController = () => {
           <AccountSettingsPage
             currentUser={currentUser}
             onLogout={handleLogout}
-            onBackToMyPage={() => setCurrentPage("mypage")}
+            onBackToMyPage={() => handleMovePage("mypage")}
           />
         );
 
       case "admin":
         return (
           <AdminPage
+            currentUser={currentUser}
             onOpenUserMyPage={(user) => {
               setSelectedMyPageUser(user);
               setCurrentPage("mypage");
@@ -425,6 +520,7 @@ const AppController = () => {
           />
         );
 
+      case "home":
       default:
         return (
           <HomePage
@@ -437,17 +533,31 @@ const AppController = () => {
   };
 
   return (
-    <div className="site-layout">
+    <div className="app-container">
       <TopNav
-        currentPage={currentPage}
-        onMovePage={handleMovePage}
         isLoggedIn={isLoggedIn}
         isAdmin={currentUser?.role === "admin"}
+        currentUser={currentUser}
+        currentPage={currentPage}
+        onMovePage={handleMovePage}
         onOpenLogin={handleOpenLogin}
         onLogout={handleLogout}
       />
-
-      <main className="site-main">{renderPage()}</main>
+      <main className="main-content">
+        <div className="container">
+          {currentPage !== "home" && (
+            <header className="page-header">
+              <h2 className="page-title">
+                {pageTexts[currentPage]?.title || "페이지"}
+              </h2>
+              <p className="page-description">
+                {pageTexts[currentPage]?.description || ""}
+              </p>
+            </header>
+          )}
+          {renderPage()}
+        </div>
+      </main>
     </div>
   );
 };

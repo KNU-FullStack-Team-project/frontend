@@ -47,6 +47,7 @@ const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
         const params = new URLSearchParams({ email: currentUser.email });
         const response = await fetch(
           `http://localhost:8081/users/profile?${params.toString()}`,
+          { headers: { Authorization: `Bearer ${currentUser.token}` } },
         );
 
         if (!response.ok) {
@@ -93,6 +94,7 @@ const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
         `http://localhost:8081/users/profile-image?${params.toString()}`,
         {
           method: "POST",
+          headers: { Authorization: `Bearer ${currentUser.token}` },
           body: formData,
         },
       );
@@ -130,6 +132,7 @@ const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${currentUser.token}`,
           },
           body: JSON.stringify({
             email: currentUser.email,
@@ -178,6 +181,7 @@ const AccountSettingsPage = ({ currentUser, onLogout, onBackToMyPage }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.token}`,
         },
         body: JSON.stringify({
           email: currentUser.email,

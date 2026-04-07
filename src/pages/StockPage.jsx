@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+
 import Modal from "../common/Modal";
 import StockDetail from "../components/stock/StockDetail";
 
@@ -8,38 +9,63 @@ const StockPage = ({ user, onOpenCommunity }) => {
   const [selectedStock, setSelectedStock] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [favorites, setFavorites] = useState(new Set());
+  const [favoriteStocksData, setFavoriteStocksData] = useState([]);
+  const [activeTab, setActiveTab] = useState("all");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFavoritesLoading, setIsFavoritesLoading] = useState(false);
+  const observerTarget = useRef(null);
 
   const handleStockClick = (stock) => {
     setSelectedStock(stock);
     setIsModalOpen(true);
   };
 
-  const fetchStocks = async () => {
+  const fetchStocks = useCallback(async (pageNum = 1, isReset = false) => {
     try {
       setLoading(true);
-      const response = await fetch("/api/stocks?page=1&size=60");
+      const response = await fetch(
+        `http://localhost:8081/api/stocks?page=${pageNum}&size=20`
+      );
       if (!response.ok) throw new Error("Stock list fetch failed");
+
       const data = await response.json();
-      setStocks(data.content);
+
+      if (isReset) {
+        setStocks(data.content);
+      } else {
+        setStocks((prev) => {
+          const existingSymbols = new Set(prev.map((s) => s.symbol));
+          const newStocks = data.content.filter(
+            (s) => !existingSymbols.has(s.symbol)
+          );
+          return [...prev, ...newStocks];
+        });
+      }
+
+      setHasMore(data.content.length > 0 && data.currentPage < data.totalPages);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchFavorites = async () => {
+  const fetchFavorites = useCallback(async () => {
     const userId = user?.userId || user?.id;
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("accessToken") || user?.token;
 
     if (!userId || !token) return;
 
     try {
-      const response = await fetch(`/api/favorites?userId=${userId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `http://localhost:8081/api/favorites?userId=${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -48,12 +74,42 @@ const StockPage = ({ user, onOpenCommunity }) => {
     } catch (err) {
       console.error("Failed to fetch favorites:", err);
     }
-  };
+  }, [user]);
+
+  const fetchFavoriteDetails = useCallback(async () => {
+    const userId = user?.userId || user?.id;
+    const token = localStorage.getItem("accessToken") || user?.token;
+
+    if (!userId || !token) return;
+
+    try {
+      setIsFavoritesLoading(true);
+      const response = await fetch(
+        `http://localhost:8081/api/favorites/details?userId=${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setFavoriteStocksData(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch favorite details:", err);
+    } finally {
+      setIsFavoritesLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
-    fetchStocks();
+    setPage(1);
+    fetchStocks(1, true);
+
     const userId = user?.userId || user?.id;
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("accessToken") || user?.token;
 
     if (userId && token) {
       fetchFavorites();
@@ -63,13 +119,43 @@ const StockPage = ({ user, onOpenCommunity }) => {
         setFavorites(new Set(JSON.parse(savedFavs)));
       }
     }
-  }, [user?.userId, user?.id]);
+  }, [user, fetchStocks, fetchFavorites]);
+
+  useEffect(() => {
+    if (activeTab === "favorites") {
+      fetchFavoriteDetails();
+    }
+  }, [activeTab, fetchFavoriteDetails]);
+
+  useEffect(() => {
+    if (activeTab !== "all") return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          const nextPage = page + 1;
+          setPage(nextPage);
+          fetchStocks(nextPage, false);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) observer.unobserve(currentTarget);
+    };
+  }, [hasMore, loading, page, fetchStocks, activeTab]);
 
   const toggleFavorite = async (e, symbol) => {
     e.stopPropagation();
 
     const userId = user?.userId || user?.id;
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("accessToken") || user?.token;
 
     if (!userId || !token) {
       const newFavs = new Set(favorites);
@@ -79,34 +165,47 @@ const StockPage = ({ user, onOpenCommunity }) => {
         newFavs.add(symbol);
       }
       setFavorites(newFavs);
-      localStorage.setItem("favoriteStocks", JSON.stringify(Array.from(newFavs)));
+      localStorage.setItem(
+        "favoriteStocks",
+        JSON.stringify(Array.from(newFavs))
+      );
       alert("로그인이 필요한 기능입니다. (현재는 로컬에만 저장됩니다)");
       return;
     }
 
     const isFavorite = favorites.has(symbol);
     const newFavs = new Set(favorites);
+
     if (isFavorite) {
       newFavs.delete(symbol);
     } else {
       newFavs.add(symbol);
     }
+
     setFavorites(newFavs);
 
     try {
       const method = isFavorite ? "DELETE" : "POST";
-      const response = await fetch(`/api/favorites/${symbol}?userId=${userId}`, {
-        method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `http://localhost:8081/api/favorites/${symbol}?userId=${userId}`,
+        {
+          method,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error("서버 응답 오류");
       }
+
+      if (activeTab === "favorites") {
+        fetchFavoriteDetails();
+      }
     } catch (err) {
       console.error("Failed to toggle favorite:", err);
+
       const revertFavs = new Set(favorites);
       if (isFavorite) {
         revertFavs.add(symbol);
@@ -114,6 +213,7 @@ const StockPage = ({ user, onOpenCommunity }) => {
         revertFavs.delete(symbol);
       }
       setFavorites(revertFavs);
+
       alert("관심종목 반영에 실패했습니다. 다시 시도해주세요.");
     }
   };
@@ -130,18 +230,46 @@ const StockPage = ({ user, onOpenCommunity }) => {
     return amount.toLocaleString() + "원";
   };
 
-  if (loading) return <div className="loading-spinner">주식 정보를 업데이트하는 중...</div>;
+  if (loading && page === 1 && stocks.length === 0) {
+    return (
+      <div className="loading-spinner">주식 정보를 업데이트하는 중...</div>
+    );
+  }
 
   return (
     <div className="content-card">
       <div className="section-header">
         <h3>실시간 주식 정보</h3>
-        <button className="refresh-btn" onClick={fetchStocks}>새로고침</button>
+        <button
+          className="refresh-btn"
+          onClick={() => {
+            setPage(1);
+            fetchStocks(1, true);
+          }}
+        >
+          새로고침
+        </button>
       </div>
 
       <p className="page-desc">
-        현재 시장의 실시간 시세를 확인하세요. 종목을 클릭하면 상세 차트와 함께 매수/매도를 진행할 수 있습니다.
+        현재 시장의 실시간 시세를 확인하세요. 종목을 클릭하면 상세 차트와 함께
+        매수/매도를 진행할 수 있습니다.
       </p>
+
+      <div className="stock-tabs">
+        <button
+          className={`stock-tab ${activeTab === "all" ? "active" : ""}`}
+          onClick={() => setActiveTab("all")}
+        >
+          전체보기
+        </button>
+        <button
+          className={`stock-tab ${activeTab === "favorites" ? "active" : ""}`}
+          onClick={() => setActiveTab("favorites")}
+        >
+          관심종목
+        </button>
+      </div>
 
       <div className="stock-list-container">
         <div className="stock-list-header">
@@ -150,20 +278,39 @@ const StockPage = ({ user, onOpenCommunity }) => {
           <div style={{ paddingLeft: "15px" }}>종목명</div>
           <div style={{ textAlign: "right" }}>현재가</div>
           <div style={{ textAlign: "right" }}>등락률</div>
-          <div style={{ textAlign: "right", paddingRight: "10px" }}>거래대금</div>
+          <div style={{ textAlign: "right", paddingRight: "10px" }}>
+            거래대금
+          </div>
         </div>
 
-        {stocks.length === 0 ? (
-          <div className="no-data">종목 정보를 가져올 수 없습니다.</div>
-        ) : (
-          stocks.map((stock, index) => (
+        {(() => {
+          if (activeTab === "favorites" && isFavoritesLoading) {
+            return <div className="no-data">관심종목을 불러오는 중...</div>;
+          }
+
+          const displayedStocks =
+            activeTab === "all" ? stocks : favoriteStocksData;
+
+          if (displayedStocks.length === 0) {
+            return (
+              <div className="no-data">
+                {activeTab === "favorites"
+                  ? "관심종목이 없습니다. 별표를 눌러 추가해보세요!"
+                  : "종목 정보를 가져올 수 없습니다."}
+              </div>
+            );
+          }
+
+          return displayedStocks.map((stock, index) => (
             <div
               key={stock.symbol}
               className="stock-list-item clickable"
               onClick={() => handleStockClick(stock)}
             >
               <button
-                className={`favorite-btn ${favorites.has(stock.symbol) ? "active" : ""}`}
+                className={`favorite-btn ${
+                  favorites.has(stock.symbol) ? "active" : ""
+                }`}
                 onClick={(e) => toggleFavorite(e, stock.symbol)}
               >
                 {favorites.has(stock.symbol) ? "❤️" : "🤍"}
@@ -180,7 +327,11 @@ const StockPage = ({ user, onOpenCommunity }) => {
               </div>
 
               <div className="stock-rate-section">
-                <span className={`rate-text ${parseFloat(stock.changeRate) >= 0 ? "up" : "down"}`}>
+                <span
+                  className={`rate-text ${
+                    parseFloat(stock.changeRate) >= 0 ? "up" : "down"
+                  }`}
+                >
                   {parseFloat(stock.changeRate) >= 0 ? "+" : ""}
                   {stock.changeRate}%
                 </span>
@@ -190,7 +341,26 @@ const StockPage = ({ user, onOpenCommunity }) => {
                 {getTradingAmountLabel(stock.currentPrice, stock.volume)}
               </div>
             </div>
-          ))
+          ));
+        })()}
+
+        {loading && page > 1 && (
+          <div className="loading-more">
+            <span className="dot"></span>
+            <span className="dot"></span>
+            <span className="dot"></span>
+          </div>
+        )}
+
+        {activeTab === "all" && !loading && hasMore && (
+          <div
+            ref={observerTarget}
+            style={{ height: "40px", width: "100%" }}
+          ></div>
+        )}
+
+        {activeTab === "all" && !hasMore && stocks.length > 0 && (
+          <div className="end-of-list">모든 종목을 불러왔습니다.</div>
         )}
       </div>
 
