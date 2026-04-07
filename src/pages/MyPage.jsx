@@ -11,8 +11,6 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
 
   const targetEmail = viewedUser?.email || currentUser?.email;
   const isMyOwnPage = !viewedUser || viewedUser.email === currentUser?.email;
-  const targetUserId =
-    viewedUser?.id || viewedUser?.userId || currentUser?.userId;
 
   const loadMyPageData = async () => {
     if (!targetEmail) {
@@ -20,31 +18,34 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     }
 
     try {
-      // 프로필은 이메일로 조회 (UserService 기준)
-      const profileParams = new URLSearchParams({ email: targetEmail });
-      // 계좌 관련도 백엔드 Controller 기준에 맞춰 email로 조회
-      const accountParams = new URLSearchParams({ email: targetEmail });
+      const token =
+        localStorage.getItem("accessToken") || currentUser?.token;
+
+      if (!token) {
+        setError("로그인 토큰이 없습니다. 다시 로그인해주세요.");
+        return;
+      }
+
+      const params = new URLSearchParams({ email: targetEmail });
+
+      const commonHeaders = {
+        Authorization: `Bearer ${token}`,
+      };
 
       const [profileResponse, dashboardResponse, accountsResponse] =
         await Promise.all([
+          fetch(`http://localhost:8081/users/profile?${params.toString()}`, {
+            headers: commonHeaders,
+          }),
           fetch(
-            `http://localhost:8081/users/profile?${profileParams.toString()}`,
+            `http://localhost:8081/api/accounts/my/dashboard?${params.toString()}`,
             {
-              headers: { Authorization: `Bearer ${currentUser?.token}` },
-            },
+              headers: commonHeaders,
+            }
           ),
-          fetch(
-            `http://localhost:8081/api/accounts/my/dashboard?${accountParams.toString()}`,
-            {
-              headers: { Authorization: `Bearer ${currentUser?.token}` },
-            },
-          ),
-          fetch(
-            `http://localhost:8081/api/accounts/my?${accountParams.toString()}`,
-            {
-              headers: { Authorization: `Bearer ${currentUser?.token}` },
-            },
-          ),
+          fetch(`http://localhost:8081/api/accounts/my?${params.toString()}`, {
+            headers: commonHeaders,
+          }),
         ]);
 
       if (
@@ -70,14 +71,15 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
       setDashboard(dashboardData);
       setAccounts(accountsData);
       setError("");
-    } catch {
+    } catch (loadError) {
+      console.error("마이페이지 조회 오류:", loadError);
       setError("마이페이지 정보를 불러오지 못했습니다.");
     }
   };
 
   useEffect(() => {
     loadMyPageData();
-  }, [targetEmail]);
+  }, [targetEmail, currentUser]);
 
   const handleResetCash = async (accountId) => {
     if (!accountId || resettingAccountId || !isMyOwnPage) {
@@ -91,12 +93,21 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     setResettingAccountId(accountId);
 
     try {
+      const token =
+        localStorage.getItem("accessToken") || currentUser?.token;
+
+      if (!token) {
+        throw new Error("로그인 토큰이 없습니다. 다시 로그인해주세요.");
+      }
+
       const response = await fetch(
         `http://localhost:8081/api/accounts/${accountId}/reset-cash`,
         {
           method: "POST",
-          headers: { Authorization: `Bearer ${currentUser?.token}` },
-        },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       if (!response.ok) {

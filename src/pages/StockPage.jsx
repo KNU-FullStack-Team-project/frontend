@@ -3,14 +3,14 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Modal from "../common/Modal";
 import StockDetail from "../components/stock/StockDetail";
 
-const StockPage = ({ user }) => {
+const StockPage = ({ user, onOpenCommunity }) => {
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStock, setSelectedStock] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [favorites, setFavorites] = useState(new Set());
   const [favoriteStocksData, setFavoriteStocksData] = useState([]);
-  const [activeTab, setActiveTab] = useState("all"); // 'all' or 'favorites'
+  const [activeTab, setActiveTab] = useState("all");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isFavoritesLoading, setIsFavoritesLoading] = useState(false);
@@ -25,22 +25,24 @@ const StockPage = ({ user }) => {
     try {
       setLoading(true);
       const response = await fetch(
-        `http://localhost:8081/api/stocks?page=${pageNum}&size=20`,
+        `http://localhost:8081/api/stocks?page=${pageNum}&size=20`
       );
       if (!response.ok) throw new Error("Stock list fetch failed");
+
       const data = await response.json();
-      
+
       if (isReset) {
         setStocks(data.content);
       } else {
         setStocks((prev) => {
-          // 중복 방지를 위한 간단한 로직
-          const existingSymbols = new Set(prev.map(s => s.symbol));
-          const newStocks = data.content.filter(s => !existingSymbols.has(s.symbol));
+          const existingSymbols = new Set(prev.map((s) => s.symbol));
+          const newStocks = data.content.filter(
+            (s) => !existingSymbols.has(s.symbol)
+          );
           return [...prev, ...newStocks];
         });
       }
-      
+
       setHasMore(data.content.length > 0 && data.currentPage < data.totalPages);
     } catch (err) {
       console.error(err);
@@ -51,16 +53,20 @@ const StockPage = ({ user }) => {
 
   const fetchFavorites = useCallback(async () => {
     const userId = user?.userId || user?.id;
-    if (!userId) return;
+    const token = localStorage.getItem("accessToken") || user?.token;
+
+    if (!userId || !token) return;
+
     try {
       const response = await fetch(
         `http://localhost:8081/api/favorites?userId=${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${user.token}`,
+            Authorization: `Bearer ${token}`,
           },
-        },
+        }
       );
+
       if (response.ok) {
         const data = await response.json();
         setFavorites(new Set(data));
@@ -68,22 +74,25 @@ const StockPage = ({ user }) => {
     } catch (err) {
       console.error("Failed to fetch favorites:", err);
     }
-  }, [user?.userId, user?.id, user?.token]);
+  }, [user]);
 
   const fetchFavoriteDetails = useCallback(async () => {
     const userId = user?.userId || user?.id;
-    if (!userId) return;
-    
+    const token = localStorage.getItem("accessToken") || user?.token;
+
+    if (!userId || !token) return;
+
     try {
       setIsFavoritesLoading(true);
       const response = await fetch(
         `http://localhost:8081/api/favorites/details?userId=${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${user.token}`,
+            Authorization: `Bearer ${token}`,
           },
-        },
+        }
       );
+
       if (response.ok) {
         const data = await response.json();
         setFavoriteStocksData(data);
@@ -93,14 +102,16 @@ const StockPage = ({ user }) => {
     } finally {
       setIsFavoritesLoading(false);
     }
-  }, [user?.userId, user?.id, user?.token]);
+  }, [user]);
 
   useEffect(() => {
     setPage(1);
     fetchStocks(1, true);
-    
+
     const userId = user?.userId || user?.id;
-    if (userId) {
+    const token = localStorage.getItem("accessToken") || user?.token;
+
+    if (userId && token) {
       fetchFavorites();
     } else {
       const savedFavs = localStorage.getItem("favoriteStocks");
@@ -108,7 +119,7 @@ const StockPage = ({ user }) => {
         setFavorites(new Set(JSON.parse(savedFavs)));
       }
     }
-  }, [user?.userId, user?.id, fetchStocks, fetchFavorites]);
+  }, [user, fetchStocks, fetchFavorites]);
 
   useEffect(() => {
     if (activeTab === "favorites") {
@@ -117,6 +128,8 @@ const StockPage = ({ user }) => {
   }, [activeTab, fetchFavoriteDetails]);
 
   useEffect(() => {
+    if (activeTab !== "all") return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loading) {
@@ -142,8 +155,9 @@ const StockPage = ({ user }) => {
     e.stopPropagation();
 
     const userId = user?.userId || user?.id;
-    if (!userId) {
-      // 로그인하지 않은 경우 기존 로컬스토리지 방식 유지
+    const token = localStorage.getItem("accessToken") || user?.token;
+
+    if (!userId || !token) {
       const newFavs = new Set(favorites);
       if (newFavs.has(symbol)) {
         newFavs.delete(symbol);
@@ -153,20 +167,21 @@ const StockPage = ({ user }) => {
       setFavorites(newFavs);
       localStorage.setItem(
         "favoriteStocks",
-        JSON.stringify(Array.from(newFavs)),
+        JSON.stringify(Array.from(newFavs))
       );
       alert("로그인이 필요한 기능입니다. (현재는 로컬에만 저장됩니다)");
       return;
     }
 
-    // 낙관적 업데이트 (Optimistic Update): UI를 먼저 변경
     const isFavorite = favorites.has(symbol);
     const newFavs = new Set(favorites);
+
     if (isFavorite) {
       newFavs.delete(symbol);
     } else {
       newFavs.add(symbol);
     }
+
     setFavorites(newFavs);
 
     try {
@@ -174,19 +189,23 @@ const StockPage = ({ user }) => {
       const response = await fetch(
         `http://localhost:8081/api/favorites/${symbol}?userId=${userId}`,
         {
-          method: method,
+          method,
           headers: {
-            Authorization: `Bearer ${user.token}`,
+            Authorization: `Bearer ${token}`,
           },
-        },
+        }
       );
 
       if (!response.ok) {
         throw new Error("서버 응답 오류");
       }
+
+      if (activeTab === "favorites") {
+        fetchFavoriteDetails();
+      }
     } catch (err) {
       console.error("Failed to toggle favorite:", err);
-      // 에러 발생 시 원래 상태로 복구
+
       const revertFavs = new Set(favorites);
       if (isFavorite) {
         revertFavs.add(symbol);
@@ -194,6 +213,7 @@ const StockPage = ({ user }) => {
         revertFavs.delete(symbol);
       }
       setFavorites(revertFavs);
+
       alert("관심종목 반영에 실패했습니다. 다시 시도해주세요.");
     }
   };
@@ -210,16 +230,23 @@ const StockPage = ({ user }) => {
     return amount.toLocaleString() + "원";
   };
 
-  if (loading && page === 1 && stocks.length === 0)
+  if (loading && page === 1 && stocks.length === 0) {
     return (
       <div className="loading-spinner">주식 정보를 업데이트하는 중...</div>
     );
+  }
 
   return (
     <div className="content-card">
       <div className="section-header">
         <h3>실시간 주식 정보</h3>
-        <button className="refresh-btn" onClick={fetchStocks}>
+        <button
+          className="refresh-btn"
+          onClick={() => {
+            setPage(1);
+            fetchStocks(1, true);
+          }}
+        >
           새로고침
         </button>
       </div>
@@ -262,9 +289,7 @@ const StockPage = ({ user }) => {
           }
 
           const displayedStocks =
-            activeTab === "all"
-              ? stocks
-              : favoriteStocksData; // 필터링 대신 서버에서 가져온 전체 관심종목 데이터 사용
+            activeTab === "all" ? stocks : favoriteStocksData;
 
           if (displayedStocks.length === 0) {
             return (
@@ -283,7 +308,9 @@ const StockPage = ({ user }) => {
               onClick={() => handleStockClick(stock)}
             >
               <button
-                className={`favorite-btn ${favorites.has(stock.symbol) ? "active" : ""}`}
+                className={`favorite-btn ${
+                  favorites.has(stock.symbol) ? "active" : ""
+                }`}
                 onClick={(e) => toggleFavorite(e, stock.symbol)}
               >
                 {favorites.has(stock.symbol) ? "❤️" : "🤍"}
@@ -301,7 +328,9 @@ const StockPage = ({ user }) => {
 
               <div className="stock-rate-section">
                 <span
-                  className={`rate-text ${parseFloat(stock.changeRate) >= 0 ? "up" : "down"}`}
+                  className={`rate-text ${
+                    parseFloat(stock.changeRate) >= 0 ? "up" : "down"
+                  }`}
                 >
                   {parseFloat(stock.changeRate) >= 0 ? "+" : ""}
                   {stock.changeRate}%
@@ -322,10 +351,12 @@ const StockPage = ({ user }) => {
             <span className="dot"></span>
           </div>
         )}
-        
-        {/* 무한 스크롤 트리거 요소: 전체보기 탭에서만 동작 */}
+
         {activeTab === "all" && !loading && hasMore && (
-          <div ref={observerTarget} style={{ height: "40px", width: "100%" }}></div>
+          <div
+            ref={observerTarget}
+            style={{ height: "40px", width: "100%" }}
+          ></div>
         )}
 
         {activeTab === "all" && !hasMore && stocks.length > 0 && (
@@ -338,7 +369,11 @@ const StockPage = ({ user }) => {
         onClose={() => setIsModalOpen(false)}
         title={selectedStock?.name}
       >
-        <StockDetail stock={selectedStock} user={user} />
+        <StockDetail
+          stock={selectedStock}
+          user={user}
+          onOpenCommunity={onOpenCommunity}
+        />
       </Modal>
     </div>
   );

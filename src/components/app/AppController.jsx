@@ -10,7 +10,10 @@ import MyPage from "../../pages/MyPage";
 import AccountSettingsPage from "../../pages/AccountSettingsPage";
 import AuthPage from "../../pages/AuthPage";
 import AdminPage from "../../pages/AdminPage";
-import RankingPage from "../../pages/RankingPage"; // 🔥 추가
+import RankingPage from "../../pages/RankingPage";
+import CommunityPage from "../../pages/CommunityPage";
+import StockCommunityPage from "../../pages/StockCommunityPage";
+import CommunityPostDetailPage from "../../pages/CommunityPostDetailPage";
 
 import TopNav from "../../layout/TopNav";
 
@@ -50,33 +53,41 @@ const AppController = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedMyPageUser, setSelectedMyPageUser] = useState(null);
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
+  const [selectedCommunitySymbol, setSelectedCommunitySymbol] = useState(null);
+  const [selectedCommunityPostId, setSelectedCommunityPostId] = useState(null);
   const [authMode, setAuthMode] = useState("login");
 
   useEffect(() => {
     const savedUser = localStorage.getItem("currentUser");
+    const savedToken = localStorage.getItem("accessToken");
+
     try {
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser);
+        const token = savedToken || parsedUser?.token;
 
-        // 자동 로그아웃 체크: 토큰 만료 여부 확인
-        if (parsedUser && parsedUser.token) {
-          const isExpired = checkTokenExpiration(parsedUser.token);
+        if (parsedUser && token) {
+          const isExpired = checkTokenExpiration(token);
+
           if (isExpired) {
             handleLogout();
           } else {
-            setCurrentUser(parsedUser);
+            const restoredUser = { ...parsedUser, token };
+            setCurrentUser(restoredUser);
             setIsLoggedIn(true);
-            setupAutoLogout(parsedUser.token);
+            localStorage.setItem("currentUser", JSON.stringify(restoredUser));
+            localStorage.setItem("accessToken", token);
+            setupAutoLogout(token);
           }
         }
       }
     } catch (e) {
       console.error("Local storage user parsing error:", e);
       localStorage.removeItem("currentUser");
+      localStorage.removeItem("accessToken");
     }
   }, []);
 
-  // 토큰 만료 여부 확인 (JWT 디코딩 로직 포함)
   const checkTokenExpiration = (token) => {
     try {
       if (!token || token.split(".").length !== 3) return true;
@@ -85,11 +96,10 @@ const AppController = () => {
       const payload = JSON.parse(window.atob(base64));
       return payload.exp * 1000 < Date.now();
     } catch (e) {
-      return true; // 에러 시 만료된 것으로 처리
+      return true;
     }
   };
 
-  // 자동 로그아웃 타이머 설정
   const setupAutoLogout = (token) => {
     try {
       if (!token || token.split(".").length !== 3) return;
@@ -97,13 +107,16 @@ const AppController = () => {
       const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
       const payload = JSON.parse(window.atob(base64));
       const remainingTime = payload.exp * 1000 - Date.now();
+
       if (remainingTime > 0) {
         setTimeout(() => {
           alert("세션이 만료되어 자동으로 로그아웃되었습니다.");
           handleLogout();
         }, remainingTime);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error("자동 로그아웃 설정 오류:", e);
+    }
   };
 
   const handleLogin = async (form) => {
@@ -119,29 +132,44 @@ const AppController = () => {
         }),
       });
 
+      let data = null;
+      let responseText = "";
+
+      const contentType = res.headers.get("content-type") || "";
+
+      if (contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        responseText = await res.text();
+      }
+
       if (!res.ok) {
-        const responseText = await res.text();
-        alert(responseText || "로그인에 실패했습니다.");
+        alert(data?.message || responseText || "로그인에 실패했습니다.");
         return;
       }
 
-      const data = await res.json();
+      if (data?.message === "로그인 성공") {
+        const token = data.token || "";
 
-      if (data.message === "로그인 성공") {
         const loginUser = {
-          userId: data.id || data.userId, // 백엔드에서 id로 보낼 경우를 대비
+          userId: data.id || data.userId,
           email: data.email,
           nickname: data.nickname,
           role: data.role === "ADMIN" ? "admin" : "user",
-          accountId: data.accountId, // 계좌 ID 저장
-          profileImageUrl: data.profileImageUrl, // 프로필 이미지 URL 저장
-          token: data.token, // 서버에서 받은 JWT 저장
+          accountId: data.accountId,
+          profileImageUrl: data.profileImageUrl,
+          token,
         };
 
         setCurrentUser(loginUser);
         setIsLoggedIn(true);
+
         localStorage.setItem("currentUser", JSON.stringify(loginUser));
-        setupAutoLogout(data.token); // 로그인 성공 시 타이머 시작
+        localStorage.setItem("accessToken", token);
+
+        if (token) {
+          setupAutoLogout(token);
+        }
 
         if (pendingPage) {
           setCurrentPage(pendingPage);
@@ -150,7 +178,7 @@ const AppController = () => {
           setCurrentPage("home");
         }
       } else {
-        alert(data.message || "로그인 실패");
+        alert(data?.message || "로그인 실패");
       }
     } catch (error) {
       console.error("로그인 fetch 중 에러 발생:", error);
@@ -184,14 +212,14 @@ const AppController = () => {
             {
               method: "POST",
               body: profileFormData,
-            },
+            }
           );
 
           if (!imageResponse.ok) {
             const imageError = await imageResponse.text();
             alert(
               imageError ||
-                "회원가입은 완료됐지만 프로필 사진 저장에 실패했습니다.",
+                "회원가입은 완료됐지만 프로필 사진 저장에 실패했습니다."
             );
           }
         }
@@ -199,7 +227,7 @@ const AppController = () => {
         alert("회원가입이 완료되었습니다. 로그인해 주세요.");
         setAuthMode("login");
         setCurrentPage("auth");
-        return "success"; // SignupForm에서 성공 처리를 인식할 수 있도록 반환
+        return "success";
       } else {
         alert(data);
       }
@@ -210,11 +238,14 @@ const AppController = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
+    localStorage.removeItem("accessToken");
     setCurrentUser(null);
     setIsLoggedIn(false);
     setCurrentPage("home");
     setSelectedCompetitionId(null);
     setSelectedMyPageUser(null);
+    setSelectedCommunitySymbol(null);
+    setSelectedCommunityPostId(null);
   };
 
   const handleUpdateCurrentUser = (updates) => {
@@ -226,7 +257,6 @@ const AppController = () => {
     });
   };
 
-  //랭킹페이지 이동 함수
   const handleViewRanking = (competitionId, status) => {
     if (!isLoggedIn) {
       setPendingPage("ranking");
@@ -246,7 +276,6 @@ const AppController = () => {
   };
 
   const handleMovePage = (page) => {
-    // 공개 페이지: 홈, 주식, 인증(로그인/회원가입)
     const publicPages = ["home", "stock", "auth"];
     const isPublic = publicPages.includes(page);
 
@@ -263,9 +292,13 @@ const AppController = () => {
       setSelectedMyPageUser(null);
     }
 
-    // 🔥 랭킹 메뉴 클릭 시 기본 상태 초기화
     if (page === "ranking") {
       setSelectedCompetitionId(null);
+    }
+
+    if (page === "community") {
+      setSelectedCommunitySymbol(null);
+      setSelectedCommunityPostId(null);
     }
 
     setCurrentPage(page);
@@ -309,12 +342,16 @@ const AppController = () => {
 
   const handleDeleteCompetition = async (competitionId) => {
     try {
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
+
       const res = await fetch(
         `http://localhost:8081/api/admin/competitions/${competitionId}`,
         {
           method: "DELETE",
-          headers: { Authorization: `Bearer ${currentUser?.token}` },
-        },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       const text = await res.text();
@@ -333,6 +370,28 @@ const AppController = () => {
     }
   };
 
+  const handleMoveToStockCommunity = (symbol) => {
+    setSelectedCommunitySymbol(symbol);
+    setSelectedCommunityPostId(null);
+    setCurrentPage("stockCommunity");
+  };
+
+  const handleBackToCommunityMain = () => {
+    setCurrentPage("community");
+    setSelectedCommunitySymbol(null);
+    setSelectedCommunityPostId(null);
+  };
+
+  const handleOpenCommunityPostDetail = (postId) => {
+    setSelectedCommunityPostId(postId);
+    setCurrentPage("communityPostDetail");
+  };
+
+  const handleBackToStockCommunity = () => {
+    setCurrentPage("stockCommunity");
+    setSelectedCommunityPostId(null);
+  };
+
   if (currentPage === "auth") {
     return (
       <AuthPage
@@ -349,7 +408,13 @@ const AppController = () => {
   const renderPage = () => {
     switch (currentPage) {
       case "stock":
-        return <StockPage isLoggedIn={isLoggedIn} user={currentUser} />;
+        return (
+          <StockPage
+            isLoggedIn={isLoggedIn}
+            user={currentUser}
+            onOpenCommunity={handleMoveToStockCommunity}
+          />
+        );
 
       case "contest":
         return (
@@ -360,7 +425,7 @@ const AppController = () => {
             onCreateCompetition={handleCreateCompetition}
             onEditCompetition={handleEditCompetition}
             onDeleteCompetition={handleDeleteCompetition}
-            onViewRanking={handleViewRanking} // 🔥 추가
+            onViewRanking={handleViewRanking}
           />
         );
 
@@ -400,6 +465,34 @@ const AppController = () => {
             currentUser={currentUser}
             selectedCompetitionId={selectedCompetitionId}
             onBack={() => setCurrentPage("contest")}
+          />
+        );
+
+      case "community":
+        return (
+          <CommunityPage
+            onSelectStockCommunity={handleMoveToStockCommunity}
+          />
+        );
+
+      case "stockCommunity":
+        return (
+          <StockCommunityPage
+            symbol={selectedCommunitySymbol}
+            currentUser={currentUser}
+            isLoggedIn={isLoggedIn}
+            onBack={handleBackToCommunityMain}
+            onSelectPost={handleOpenCommunityPostDetail}
+          />
+        );
+
+      case "communityPostDetail":
+        return (
+          <CommunityPostDetailPage
+            postId={selectedCommunityPostId}
+            currentUser={currentUser}
+            isLoggedIn={isLoggedIn}
+            onBack={handleBackToStockCommunity}
           />
         );
 

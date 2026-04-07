@@ -8,29 +8,42 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isLoggedIn && currentUser?.email) {
-      const fetchDashboard = async () => {
-        setLoading(true);
-        try {
-          const response = await fetch(
-            `http://localhost:8081/api/accounts/my/dashboard?email=${currentUser.email}`,
-            {
-              headers: { Authorization: `Bearer ${currentUser.token}` },
-            },
-          );
-          if (response.ok) {
-            const data = await response.json();
-            setAccountData(data);
-          }
-        } catch (err) {
-          console.error("Dashboard fetch error:", err);
-        } finally {
+  if (isLoggedIn && currentUser?.email) {
+    const fetchDashboard = async () => {
+      setLoading(true);
+      try {
+        const token =
+          localStorage.getItem("accessToken") || currentUser?.token;
+
+        if (!token) {
           setLoading(false);
+          return;
         }
-      };
-      fetchDashboard();
-    }
-  }, [isLoggedIn, currentUser?.email]);
+
+        const response = await fetch(
+          `http://localhost:8081/api/accounts/my/dashboard?email=${currentUser.email}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setAccountData(data);
+        }
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }
+}, [isLoggedIn, currentUser]);
+
   if (!isLoggedIn) {
     return (
       <div className="landing-page">
