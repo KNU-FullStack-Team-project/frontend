@@ -19,6 +19,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   const [period, setPeriod] = useState("1M");
   const [accountData, setAccountData] = useState(null);
   const [detailTab, setDetailTab] = useState("trade");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (stock) {
@@ -51,7 +52,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
     if (stock) fetchHistory();
   }, [stock, period]);
 
-  const fetchAccountData = async () => {
+  const fetchAccountData = React.useCallback(async () => {
     if (!user?.email) return;
 
     const token = localStorage.getItem("accessToken") || user?.token;
@@ -74,11 +75,11 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
     } catch (err) {
       console.error("Failed to fetch account data:", err);
     }
-  };
+  }, [user?.email, user?.token]);
 
   useEffect(() => {
     fetchAccountData();
-  }, [user?.email, user?.token]);
+  }, [fetchAccountData]);
 
   const handleOrder = async () => {
     const token = localStorage.getItem("accessToken") || user?.token;
@@ -114,7 +115,12 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
       }
     }
 
+    if (isSubmitting) return;
+
     try {
+      setIsSubmitting(true);
+      const requestId = crypto.randomUUID(); // 고유 요청 ID 생성
+
       const response = await fetch("http://localhost:8081/api/orders", {
         method: "POST",
         headers: {
@@ -128,6 +134,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
           orderType,
           quantity: parseInt(quantity),
           price: targetPrice,
+          requestId, // 생성된 ID 전송
         }),
       });
 
@@ -144,6 +151,8 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
       fetchAccountData();
     } catch (err) {
       alert("주문 실패: " + err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -429,8 +438,9 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
                 variant={orderSide === "BUY" ? "primary" : "danger"}
                 fullWidth
                 onClick={handleOrder}
+                disabled={isSubmitting}
               >
-                {stock.name} {orderSide === "BUY" ? "매수하기" : "매도하기"}
+                {isSubmitting ? "처리 중..." : `${stock.name} ${orderSide === "BUY" ? "매수하기" : "매도하기"}`}
               </AppButton>
             </div>
           </div>
