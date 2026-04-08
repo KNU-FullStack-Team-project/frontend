@@ -8,41 +8,41 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-  if (isLoggedIn && currentUser?.email) {
-    const fetchDashboard = async () => {
-      setLoading(true);
-      try {
-        const token =
-          localStorage.getItem("accessToken") || currentUser?.token;
+    if (isLoggedIn && currentUser?.email) {
+      const fetchDashboard = async () => {
+        setLoading(true);
+        try {
+          const token =
+            localStorage.getItem("accessToken") || currentUser?.token;
 
-        if (!token) {
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch(
-          `http://localhost:8081/api/accounts/my/dashboard?email=${currentUser.email}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+          if (!token) {
+            setLoading(false);
+            return;
           }
-        );
 
-        if (response.ok) {
-          const data = await response.json();
-          setAccountData(data);
+          const response = await fetch(
+            `http://localhost:8081/api/accounts/my/dashboard?email=${currentUser.email}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            setAccountData(data);
+          }
+        } catch (err) {
+          console.error("Dashboard fetch error:", err);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error("Dashboard fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchDashboard();
-  }
-}, [isLoggedIn, currentUser]);
+      fetchDashboard();
+    }
+  }, [isLoggedIn, currentUser]);
 
   if (!isLoggedIn) {
     return (
@@ -60,18 +60,25 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
           </div>
         </section>
 
-        <section className="landing-section">
-          <SectionTitle>서비스 소개</SectionTitle>
-          <div className="stock-grid">
-            <div className="mini-stock-card">
+        <section className="landing-section" style={{ textAlign: "center" }}>
+          <SectionTitle title="서비스 소개" />
+          <div
+            className="stock-grid"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: "20px",
+            }}
+          >
+            <div className="mini-stock-card" style={{ textAlign: "center" }}>
               <h4>모의 매매</h4>
               <p>실전처럼 사고 팔며 투자 흐름을 익혀보세요.</p>
             </div>
-            <div className="mini-stock-card">
+            <div className="mini-stock-card" style={{ textAlign: "center" }}>
               <h4>대회 참여</h4>
               <p>다른 사용자와 수익률을 비교하며 경쟁해보세요.</p>
             </div>
-            <div className="mini-stock-card">
+            <div className="mini-stock-card" style={{ textAlign: "center" }}>
               <h4>포트폴리오 확인</h4>
               <p>내 투자 결과를 한눈에 정리해서 볼 수 있습니다.</p>
             </div>
