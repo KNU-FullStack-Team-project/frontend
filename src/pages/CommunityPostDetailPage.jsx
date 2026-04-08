@@ -16,17 +16,22 @@ const CommunityPostDetailPage = ({
     content: "",
   });
 
+  const [isLiking, setIsLiking] = useState(false);
+
   const fetchPostDetail = async () => {
     if (!postId) return;
 
     try {
       setLoading(true);
 
-      const token = localStorage.getItem("accessToken");
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
 
-      const response = await fetch(`/api/community/posts/${postId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const response = await fetch(
+        `http://localhost:8081/api/community/posts/${postId}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
 
       if (!response.ok) {
         throw new Error("게시글 상세 정보를 불러오지 못했습니다.");
@@ -57,18 +62,78 @@ const CommunityPostDetailPage = ({
 
   const canManagePost = useMemo(() => {
     if (!currentUser || !postDetail) return false;
-    return (
-      currentUser.role === "admin" ||
-      currentUser.userId === postDetail.userId
-    );
+    return currentUser.role === "admin" || currentUser.userId === postDetail.userId;
   }, [currentUser, postDetail]);
 
   const canDeleteComment = (commentUserId) => {
     if (!currentUser) return false;
-    return (
-      currentUser.role === "admin" ||
-      currentUser.userId === commentUserId
-    );
+    return currentUser.role === "admin" || currentUser.userId === commentUserId;
+  };
+
+  const formatDateTime = (value) => {
+    if (!value) return "-";
+
+    const date = new Date(value);
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    const hh = String(date.getHours()).padStart(2, "0");
+    const min = String(date.getMinutes()).padStart(2, "0");
+
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+  };
+
+  const handleLikePost = async () => {
+    if (!isLoggedIn || !currentUser?.userId) {
+      alert("로그인 후 추천할 수 있습니다.");
+      return;
+    }
+
+    if (postDetail?.likedByCurrentUser) {
+      alert("이미 추천한 게시글입니다.");
+      return;
+    }
+
+    try {
+      setIsLiking(true);
+
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
+
+      if (!token) {
+        alert("로그인 토큰이 없습니다.");
+        return;
+      }
+
+      const response = await fetch(
+        `http://localhost:8081/api/community/posts/${postId}/like`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const text = await response.text();
+
+      if (!response.ok) {
+        alert(text || "추천에 실패했습니다.");
+        return;
+      }
+
+      setPostDetail((prev) => ({
+        ...prev,
+        likeCount: (prev?.likeCount || 0) + 1,
+        likedByCurrentUser: true,
+      }));
+
+      alert("추천이 반영되었습니다.");
+    } catch (error) {
+      console.error("추천 오류:", error);
+      alert("추천 중 오류가 발생했습니다.");
+    } finally {
+      setIsLiking(false);
+    }
   };
 
   const handleSubmitComment = async () => {
@@ -83,23 +148,26 @@ const CommunityPostDetailPage = ({
     }
 
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
 
       if (!token) {
         alert("로그인 토큰이 없습니다.");
         return;
       }
 
-      const response = await fetch(`/api/community/posts/${postId}/comments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          content: commentContent.trim(),
-        }),
-      });
+      const response = await fetch(
+        `http://localhost:8081/api/community/posts/${postId}/comments`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            content: commentContent.trim(),
+          }),
+        }
+      );
 
       const text = await response.text();
 
@@ -153,24 +221,27 @@ const CommunityPostDetailPage = ({
     }
 
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
 
       if (!token) {
         alert("로그인 토큰이 없습니다.");
         return;
       }
 
-      const response = await fetch(`/api/community/posts/${postId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          title: editForm.title.trim(),
-          content: editForm.content.trim(),
-        }),
-      });
+      const response = await fetch(
+        `http://localhost:8081/api/community/posts/${postId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title: editForm.title.trim(),
+            content: editForm.content.trim(),
+          }),
+        }
+      );
 
       const text = await response.text();
 
@@ -192,19 +263,22 @@ const CommunityPostDetailPage = ({
     if (!window.confirm("게시글을 삭제하시겠습니까?")) return;
 
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
 
       if (!token) {
         alert("로그인 토큰이 없습니다.");
         return;
       }
 
-      const response = await fetch(`/api/community/posts/${postId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `http://localhost:8081/api/community/posts/${postId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       const text = await response.text();
 
@@ -225,19 +299,22 @@ const CommunityPostDetailPage = ({
     if (!window.confirm("댓글을 삭제하시겠습니까?")) return;
 
     try {
-      const token = localStorage.getItem("accessToken");
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
 
       if (!token) {
         alert("로그인 토큰이 없습니다.");
         return;
       }
 
-      const response = await fetch(`/api/community/comments/${commentId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `http://localhost:8081/api/community/comments/${commentId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       const text = await response.text();
 
@@ -315,13 +392,10 @@ const CommunityPostDetailPage = ({
                 {postDetail.nickname}
                 {postDetail.hasBoughtStock ? "★" : ""}
               </span>
-              <span>
-                {postDetail.createdAt
-                  ? new Date(postDetail.createdAt).toLocaleString("ko-KR")
-                  : "-"}
-              </span>
+              <span>{formatDateTime(postDetail.createdAt)}</span>
               <span>조회 {postDetail.viewCount ?? 0}</span>
               <span>댓글 {postDetail.commentCount ?? 0}</span>
+              <span>추천 {postDetail.likeCount ?? 0}</span>
             </div>
 
             <textarea
@@ -360,13 +434,24 @@ const CommunityPostDetailPage = ({
                 {postDetail.nickname}
                 {postDetail.hasBoughtStock ? "★" : ""}
               </span>
-              <span>
-                {postDetail.createdAt
-                  ? new Date(postDetail.createdAt).toLocaleString("ko-KR")
-                  : "-"}
-              </span>
+              <span>{formatDateTime(postDetail.createdAt)}</span>
               <span>조회 {postDetail.viewCount ?? 0}</span>
               <span>댓글 {postDetail.commentCount ?? 0}</span>
+              <span>추천 {postDetail.likeCount ?? 0}</span>
+            </div>
+
+            <div style={styles.likeRow}>
+              <button
+                type="button"
+                onClick={handleLikePost}
+                disabled={!isLoggedIn || postDetail.likedByCurrentUser || isLiking}
+                style={{
+                  ...styles.likeButton,
+                  ...(postDetail.likedByCurrentUser ? styles.likeButtonDisabled : {}),
+                }}
+              >
+                {postDetail.likedByCurrentUser ? "추천 완료" : "👍 추천하기"}
+              </button>
             </div>
 
             {canManagePost && (
@@ -430,9 +515,7 @@ const CommunityPostDetailPage = ({
                   <span style={styles.nickname}>{comment.nickname}</span>
                   <div style={styles.commentTopRight}>
                     <span style={styles.commentDate}>
-                      {comment.createdAt
-                        ? new Date(comment.createdAt).toLocaleString("ko-KR")
-                        : "-"}
+                      {formatDateTime(comment.createdAt)}
                     </span>
 
                     {canDeleteComment(comment.userId) && (
@@ -520,6 +603,25 @@ const styles = {
   nickname: {
     fontWeight: "800",
     color: "#374151",
+  },
+  likeRow: {
+    display: "flex",
+    justifyContent: "flex-start",
+    marginBottom: "16px",
+  },
+  likeButton: {
+    padding: "10px 16px",
+    borderRadius: "10px",
+    border: "none",
+    background: "#2563eb",
+    color: "#fff",
+    cursor: "pointer",
+    fontWeight: "700",
+    fontSize: "13px",
+  },
+  likeButtonDisabled: {
+    background: "#94a3b8",
+    cursor: "not-allowed",
   },
   actionRow: {
     display: "flex",

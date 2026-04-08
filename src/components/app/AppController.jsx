@@ -14,6 +14,7 @@ import RankingPage from "../../pages/RankingPage";
 import CommunityPage from "../../pages/CommunityPage";
 import StockCommunityPage from "../../pages/StockCommunityPage";
 import CommunityPostDetailPage from "../../pages/CommunityPostDetailPage";
+import CommunityPostWritePage from "../../pages/CommunityPostWritePage";
 
 import TopNav from "../../layout/TopNav";
 
@@ -391,6 +392,19 @@ const AppController = () => {
     setCurrentPage("stockCommunity");
     setSelectedCommunityPostId(null);
   };
+  ///////////////
+  const handleOpenCommunityWritePage = () => {
+  setCurrentPage("communityPostWrite");
+};
+
+const handleBackToCommunityListFromWrite = () => {
+  setCurrentPage("stockCommunity");
+};
+
+const handleCommunityPostCreated = () => {
+  setCurrentPage("stockCommunity");
+};
+//////////
 
   if (currentPage === "auth") {
     return (
@@ -478,12 +492,13 @@ const AppController = () => {
       case "stockCommunity":
         return (
           <StockCommunityPage
-            symbol={selectedCommunitySymbol}
-            currentUser={currentUser}
-            isLoggedIn={isLoggedIn}
-            onBack={handleBackToCommunityMain}
-            onSelectPost={handleOpenCommunityPostDetail}
-          />
+  symbol={selectedCommunitySymbol}
+  currentUser={currentUser}
+  isLoggedIn={isLoggedIn}
+  onBack={handleBackToCommunityMain}
+  onSelectPost={handleOpenCommunityPostDetail}
+  onWritePost={handleOpenCommunityWritePage}
+/>
         );
 
       case "communityPostDetail":
@@ -537,6 +552,16 @@ const AppController = () => {
             currentUser={currentUser}
           />
         );
+        case "communityPostWrite":
+  return (
+    <CommunityPostWritePage
+      symbol={selectedCommunitySymbol}
+      currentUser={currentUser}
+      isLoggedIn={isLoggedIn}
+      onBack={handleBackToCommunityListFromWrite}
+      onSuccess={handleCommunityPostCreated}
+    />
+  );
     }
   };
 
