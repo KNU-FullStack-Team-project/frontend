@@ -70,14 +70,36 @@ const StockCommunityPage = ({
     return posts
       .filter((post) => {
         const likeCount = post.likeCount ?? 0;
-        if (recommendFilter === "5") return likeCount >= 5;
-        if (recommendFilter === "10") return likeCount >= 10;
+
+        // 공지 전용 탭
+        if (recommendFilter === "notice") {
+          return post.isNotice;
+        }
+
+        // 5추: 공지 제외
+        if (recommendFilter === "5") {
+          return !post.isNotice && likeCount >= 5;
+        }
+
+        // 10추: 공지 제외
+        if (recommendFilter === "10") {
+          return !post.isNotice && likeCount >= 10;
+        }
+
+        // 전체: 공지 + 일반글
         return true;
       })
       .filter((post) => {
         if (!keyword.trim()) return true;
 
         const value = keyword.toLowerCase();
+
+        if (recommendFilter === "notice") {
+          return (
+            post.title?.toLowerCase().includes(value) ||
+            post.nickname?.toLowerCase().includes(value)
+          );
+        }
 
         if (searchType === "title") {
           return post.title?.toLowerCase().includes(value);
@@ -90,6 +112,69 @@ const StockCommunityPage = ({
         return true;
       });
   }, [posts, recommendFilter, searchType, keyword]);
+
+  const noticePosts = useMemo(() => {
+    return filteredPosts.filter((post) => post.isNotice);
+  }, [filteredPosts]);
+
+  const normalPosts = useMemo(() => {
+    return filteredPosts.filter((post) => !post.isNotice);
+  }, [filteredPosts]);
+
+  const getRowStyle = (post) => {
+    if (post.isNotice) {
+      return {
+        ...styles.tr,
+        ...styles.noticeRow,
+      };
+    }
+
+    if ((post.likeCount ?? 0) >= 5) {
+      return {
+        ...styles.tr,
+        ...styles.popularRow,
+      };
+    }
+
+    return styles.tr;
+  };
+
+  const renderPostRow = (post) => (
+    <tr
+      key={post.postId}
+      style={getRowStyle(post)}
+      onClick={() => onSelectPost?.(post.postId)}
+    >
+      <td style={styles.td}>{post.postId}</td>
+      <td style={{ ...styles.td, textAlign: "left" }}>
+        <span
+          style={{
+            ...styles.titleCell,
+            ...(post.isNotice ? styles.noticeTitle : {}),
+            ...((post.likeCount ?? 0) >= 5 && !post.isNotice
+              ? styles.popularTitle
+              : {}),
+          }}
+        >
+          {post.isNotice && <span style={styles.noticeBadge}>공지</span>}
+          {post.title}
+          {(post.likeCount ?? 0) >= 5 && !post.isNotice && (
+            <span style={styles.popularBadge}>인기</span>
+          )}
+          <span style={styles.commentCount}>[{post.commentCount ?? 0}]</span>
+        </span>
+      </td>
+      <td style={styles.td}>
+        <span style={styles.nickname}>
+          {post.nickname}
+          {post.hasBoughtStock ? "★" : ""}
+        </span>
+      </td>
+      <td style={styles.td}>{formatDateTime(post.createdAt)}</td>
+      <td style={styles.td}>{post.viewCount ?? 0}</td>
+      <td style={styles.td}>{post.likeCount ?? 0}</td>
+    </tr>
+  );
 
   if (!symbol) {
     return (
@@ -130,7 +215,9 @@ const StockCommunityPage = ({
         </div>
 
         <div style={styles.heroRight}>
-          <div style={styles.heroSymbol}>{stockInfo?.stockCode || stockInfo?.symbol || symbol}</div>
+          <div style={styles.heroSymbol}>
+            {stockInfo?.stockCode || stockInfo?.symbol || symbol}
+          </div>
           <div style={styles.heroPrice}>
             {stockInfo?.currentPrice
               ? `${Number(stockInfo.currentPrice).toLocaleString("ko-KR")}원`
@@ -139,8 +226,7 @@ const StockCommunityPage = ({
           <div
             style={{
               ...styles.heroChange,
-              color:
-                Number(stockInfo?.changeRate) >= 0 ? "#e03131" : "#1971c2",
+              color: Number(stockInfo?.changeRate) >= 0 ? "#e03131" : "#1971c2",
             }}
           >
             {stockInfo?.changeRate != null
@@ -162,6 +248,18 @@ const StockCommunityPage = ({
           >
             전체
           </button>
+
+          <button
+            type="button"
+            onClick={() => setRecommendFilter("notice")}
+            style={{
+              ...styles.filterButton,
+              ...(recommendFilter === "notice" ? styles.filterButtonActive : {}),
+            }}
+          >
+            공지
+          </button>
+
           <button
             type="button"
             onClick={() => setRecommendFilter("5")}
@@ -172,6 +270,7 @@ const StockCommunityPage = ({
           >
             5추+
           </button>
+
           <button
             type="button"
             onClick={() => setRecommendFilter("10")}
@@ -223,6 +322,12 @@ const StockCommunityPage = ({
           <span style={styles.postCount}>총 {filteredPosts.length}개</span>
         </div>
 
+        <div style={styles.noticeGuide}>
+          {recommendFilter === "notice"
+            ? "공지사항 전체 목록입니다."
+            : "공지사항은 항상 상단에 최대 3개까지 고정됩니다."}
+        </div>
+
         <div style={styles.tableWrap}>
           <table style={styles.table}>
             <thead>
@@ -242,33 +347,22 @@ const StockCommunityPage = ({
                     게시글이 없습니다.
                   </td>
                 </tr>
+              ) : recommendFilter === "notice" ? (
+                noticePosts.map(renderPostRow)
               ) : (
-                filteredPosts.map((post) => (
-                  <tr
-                    key={post.postId}
-                    style={styles.tr}
-                    onClick={() => onSelectPost?.(post.postId)}
-                  >
-                    <td style={styles.td}>{post.postId}</td>
-                    <td style={{ ...styles.td, textAlign: "left" }}>
-                      <span style={styles.titleCell}>
-                        {post.title}
-                        <span style={styles.commentCount}>
-                          [{post.commentCount ?? 0}]
-                        </span>
-                      </span>
-                    </td>
-                    <td style={styles.td}>
-                      <span style={styles.nickname}>
-                        {post.nickname}
-                        {post.hasBoughtStock ? "★" : ""}
-                      </span>
-                    </td>
-                    <td style={styles.td}>{formatDateTime(post.createdAt)}</td>
-                    <td style={styles.td}>{post.viewCount ?? 0}</td>
-                    <td style={styles.td}>{post.likeCount ?? 0}</td>
-                  </tr>
-                ))
+                <>
+                  {noticePosts.length > 0 && noticePosts.map(renderPostRow)}
+
+                  {normalPosts.length > 0 && (
+                    <tr>
+                      <td colSpan="6" style={styles.dividerCell}>
+                        일반 게시글
+                      </td>
+                    </tr>
+                  )}
+
+                  {normalPosts.map(renderPostRow)}
+                </>
               )}
             </tbody>
           </table>
@@ -278,7 +372,10 @@ const StockCommunityPage = ({
           <button type="button" style={styles.pageButton}>
             {"<"}
           </button>
-          <button type="button" style={{ ...styles.pageButton, ...styles.pageButtonActive }}>
+          <button
+            type="button"
+            style={{ ...styles.pageButton, ...styles.pageButtonActive }}
+          >
             1
           </button>
           <button type="button" style={styles.pageButton}>
@@ -441,7 +538,7 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     gap: "12px",
-    marginBottom: "14px",
+    marginBottom: "10px",
   },
   sectionTitle: {
     margin: 0,
@@ -452,6 +549,16 @@ const styles = {
   postCount: {
     fontSize: "14px",
     color: "#6b7280",
+    fontWeight: "700",
+  },
+  noticeGuide: {
+    marginBottom: "14px",
+    fontSize: "13px",
+    color: "#92400e",
+    background: "#fff7ed",
+    border: "1px solid #fed7aa",
+    borderRadius: "10px",
+    padding: "10px 12px",
     fontWeight: "700",
   },
   tableWrap: {
@@ -479,6 +586,12 @@ const styles = {
     cursor: "pointer",
     borderBottom: "1px solid #f1f5f9",
   },
+  noticeRow: {
+    background: "#fff7e6",
+  },
+  popularRow: {
+    background: "#f8fbff",
+  },
   td: {
     padding: "15px 12px",
     fontSize: "14px",
@@ -490,6 +603,35 @@ const styles = {
     fontWeight: "700",
     color: "#111827",
   },
+  noticeTitle: {
+    fontWeight: "800",
+    color: "#d9480f",
+  },
+  popularTitle: {
+    fontWeight: "800",
+    color: "#1d4ed8",
+    fontSize: "15px",
+  },
+  noticeBadge: {
+    display: "inline-block",
+    marginRight: "8px",
+    padding: "2px 8px",
+    borderRadius: "999px",
+    background: "#fff0d9",
+    color: "#d9480f",
+    fontSize: "12px",
+    fontWeight: "800",
+  },
+  popularBadge: {
+    display: "inline-block",
+    marginLeft: "8px",
+    padding: "2px 8px",
+    borderRadius: "999px",
+    background: "#e7f0ff",
+    color: "#1d4ed8",
+    fontSize: "12px",
+    fontWeight: "800",
+  },
   commentCount: {
     marginLeft: "6px",
     color: "#2563eb",
@@ -498,6 +640,16 @@ const styles = {
   nickname: {
     fontWeight: "700",
     color: "#374151",
+  },
+  dividerCell: {
+    background: "#f8fafc",
+    color: "#64748b",
+    fontWeight: "800",
+    fontSize: "12px",
+    textAlign: "left",
+    padding: "10px 14px",
+    borderTop: "1px solid #e5e7eb",
+    borderBottom: "1px solid #e5e7eb",
   },
   emptyTableCell: {
     textAlign: "center",

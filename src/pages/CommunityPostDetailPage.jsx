@@ -14,6 +14,7 @@ const CommunityPostDetailPage = ({
   const [editForm, setEditForm] = useState({
     title: "",
     content: "",
+    isNotice: false,
   });
 
   const [isLiking, setIsLiking] = useState(false);
@@ -47,8 +48,21 @@ const CommunityPostDetailPage = ({
     }
   };
 
+  const increaseViewCount = async () => {
+    if (!postId) return;
+
+    try {
+      await fetch(`http://localhost:8081/api/community/posts/${postId}/view`, {
+        method: "POST",
+      });
+    } catch (error) {
+      console.error("조회수 증가 오류:", error);
+    }
+  };
+
   useEffect(() => {
     fetchPostDetail();
+    increaseViewCount();
   }, [postId]);
 
   useEffect(() => {
@@ -56,6 +70,7 @@ const CommunityPostDetailPage = ({
       setEditForm({
         title: postDetail.title || "",
         content: postDetail.content || "",
+        isNotice: !!postDetail.isNotice,
       });
     }
   }, [postDetail]);
@@ -63,6 +78,11 @@ const CommunityPostDetailPage = ({
   const canManagePost = useMemo(() => {
     if (!currentUser || !postDetail) return false;
     return currentUser.role === "admin" || currentUser.userId === postDetail.userId;
+  }, [currentUser, postDetail]);
+
+  const isMyPost = useMemo(() => {
+    if (!currentUser || !postDetail) return false;
+    return currentUser.userId === postDetail.userId;
   }, [currentUser, postDetail]);
 
   const canDeleteComment = (commentUserId) => {
@@ -86,6 +106,11 @@ const CommunityPostDetailPage = ({
   const handleLikePost = async () => {
     if (!isLoggedIn || !currentUser?.userId) {
       alert("로그인 후 추천할 수 있습니다.");
+      return;
+    }
+
+    if (isMyPost) {
+      alert("본인 글은 추천할 수 없습니다.");
       return;
     }
 
@@ -186,10 +211,10 @@ const CommunityPostDetailPage = ({
   };
 
   const handleEditChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setEditForm((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -197,6 +222,7 @@ const CommunityPostDetailPage = ({
     setEditForm({
       title: postDetail?.title || "",
       content: postDetail?.content || "",
+      isNotice: !!postDetail?.isNotice,
     });
     setIsEditMode(true);
   };
@@ -205,6 +231,7 @@ const CommunityPostDetailPage = ({
     setEditForm({
       title: postDetail?.title || "",
       content: postDetail?.content || "",
+      isNotice: !!postDetail?.isNotice,
     });
     setIsEditMode(false);
   };
@@ -239,6 +266,7 @@ const CommunityPostDetailPage = ({
           body: JSON.stringify({
             title: editForm.title.trim(),
             content: editForm.content.trim(),
+            isNotice: editForm.isNotice,
           }),
         }
       );
@@ -374,6 +402,7 @@ const CommunityPostDetailPage = ({
           <span style={styles.stockBadge}>
             {postDetail.stockName || postDetail.stockCode || "종목 커뮤니티"}
           </span>
+          {postDetail.isNotice && <span style={styles.noticeBadge}>공지</span>}
         </div>
 
         {isEditMode ? (
@@ -386,6 +415,18 @@ const CommunityPostDetailPage = ({
               placeholder="제목을 입력하세요."
               style={styles.titleInput}
             />
+
+            {currentUser?.role === "admin" && (
+              <label style={styles.noticeCheckWrap}>
+                <input
+                  type="checkbox"
+                  name="isNotice"
+                  checked={editForm.isNotice}
+                  onChange={handleEditChange}
+                />
+                공지글로 등록
+              </label>
+            )}
 
             <div style={styles.metaRow}>
               <span style={styles.nickname}>
@@ -427,7 +468,10 @@ const CommunityPostDetailPage = ({
           </>
         ) : (
           <>
-            <h1 style={styles.title}>{postDetail.title}</h1>
+            <h1 style={styles.title}>
+              {postDetail.isNotice && <span style={styles.noticeTitlePrefix}>[공지] </span>}
+              {postDetail.title}
+            </h1>
 
             <div style={styles.metaRow}>
               <span style={styles.nickname}>
@@ -444,13 +488,17 @@ const CommunityPostDetailPage = ({
               <button
                 type="button"
                 onClick={handleLikePost}
-                disabled={!isLoggedIn || postDetail.likedByCurrentUser || isLiking}
+                disabled={!isLoggedIn || postDetail.likedByCurrentUser || isLiking || isMyPost}
                 style={{
                   ...styles.likeButton,
-                  ...(postDetail.likedByCurrentUser ? styles.likeButtonDisabled : {}),
+                  ...((postDetail.likedByCurrentUser || isMyPost) ? styles.likeButtonDisabled : {}),
                 }}
               >
-                {postDetail.likedByCurrentUser ? "추천 완료" : "👍 추천하기"}
+                {isMyPost
+                  ? "내 글은 추천 불가"
+                  : postDetail.likedByCurrentUser
+                  ? "추천 완료"
+                  : "👍 추천하기"}
               </button>
             </div>
 
@@ -563,6 +611,10 @@ const styles = {
   },
   stockBadgeWrap: {
     marginBottom: "12px",
+    display: "flex",
+    gap: "8px",
+    alignItems: "center",
+    flexWrap: "wrap",
   },
   stockBadge: {
     display: "inline-block",
@@ -571,6 +623,19 @@ const styles = {
     background: "#eef2ff",
     color: "#4c6ef5",
     fontSize: "12px",
+    fontWeight: "800",
+  },
+  noticeBadge: {
+    display: "inline-block",
+    padding: "6px 12px",
+    borderRadius: "999px",
+    background: "#fff0d9",
+    color: "#d9480f",
+    fontSize: "12px",
+    fontWeight: "800",
+  },
+  noticeTitlePrefix: {
+    color: "#d9480f",
     fontWeight: "800",
   },
   title: {
@@ -591,6 +656,15 @@ const styles = {
     fontWeight: "700",
     marginBottom: "14px",
     outline: "none",
+  },
+  noticeCheckWrap: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    marginBottom: "14px",
+    fontSize: "14px",
+    fontWeight: "700",
+    color: "#374151",
   },
   metaRow: {
     display: "flex",
