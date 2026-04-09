@@ -20,6 +20,9 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   const [accountData, setAccountData] = useState(null);
   const [detailTab, setDetailTab] = useState("trade");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+  const [alertTargetPrice, setAlertTargetPrice] = useState(0);
+  const [alertDirection, setAlertDirection] = useState("ABOVE"); // ABOVE or BELOW
 
   useEffect(() => {
     if (stock) {
@@ -29,8 +32,39 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
       } else if (targetPrice === 0) {
         setTargetPrice(price);
       }
+      if (alertTargetPrice === 0) setAlertTargetPrice(price);
     }
-  }, [stock, orderType, targetPrice]);
+  }, [stock, orderType, targetPrice, alertTargetPrice]);
+
+  const handleCreateAlert = async () => {
+    const token = localStorage.getItem("accessToken") || user?.token;
+    if (!user || !token) {
+        alert("로그인이 필요합니다.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`http://localhost:8081/api/price-alerts/${user.id || user.userId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                stockId: stock.id || stock.stockId || 1, // Ensure various ID field names are handled
+                targetPrice: alertTargetPrice,
+                direction: alertDirection
+            }),
+        });
+
+        if (!response.ok) throw new Error("알림 설정 실패");
+
+        alert(`[${stock.name}] ${alertTargetPrice.toLocaleString()}원 ${alertDirection === "ABOVE" ? "이상" : "이하"} 도달 시 알림이 설정되었습니다.`);
+        setIsAlertModalOpen(false);
+    } catch (err) {
+        alert(err.message);
+    }
+  };
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -197,10 +231,30 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   return (
     <div className="stock-detail-content">
       <div className="stock-detail-header">
-        <div className="price-section">
+        <div className="price-section" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <span className="price-big">
             {cleanNumber(stock.currentPrice).toLocaleString()}원
           </span>
+          <button 
+            className="alert-setup-btn"
+            onClick={() => setIsAlertModalOpen(true)}
+            style={{
+              background: '#f3f4f6',
+              border: 'none',
+              borderRadius: '50%',
+              width: '36px',
+              height: '36px',
+              cursor: 'pointer',
+              fontSize: '18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s'
+            }}
+            title="목표가 알림 설정"
+          >
+            🔔
+          </button>
           <div
             className={`price-change ${
               parseFloat(stock.changeRate || 0) >= 0 ? "up" : "down"
@@ -214,6 +268,65 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
           거래량: {cleanNumber(stock.volume).toLocaleString()}
         </div>
       </div>
+
+      {isAlertModalOpen && (
+        <div className="alert-modal-overlay" style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000
+        }}>
+            <div className="alert-modal" style={{
+                background: '#fff',
+                padding: '30px',
+                borderRadius: '20px',
+                width: '360px',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+            }}>
+                <h3 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>🔔 목표가 알림 설정</h3>
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#666' }}>목표 가격</label>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <AppInput 
+                            type="number"
+                            value={alertTargetPrice}
+                            onChange={(e) => setAlertTargetPrice(Number(e.target.value))}
+                            fullWidth
+                        />
+                        <span style={{ alignSelf: 'center' }}>원</span>
+                    </div>
+                </div>
+                <div className="form-group" style={{ marginBottom: '25px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#666' }}>알림 조건</label>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                            style={{ 
+                                flex: 1, padding: '10px', borderRadius: '10px', border: alertDirection === 'ABOVE' ? '2px solid #007aff' : '1px solid #ddd',
+                                background: alertDirection === 'ABOVE' ? '#eef6ff' : '#fff', color: alertDirection === 'ABOVE' ? '#007aff' : '#333',
+                                cursor: 'pointer', fontWeight: 'bold'
+                            }}
+                            onClick={() => setAlertDirection('ABOVE')}
+                        >이상 (▲)</button>
+                        <button 
+                            style={{ 
+                                flex: 1, padding: '10px', borderRadius: '10px', border: alertDirection === 'BELOW' ? '2px solid #ff3b30' : '1px solid #ddd',
+                                background: alertDirection === 'BELOW' ? '#fff1f0' : '#fff', color: alertDirection === 'BELOW' ? '#ff3b30' : '#333',
+                                cursor: 'pointer', fontWeight: 'bold'
+                            }}
+                            onClick={() => setAlertDirection('BELOW')}
+                        >이하 (▼)</button>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <AppButton variant="secondary" fullWidth onClick={() => setIsAlertModalOpen(false)}>취소</AppButton>
+                    <AppButton variant="primary" fullWidth onClick={handleCreateAlert}>설정하기</AppButton>
+                </div>
+            </div>
+        </div>
+      )}
 
       <div className="divider" />
 

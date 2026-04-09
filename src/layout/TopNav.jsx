@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import AppButton from "../common/AppButton";
+import useNotifications from "../hooks/useNotifications";
+import NotificationDropdown from "../components/notification/NotificationDropdown";
 
 const menus = [
   { key: "home", label: "홈" },
@@ -15,9 +17,16 @@ const TopNav = ({
   onMovePage,
   isLoggedIn,
   isAdmin,
+  currentUser,
   onOpenLogin,
   onLogout,
 }) => {
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(
+    currentUser?.id || currentUser?.userId
+  );
+
   return (
     <header className="top-nav">
       <div className="top-nav-inner">
@@ -46,7 +55,50 @@ const TopNav = ({
 
         <div className="top-nav-right">
           {isLoggedIn ? (
-            <>
+            <div className="nav-user-actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div className="notification-wrapper" style={{ position: 'relative' }}>
+                <button 
+                  className="notification-trigger" 
+                  onClick={() => setIsNotifOpen(!isNotifOpen)}
+                  style={{ 
+                    background: 'none', 
+                    border: 'none', 
+                    cursor: 'pointer', 
+                    fontSize: '20px', 
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  🔔
+                  {unreadCount > 0 && (
+                    <span className="unread-badge" style={{
+                      position: 'absolute',
+                      top: '-5px',
+                      right: '-5px',
+                      background: '#ff3b30',
+                      color: '#fff',
+                      fontSize: '10px',
+                      borderRadius: '50%',
+                      padding: '2px 5px',
+                      minWidth: '15px',
+                      textAlign: 'center'
+                    }}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+                
+                {isNotifOpen && (
+                  <NotificationDropdown 
+                    notifications={notifications}
+                    onMarkAsRead={markAsRead}
+                    onMarkAllAsRead={markAllAsRead}
+                    onClose={() => setIsNotifOpen(false)}
+                  />
+                )}
+              </div>
+
               {isAdmin ? (
                 <AppButton
                   variant="primary"
@@ -59,7 +111,7 @@ const TopNav = ({
               <AppButton variant="danger" onClick={onLogout}>
                 로그아웃
               </AppButton>
-            </>
+            </div>
           ) : (
             <AppButton variant="primary" onClick={onOpenLogin}>
               로그인
