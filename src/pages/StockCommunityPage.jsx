@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 
+const PAGE_SIZE = 10;
+
 const StockCommunityPage = ({
   symbol,
   currentUser,
@@ -15,6 +17,7 @@ const StockCommunityPage = ({
   const [searchType, setSearchType] = useState("title");
   const [keyword, setKeyword] = useState("");
   const [recommendFilter, setRecommendFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchData = async () => {
     if (!symbol) return;
@@ -40,10 +43,12 @@ const StockCommunityPage = ({
 
       setStockInfo(stockData);
       setPosts(Array.isArray(postData) ? postData : []);
+      setCurrentPage(1);
     } catch (e) {
       console.error(e);
       setStockInfo(null);
       setPosts([]);
+      setCurrentPage(1);
     } finally {
       setLoading(false);
     }
@@ -52,6 +57,10 @@ const StockCommunityPage = ({
   useEffect(() => {
     fetchData();
   }, [symbol]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [recommendFilter, searchType, keyword]);
 
   const formatDateTime = (value) => {
     if (!value) return "-";
@@ -71,22 +80,18 @@ const StockCommunityPage = ({
       .filter((post) => {
         const likeCount = post.likeCount ?? 0;
 
-        // 공지 전용 탭
         if (recommendFilter === "notice") {
           return post.isNotice;
         }
 
-        // 5추: 공지 제외
         if (recommendFilter === "5") {
           return !post.isNotice && likeCount >= 5;
         }
 
-        // 10추: 공지 제외
         if (recommendFilter === "10") {
           return !post.isNotice && likeCount >= 10;
         }
 
-        // 전체: 공지 + 일반글
         return true;
       })
       .filter((post) => {
@@ -120,6 +125,36 @@ const StockCommunityPage = ({
   const normalPosts = useMemo(() => {
     return filteredPosts.filter((post) => !post.isNotice);
   }, [filteredPosts]);
+
+  const totalPages = useMemo(() => {
+    if (recommendFilter === "notice") return 1;
+    return Math.max(1, Math.ceil(normalPosts.length / PAGE_SIZE));
+  }, [recommendFilter, normalPosts]);
+
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
+  const paginatedNormalPosts = useMemo(() => {
+    if (recommendFilter === "notice") return [];
+    const startIndex = (safeCurrentPage - 1) * PAGE_SIZE;
+    const endIndex = startIndex + PAGE_SIZE;
+    return normalPosts.slice(startIndex, endIndex);
+  }, [recommendFilter, normalPosts, safeCurrentPage]);
+
+  const pageNumbers = useMemo(() => {
+    if (recommendFilter === "notice") return [1];
+
+    const pages = [];
+    for (let i = 1; i <= totalPages; i += 1) {
+      pages.push(i);
+    }
+    return pages;
+  }, [recommendFilter, totalPages]);
+
+  const getTotalDisplayCount = () => {
+    if (recommendFilter === "notice") return noticePosts.length;
+    if (recommendFilter === "all") return noticePosts.length + normalPosts.length;
+    return normalPosts.length;
+  };
 
   const getRowStyle = (post) => {
     if (post.isNotice) {
@@ -313,19 +348,29 @@ const StockCommunityPage = ({
           >
             글쓰기
           </button>
+          <button
+  type="button"
+  onClick={() => {
+    fetchData();
+    setCurrentPage(1);
+  }}
+  style={styles.refreshButton}
+>
+  새로고침
+</button>
         </div>
       </div>
 
       <div style={styles.listCard}>
         <div style={styles.listHeaderRow}>
           <h3 style={styles.sectionTitle}>게시글 목록</h3>
-          <span style={styles.postCount}>총 {filteredPosts.length}개</span>
+          <span style={styles.postCount}>총 {getTotalDisplayCount()}개</span>
         </div>
 
         <div style={styles.noticeGuide}>
           {recommendFilter === "notice"
             ? "공지사항 전체 목록입니다."
-            : "공지사항은 항상 상단에 최대 3개까지 고정됩니다."}
+            : "공지사항은 항상 상단에 최대 3개까지 고정되며, 일반 게시글만 10개씩 페이지 처리됩니다."}
         </div>
 
         <div style={styles.tableWrap}>
@@ -341,19 +386,29 @@ const StockCommunityPage = ({
               </tr>
             </thead>
             <tbody>
-              {filteredPosts.length === 0 ? (
+              {recommendFilter === "notice" ? (
+                noticePosts.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" style={styles.emptyTableCell}>
+                      게시글이 없습니다.
+                    </td>
+                  </tr>
+                ) : (
+                  noticePosts.map(renderPostRow)
+                )
+              ) : noticePosts.length === 0 && paginatedNormalPosts.length === 0 ? (
                 <tr>
                   <td colSpan="6" style={styles.emptyTableCell}>
                     게시글이 없습니다.
                   </td>
                 </tr>
-              ) : recommendFilter === "notice" ? (
-                noticePosts.map(renderPostRow)
               ) : (
                 <>
-                  {noticePosts.length > 0 && noticePosts.map(renderPostRow)}
+                  {recommendFilter === "all" &&
+                    noticePosts.length > 0 &&
+                    noticePosts.map(renderPostRow)}
 
-                  {normalPosts.length > 0 && (
+                  {paginatedNormalPosts.length > 0 && (
                     <tr>
                       <td colSpan="6" style={styles.dividerCell}>
                         일반 게시글
@@ -361,30 +416,52 @@ const StockCommunityPage = ({
                     </tr>
                   )}
 
-                  {normalPosts.map(renderPostRow)}
+                  {paginatedNormalPosts.map(renderPostRow)}
                 </>
               )}
             </tbody>
           </table>
         </div>
 
-        <div style={styles.pagination}>
-          <button type="button" style={styles.pageButton}>
-            {"<"}
-          </button>
-          <button
-            type="button"
-            style={{ ...styles.pageButton, ...styles.pageButtonActive }}
-          >
-            1
-          </button>
-          <button type="button" style={styles.pageButton}>
-            2
-          </button>
-          <button type="button" style={styles.pageButton}>
-            {">"}
-          </button>
-        </div>
+        {recommendFilter !== "notice" && totalPages > 1 && (
+          <div style={styles.pagination}>
+            <button
+              type="button"
+              style={styles.pageButton}
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={safeCurrentPage === 1}
+            >
+              {"<"}
+            </button>
+
+            {pageNumbers.map((pageNumber) => (
+              <button
+                key={pageNumber}
+                type="button"
+                onClick={() => setCurrentPage(pageNumber)}
+                style={{
+                  ...styles.pageButton,
+                  ...(safeCurrentPage === pageNumber
+                    ? styles.pageButtonActive
+                    : {}),
+                }}
+              >
+                {pageNumber}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              style={styles.pageButton}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+              }
+              disabled={safeCurrentPage === totalPages}
+            >
+              {">"}
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -662,6 +739,7 @@ const styles = {
     justifyContent: "center",
     gap: "8px",
     marginTop: "18px",
+    flexWrap: "wrap",
   },
   pageButton: {
     minWidth: "36px",
@@ -698,6 +776,16 @@ const styles = {
     color: "#6b7280",
     lineHeight: "1.6",
   },
+  refreshButton: {
+  padding: "10px 16px",
+  borderRadius: "10px",
+  border: "1px solid #d1d5db",
+  background: "#fff",
+  color: "#111827",
+  cursor: "pointer",
+  fontWeight: "700",
+  fontSize: "14px",
+},
 };
 
 export default StockCommunityPage;
