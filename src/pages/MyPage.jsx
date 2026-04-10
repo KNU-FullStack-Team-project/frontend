@@ -18,8 +18,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     }
 
     try {
-      const token =
-        localStorage.getItem("accessToken") || currentUser?.token;
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
 
       if (!token) {
         setError("로그인 토큰이 없습니다. 다시 로그인해주세요.");
@@ -41,7 +40,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
             `http://localhost:8081/api/accounts/my/dashboard?${params.toString()}`,
             {
               headers: commonHeaders,
-            }
+            },
           ),
           fetch(`http://localhost:8081/api/accounts/my?${params.toString()}`, {
             headers: commonHeaders,
@@ -93,8 +92,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     setResettingAccountId(accountId);
 
     try {
-      const token =
-        localStorage.getItem("accessToken") || currentUser?.token;
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
 
       if (!token) {
         throw new Error("로그인 토큰이 없습니다. 다시 로그인해주세요.");
@@ -107,7 +105,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -130,6 +128,9 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   const createdAtText = profile?.createdAt?.includes("T")
     ? profile.createdAt.split("T")[0]
     : profile?.createdAt?.slice(0, 10) || "-";
+
+  const visibleHoldings =
+    dashboard?.holdings?.filter((h) => h.quantity > 0) || [];
 
   return (
     <div className="mypage-container">
@@ -232,7 +233,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
               </tr>
             </thead>
             <tbody>
-              {!dashboard?.holdings || dashboard.holdings.length === 0 ? (
+              {visibleHoldings.length === 0 ? (
                 <tr>
                   <td
                     colSpan="5"
@@ -246,7 +247,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                   </td>
                 </tr>
               ) : (
-                dashboard.holdings.map((item, index) => (
+                visibleHoldings.map((item, index) => (
                   <tr key={`${item.stockName}-${index}`}>
                     <td>{item.stockName}</td>
                     <td>{item.quantity?.toLocaleString()}주</td>

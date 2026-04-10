@@ -92,6 +92,9 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
     return <div className="dashboard-grid">데이터를 불러오는 중...</div>;
   }
 
+  const visibleHoldings =
+    accountData?.holdings?.filter((h) => h.quantity > 0) || [];
+
   return (
     <div className="dashboard-grid">
       <InfoCard title="총 자산" value={accountData?.totalAsset || "₩0"} />
@@ -162,8 +165,8 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
             </tr>
           </thead>
           <tbody>
-            {accountData?.holdings && accountData.holdings.length > 0 ? (
-              accountData.holdings.map((h, i) => (
+            {visibleHoldings.length > 0 ? (
+              visibleHoldings.map((h, i) => (
                 <tr key={i}>
                   <td>{h.stockName}</td>
                   <td>{h.quantity}주</td>
