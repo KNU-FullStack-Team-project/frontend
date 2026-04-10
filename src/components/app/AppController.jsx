@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 
 import HomePage from "../../pages/HomePage";
 import StockPage from "../../pages/StockPage";
@@ -58,6 +58,51 @@ const AppController = () => {
   const [selectedCommunityPostId, setSelectedCommunityPostId] = useState(null);
   const [authMode, setAuthMode] = useState("login");
 
+  // --- 자동 로그아웃 (인액티비티 타이머) 로직 ---
+  const inactivityTimerRef = useRef(null);
+  const autoLogoutTimeoutRef = useRef(null);
+
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+
+    if (isLoggedIn) {
+      // 활동이 감지되면 인액티비티 타이머 리셋 (30분)
+      inactivityTimerRef.current = setTimeout(
+        () => {
+          alert(
+            "30분 동안 활동이 없어 보안을 위해 자동으로 로그아웃되었습니다.",
+          );
+          handleLogout();
+        },
+        30 * 60 * 1000,
+      ); // 30분
+    }
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    const activityEvents = [
+      "mousemove",
+      "mousedown",
+      "keydown",
+      "scroll",
+      "touchstart",
+    ];
+
+    if (isLoggedIn) {
+      resetInactivityTimer();
+      activityEvents.forEach((event) =>
+        window.addEventListener(event, resetInactivityTimer),
+      );
+    }
+
+    return () => {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+      activityEvents.forEach((event) =>
+        window.removeEventListener(event, resetInactivityTimer),
+      );
+    };
+  }, [isLoggedIn, resetInactivityTimer]);
+
   useEffect(() => {
     const savedUser = localStorage.getItem("currentUser");
     const savedToken = localStorage.getItem("accessToken");
@@ -102,6 +147,10 @@ const AppController = () => {
   };
 
   const setupAutoLogout = (token) => {
+    // 기존에 예약된 로그아웃 타이머가 있다면 제거 (중복 방지)
+    if (autoLogoutTimeoutRef.current)
+      clearTimeout(autoLogoutTimeoutRef.current);
+
     try {
       if (!token || token.split(".").length !== 3) return;
       const base64Url = token.split(".")[1];
@@ -110,7 +159,7 @@ const AppController = () => {
       const remainingTime = payload.exp * 1000 - Date.now();
 
       if (remainingTime > 0) {
-        setTimeout(() => {
+        autoLogoutTimeoutRef.current = setTimeout(() => {
           alert("세션이 만료되어 자동으로 로그아웃되었습니다.");
           handleLogout();
         }, remainingTime);
@@ -119,6 +168,46 @@ const AppController = () => {
       console.error("자동 로그아웃 설정 오류:", e);
     }
   };
+
+  const handleUpdateCurrentUser = useCallback((updates) => {
+    setCurrentUser((prev) => {
+      if (!prev) return prev;
+      const nextUser = { ...prev, ...updates };
+      localStorage.setItem("currentUser", JSON.stringify(nextUser));
+      return nextUser;
+    });
+  }, []);
+
+  // 주식 상세창 등에서 호출할 하트비트 (세션 연장) 로직
+  const handleHeartbeat = useCallback(async () => {
+    if (!isLoggedIn || !currentUser) return;
+
+    // 1. 프론트엔드 미활동 타이머(30분) 리셋
+    resetInactivityTimer();
+
+    // 2. 백엔드 토큰 만료 연장
+    try {
+      const currentToken =
+        localStorage.getItem("accessToken") || currentUser?.token;
+      const res = await fetch("http://localhost:8081/users/refresh", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentToken}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("accessToken", data.token);
+        handleUpdateCurrentUser({ token: data.token });
+        setupAutoLogout(data.token);
+        console.log("Heartbeat: Backend session extended.");
+      }
+    } catch (e) {
+      console.error("Heartbeat backend sync failed:", e);
+    }
+  }, [isLoggedIn, currentUser, resetInactivityTimer, handleUpdateCurrentUser]);
 
   const handleLogin = async (form) => {
     try {
@@ -213,14 +302,14 @@ const AppController = () => {
             {
               method: "POST",
               body: profileFormData,
-            }
+            },
           );
 
           if (!imageResponse.ok) {
             const imageError = await imageResponse.text();
             alert(
               imageError ||
-                "회원가입은 완료됐지만 프로필 사진 저장에 실패했습니다."
+                "회원가입은 완료됐지만 프로필 사진 저장에 실패했습니다.",
             );
           }
         }
@@ -247,15 +336,6 @@ const AppController = () => {
     setSelectedMyPageUser(null);
     setSelectedCommunitySymbol(null);
     setSelectedCommunityPostId(null);
-  };
-
-  const handleUpdateCurrentUser = (updates) => {
-    setCurrentUser((prev) => {
-      if (!prev) return prev;
-      const nextUser = { ...prev, ...updates };
-      localStorage.setItem("currentUser", JSON.stringify(nextUser));
-      return nextUser;
-    });
   };
 
   const handleViewRanking = (competitionId, status) => {
@@ -352,7 +432,7 @@ const AppController = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       const text = await res.text();
@@ -394,17 +474,17 @@ const AppController = () => {
   };
   ///////////////
   const handleOpenCommunityWritePage = () => {
-  setCurrentPage("communityPostWrite");
-};
+    setCurrentPage("communityPostWrite");
+  };
 
-const handleBackToCommunityListFromWrite = () => {
-  setCurrentPage("stockCommunity");
-};
+  const handleBackToCommunityListFromWrite = () => {
+    setCurrentPage("stockCommunity");
+  };
 
-const handleCommunityPostCreated = () => {
-  setCurrentPage("stockCommunity");
-};
-//////////
+  const handleCommunityPostCreated = () => {
+    setCurrentPage("stockCommunity");
+  };
+  //////////
 
   if (currentPage === "auth") {
     return (
@@ -427,6 +507,7 @@ const handleCommunityPostCreated = () => {
             isLoggedIn={isLoggedIn}
             user={currentUser}
             onOpenCommunity={handleMoveToStockCommunity}
+            onActivity={handleHeartbeat}
           />
         );
 
@@ -484,21 +565,19 @@ const handleCommunityPostCreated = () => {
 
       case "community":
         return (
-          <CommunityPage
-            onSelectStockCommunity={handleMoveToStockCommunity}
-          />
+          <CommunityPage onSelectStockCommunity={handleMoveToStockCommunity} />
         );
 
       case "stockCommunity":
         return (
           <StockCommunityPage
-  symbol={selectedCommunitySymbol}
-  currentUser={currentUser}
-  isLoggedIn={isLoggedIn}
-  onBack={handleBackToCommunityMain}
-  onSelectPost={handleOpenCommunityPostDetail}
-  onWritePost={handleOpenCommunityWritePage}
-/>
+            symbol={selectedCommunitySymbol}
+            currentUser={currentUser}
+            isLoggedIn={isLoggedIn}
+            onBack={handleBackToCommunityMain}
+            onSelectPost={handleOpenCommunityPostDetail}
+            onWritePost={handleOpenCommunityWritePage}
+          />
         );
 
       case "communityPostDetail":
@@ -552,16 +631,16 @@ const handleCommunityPostCreated = () => {
             currentUser={currentUser}
           />
         );
-        case "communityPostWrite":
-  return (
-    <CommunityPostWritePage
-      symbol={selectedCommunitySymbol}
-      currentUser={currentUser}
-      isLoggedIn={isLoggedIn}
-      onBack={handleBackToCommunityListFromWrite}
-      onSuccess={handleCommunityPostCreated}
-    />
-  );
+      case "communityPostWrite":
+        return (
+          <CommunityPostWritePage
+            symbol={selectedCommunitySymbol}
+            currentUser={currentUser}
+            isLoggedIn={isLoggedIn}
+            onBack={handleBackToCommunityListFromWrite}
+            onSuccess={handleCommunityPostCreated}
+          />
+        );
     }
   };
 
