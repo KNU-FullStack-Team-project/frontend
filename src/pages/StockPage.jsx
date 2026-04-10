@@ -3,7 +3,14 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Modal from "../common/Modal";
 import StockDetail from "../components/stock/StockDetail";
 
-const StockRow = ({ stock, index, favorites, toggleFavorite, handleStockClick, getTradingAmountLabel }) => {
+const StockRow = ({
+  stock,
+  index,
+  favorites,
+  toggleFavorite,
+  handleStockClick,
+  getTradingAmountLabel,
+}) => {
   const [localStock, setLocalStock] = useState(stock);
   const rowRef = useRef(null);
 
@@ -31,7 +38,7 @@ const StockRow = ({ stock, index, favorites, toggleFavorite, handleStockClick, g
           observer.disconnect();
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     const currentRef = rowRef.current;
@@ -65,21 +72,25 @@ const StockRow = ({ stock, index, favorites, toggleFavorite, handleStockClick, g
       </div>
 
       <div className="stock-price-section">
-        {localStock.currentPrice === "0" 
-          ? <span style={{ color: "#9ca3af", fontSize: "12px" }}>조회 중...</span>
-          : `${parseInt(localStock.currentPrice).toLocaleString()}원`}
+        {localStock.currentPrice === "0" ? (
+          <span style={{ color: "#9ca3af", fontSize: "12px" }}>조회 중...</span>
+        ) : (
+          `${parseInt(localStock.currentPrice).toLocaleString()}원`
+        )}
       </div>
 
       <div className="stock-rate-section">
         <span
           className={`rate-text ${
-            localStock.currentPrice === "0" 
-              ? "" 
-              : parseFloat(localStock.changeRate) >= 0 ? "up" : "down"
+            localStock.currentPrice === "0"
+              ? ""
+              : parseFloat(localStock.changeRate) >= 0
+                ? "up"
+                : "down"
           }`}
         >
-          {localStock.currentPrice === "0" 
-            ? "" 
+          {localStock.currentPrice === "0"
+            ? ""
             : `${parseFloat(localStock.changeRate) >= 0 ? "+" : ""}${localStock.changeRate}%`}
         </span>
       </div>
@@ -91,7 +102,7 @@ const StockRow = ({ stock, index, favorites, toggleFavorite, handleStockClick, g
   );
 };
 
-const StockPage = ({ user, onOpenCommunity }) => {
+const StockPage = ({ user, onOpenCommunity, onActivity }) => {
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStock, setSelectedStock] = useState(null);
@@ -116,7 +127,7 @@ const StockPage = ({ user, onOpenCommunity }) => {
     try {
       setLoading(true);
       const response = await fetch(
-        `http://localhost:8081/api/stocks?page=${pageNum}&size=20`
+        `http://localhost:8081/api/stocks?page=${pageNum}&size=20`,
       );
       if (!response.ok) throw new Error("Stock list fetch failed");
 
@@ -128,7 +139,7 @@ const StockPage = ({ user, onOpenCommunity }) => {
         setStocks((prev) => {
           const existingSymbols = new Set(prev.map((s) => s.symbol));
           const newStocks = data.content.filter(
-            (s) => !existingSymbols.has(s.symbol)
+            (s) => !existingSymbols.has(s.symbol),
           );
           return [...prev, ...newStocks];
         });
@@ -155,7 +166,7 @@ const StockPage = ({ user, onOpenCommunity }) => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (response.ok) {
@@ -181,7 +192,7 @@ const StockPage = ({ user, onOpenCommunity }) => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (response.ok) {
@@ -206,8 +217,8 @@ const StockPage = ({ user, onOpenCommunity }) => {
       setIsSearching(true);
       const response = await fetch(
         `http://localhost:8081/api/stocks/search?keyword=${encodeURIComponent(
-          searchKeyword
-        )}`
+          searchKeyword,
+        )}`,
       );
       if (response.ok) {
         const data = await response.json();
@@ -249,6 +260,20 @@ const StockPage = ({ user, onOpenCommunity }) => {
     }
   }, [activeTab, fetchFavoriteDetails]);
 
+  // 주식 상세(그래프) 모달이 열려있을 때 자동 로그아웃 방지 (하트비트)
+  useEffect(() => {
+    let interval;
+    if (isModalOpen && user && onActivity) {
+      // 모달이 열리자마자 한 번 호출하여 타이머 리셋
+      onActivity();
+
+      interval = setInterval(() => {
+        onActivity();
+      }, 30000); // 30초마다 활동 타이머 리셋
+    }
+    return () => clearInterval(interval);
+  }, [isModalOpen, user, onActivity]);
+
   useEffect(() => {
     if (activeTab !== "all") return;
 
@@ -260,7 +285,7 @@ const StockPage = ({ user, onOpenCommunity }) => {
           fetchStocks(nextPage, false);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     const currentTarget = observerTarget.current;
@@ -289,7 +314,7 @@ const StockPage = ({ user, onOpenCommunity }) => {
       setFavorites(newFavs);
       localStorage.setItem(
         "favoriteStocks",
-        JSON.stringify(Array.from(newFavs))
+        JSON.stringify(Array.from(newFavs)),
       );
       alert("로그인이 필요한 기능입니다. (현재는 로컬에만 저장됩니다)");
       return;
@@ -315,7 +340,7 @@ const StockPage = ({ user, onOpenCommunity }) => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -489,8 +514,8 @@ const StockPage = ({ user, onOpenCommunity }) => {
             searchResults !== null
               ? searchResults
               : activeTab === "all"
-              ? stocks
-              : favoriteStocksData;
+                ? stocks
+                : favoriteStocksData;
 
           if (displayedStocks.length === 0) {
             return (
@@ -498,8 +523,8 @@ const StockPage = ({ user, onOpenCommunity }) => {
                 {searchResults !== null
                   ? "검색 결과가 없습니다."
                   : activeTab === "favorites"
-                  ? "관심종목이 없습니다. 별표를 눌러 추가해보세요!"
-                  : "종목 정보를 가져올 수 없습니다."}
+                    ? "관심종목이 없습니다. 별표를 눌러 추가해보세요!"
+                    : "종목 정보를 가져올 수 없습니다."}
               </div>
             );
           }
@@ -525,12 +550,15 @@ const StockPage = ({ user, onOpenCommunity }) => {
           </div>
         )}
 
-        {activeTab === "all" && searchResults === null && !loading && hasMore && (
-          <div
-            ref={observerTarget}
-            style={{ height: "40px", width: "100%" }}
-          ></div>
-        )}
+        {activeTab === "all" &&
+          searchResults === null &&
+          !loading &&
+          hasMore && (
+            <div
+              ref={observerTarget}
+              style={{ height: "40px", width: "100%" }}
+            ></div>
+          )}
 
         {activeTab === "all" &&
           searchResults === null &&
