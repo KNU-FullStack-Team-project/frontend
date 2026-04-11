@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import AppButton from "../common/AppButton";
 import OrderHistory from "../components/stock/OrderHistory";
+import PortfolioChart from "../components/stock/PortfolioChart";
 
 const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   const [profile, setProfile] = useState(null);
@@ -130,7 +131,20 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     : profile?.createdAt?.slice(0, 10) || "-";
 
   const visibleHoldings =
-    dashboard?.holdings?.filter((h) => h.quantity > 0) || [];
+    dashboard?.holdings
+      ?.filter((h) => h.quantity > 0)
+      .sort((a, b) => {
+        const getVal = (item) => {
+          if (item.holdingValueRaw !== undefined && item.holdingValueRaw !== null) {
+            return Number(item.holdingValueRaw);
+          }
+          if (item.holdingValue) {
+            return parseFloat(item.holdingValue.replace(/[^0-9.]/g, "")) || 0;
+          }
+          return 0;
+        };
+        return getVal(b) - getVal(a);
+      }) || [];
 
   return (
     <div className="mypage-container">
@@ -217,50 +231,57 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
       </div>
 
       <div className="content-card large">
-        <h3>보유 종목</h3>
-        <p className="page-desc">
-          현재 계좌에 보유 중인 종목을 확인할 수 있습니다.
-        </p>
-        <div className="table-responsive">
-          <table className="stock-table">
-            <thead>
-              <tr>
-                <th>종목명</th>
-                <th>보유 수량</th>
-                <th>평균 매수가</th>
-                <th>현재가</th>
-                <th>평가금액</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleHoldings.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan="5"
-                    style={{
-                      textAlign: "center",
-                      padding: "40px",
-                      color: "#888",
-                    }}
-                  >
-                    보유 중인 종목이 없습니다.
-                  </td>
-                </tr>
-              ) : (
-                visibleHoldings.map((item, index) => (
-                  <tr key={`${item.stockName}-${index}`}>
-                    <td>{item.stockName}</td>
-                    <td>{item.quantity?.toLocaleString()}주</td>
-                    <td>{item.averageBuyPrice}</td>
-                    <td>{item.currentPrice}</td>
-                    <td>
-                      <strong>{item.holdingValue}</strong>
-                    </td>
+        <div className="portfolio-section-layout">
+          <div className="portfolio-chart-container">
+            <h3>자산 구성 비중</h3>
+            <p className="page-desc">보유 중인 주식 종목별 비중입니다.</p>
+            <PortfolioChart holdings={visibleHoldings} />
+          </div>
+          <div className="portfolio-list-container">
+            <h3>보유 종목 현황</h3>
+            <p className="page-desc">현재 계좌에 보유 중인 종목 리스트입니다.</p>
+            <div className="table-responsive">
+              <table className="stock-table">
+                <thead>
+                  <tr>
+                    <th>종목명</th>
+                    <th>보유 수량</th>
+                    <th>평균 매수가</th>
+                    <th>현재가</th>
+                    <th>평가금액</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {visibleHoldings.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="5"
+                        style={{
+                          textAlign: "center",
+                          padding: "40px",
+                          color: "#888",
+                        }}
+                      >
+                        보유 중인 종목이 없습니다.
+                      </td>
+                    </tr>
+                  ) : (
+                    visibleHoldings.map((item, index) => (
+                      <tr key={`${item.stockName}-${index}`}>
+                        <td>{item.stockName}</td>
+                        <td>{item.quantity?.toLocaleString()}주</td>
+                        <td>{item.averageBuyPrice}</td>
+                        <td>{item.currentPrice}</td>
+                        <td>
+                          <strong>{item.holdingValue}</strong>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 

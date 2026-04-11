@@ -135,6 +135,81 @@ p {
   gap: 20px;
 }
 
+/* 포트폴리오 분석 섹션 레이아웃 */
+.portfolio-section-layout {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.portfolio-chart-container {
+  flex: 1;
+  min-width: 320px;
+  background: var(--bg);
+  padding: 10px;
+}
+
+.portfolio-list-container {
+  flex: 1.5;
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
+  .portfolio-section-layout {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .portfolio-chart-container {
+    width: 100%;
+    min-width: unset;
+  }
+}
+
+.portfolio-chart-wrapper {
+  margin-top: 20px;
+  position: relative;
+}
+
+.custom-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 10px;
+  padding: 0 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legend-name {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.legend-percent {
+  color: #888;
+  font-size: 13px;
+}
+
+.empty-chart-container {
+  margin-top: 20px;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
 .mypage-profile-avatar,
 .profile-image-preview {
   width: 84px;
