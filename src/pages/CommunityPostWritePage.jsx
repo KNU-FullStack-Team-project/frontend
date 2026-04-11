@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import RichTextEditor from "../components/community/RichTextEditor";
 
 const CommunityPostWritePage = ({
   symbol,
@@ -10,12 +11,15 @@ const CommunityPostWritePage = ({
   const [stockInfo, setStockInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
     content: "",
     isNotice: false,
   });
+
+  const [attachedFiles, setAttachedFiles] = useState([]);
 
   const isAdmin = currentUser?.role === "admin";
 
@@ -42,6 +46,13 @@ const CommunityPostWritePage = ({
     fetchStockInfo();
   }, [symbol]);
 
+  const plainContent = useMemo(() => {
+    return (form.content || "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .trim();
+  }, [form.content]);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -49,6 +60,77 @@ const CommunityPostWritePage = ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  const uploadImage = async (file) => {
+    const token = localStorage.getItem("accessToken") || currentUser?.token;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch("http://localhost:8081/api/community/uploads/images", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || "이미지 업로드 실패");
+    }
+
+    return response.json();
+  };
+
+  const handleAttachFiles = async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+
+    if (!files.length) return;
+    if (!isLoggedIn || !currentUser?.userId) {
+      alert("로그인 후 파일을 첨부할 수 있습니다.");
+      return;
+    }
+
+    const token = localStorage.getItem("accessToken") || currentUser?.token;
+
+    try {
+      setUploadingFile(true);
+
+      const uploadedResults = [];
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("http://localhost:8081/api/community/uploads/files", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text || `${file.name} 업로드 실패`);
+        }
+
+        uploadedResults.push(await response.json());
+      }
+
+      setAttachedFiles((prev) => [...prev, ...uploadedResults]);
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "파일 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleRemoveAttachedFile = (attachmentId) => {
+    setAttachedFiles((prev) => prev.filter((file) => file.attachmentId !== attachmentId));
   };
 
   const handleSubmit = async () => {
@@ -62,7 +144,7 @@ const CommunityPostWritePage = ({
       return;
     }
 
-    if (!form.content.trim()) {
+    if (!plainContent) {
       alert("내용을 입력해주세요.");
       return;
     }
@@ -82,8 +164,9 @@ const CommunityPostWritePage = ({
           },
           body: JSON.stringify({
             title: form.title.trim(),
-            content: form.content.trim(),
+            content: form.content,
             isNotice: form.isNotice,
+            attachmentIds: attachedFiles.map((file) => file.attachmentId),
           }),
         }
       );
@@ -115,7 +198,6 @@ const CommunityPostWritePage = ({
         ← 목록으로
       </button>
 
-      {/*  헤더 */}
       <div style={styles.headerCard}>
         <div>
           <div style={styles.badge}>WRITE</div>
@@ -127,7 +209,7 @@ const CommunityPostWritePage = ({
           </p>
 
           <div style={styles.tip}>
-            💡 좋은 글은 더 많은 추천을 받습니다
+            글꼴, 색상, 크기, 정렬, 이미지, 파일 첨부를 사용할 수 있습니다.
           </div>
         </div>
 
@@ -141,9 +223,7 @@ const CommunityPostWritePage = ({
         </div>
       </div>
 
-      {/*  폼 */}
       <div style={styles.formCard}>
-        {/* 제목 */}
         <input
           name="title"
           value={form.title}
@@ -152,7 +232,6 @@ const CommunityPostWritePage = ({
           style={styles.titleInput}
         />
 
-        {/* 관리자 공지 */}
         {isAdmin && (
           <div style={styles.noticeBox}>
             <label>
@@ -167,22 +246,59 @@ const CommunityPostWritePage = ({
           </div>
         )}
 
-        {/* 내용 */}
-        <textarea
-          name="content"
+        <RichTextEditor
           value={form.content}
-          onChange={handleChange}
-          placeholder="내용 입력"
-          style={styles.textarea}
+          onChange={(html) =>
+            setForm((prev) => ({
+              ...prev,
+              content: html,
+            }))
+          }
+          onUploadImage={uploadImage}
+          minHeight={360}
+          placeholder="내용을 입력하세요. 이미지도 본문 안에 삽입할 수 있습니다."
         />
 
-        {/* 버튼 */}
+        <div style={styles.attachSection}>
+          <div style={styles.attachHeader}>
+            <strong>파일 첨부</strong>
+            <label style={styles.attachButton}>
+              파일 선택
+              <input
+                type="file"
+                multiple
+                onChange={handleAttachFiles}
+                style={{ display: "none" }}
+              />
+            </label>
+          </div>
+
+          {uploadingFile && <div style={styles.helperText}>파일 업로드 중...</div>}
+
+          {attachedFiles.length > 0 && (
+            <div style={styles.fileList}>
+              {attachedFiles.map((file) => (
+                <div key={file.attachmentId} style={styles.fileItem}>
+                  <span style={styles.fileName}>{file.originalName}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveAttachedFile(file.attachmentId)}
+                    style={styles.removeFileButton}
+                  >
+                    제거
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div style={styles.btnRow}>
           <button onClick={onBack} style={styles.cancel}>
             취소
           </button>
-          <button onClick={handleSubmit} style={styles.submit}>
-            등록
+          <button onClick={handleSubmit} style={styles.submit} disabled={submitting}>
+            {submitting ? "등록 중..." : "등록"}
           </button>
         </div>
       </div>
@@ -192,19 +308,17 @@ const CommunityPostWritePage = ({
 
 const styles = {
   page: {
-    maxWidth: 1000,
+    maxWidth: 1100,
     margin: "0 auto",
     padding: 30,
     background: "#f8fafc",
   },
-
   backButton: {
     marginBottom: 10,
     border: "none",
     background: "none",
     cursor: "pointer",
   },
-
   headerCard: {
     background: "linear-gradient(135deg, #4874d4, #c6d2e7)",
     color: "white",
@@ -213,80 +327,124 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     marginBottom: 20,
+    gap: 16,
   },
-
   badge: {
     fontSize: 12,
     background: "#4f46e5",
     padding: "4px 10px",
     borderRadius: 20,
     display: "inline-block",
+    marginBottom: 10,
   },
-
   title: {
     fontSize: 28,
     fontWeight: 800,
+    margin: 0,
   },
-
   desc: {
     fontSize: 14,
-    color: "#d1d5db",
+    color: "#dbeafe",
   },
-
   tip: {
     marginTop: 10,
     fontSize: 13,
-    color: "#fbbf24",
+    color: "#fef3c7",
   },
-
   stockBox: {
     textAlign: "right",
   },
-
   formCard: {
     background: "white",
-    padding: 20,
+    padding: 24,
     borderRadius: 20,
+    display: "grid",
+    gap: 16,
   },
-
   titleInput: {
     width: "100%",
     height: 50,
-    marginBottom: 15,
-    padding: 10,
-    borderRadius: 10,
+    padding: 12,
+    borderRadius: 12,
     border: "1px solid #ddd",
+    fontSize: 16,
   },
-
   noticeBox: {
     background: "#fff7ed",
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 15,
+    padding: 12,
+    borderRadius: 12,
   },
-
-  textarea: {
-    width: "100%",
-    height: 250,
-    padding: 10,
-    borderRadius: 10,
-    border: "1px solid #ddd",
+  attachSection: {
+    border: "1px solid #e5e7eb",
+    borderRadius: 14,
+    padding: 16,
+    background: "#fafafa",
   },
-
+  attachHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 10,
+  },
+  attachButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 38,
+    padding: "0 14px",
+    borderRadius: 10,
+    background: "#111827",
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: 14,
+    fontWeight: 700,
+  },
+  helperText: {
+    fontSize: 13,
+    color: "#6b7280",
+  },
+  fileList: {
+    display: "grid",
+    gap: 10,
+    marginTop: 10,
+  },
+  fileItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 10,
+    padding: "10px 12px",
+  },
+  fileName: {
+    fontSize: 14,
+    color: "#111827",
+    wordBreak: "break-all",
+  },
+  removeFileButton: {
+    border: "none",
+    borderRadius: 8,
+    background: "#fee2e2",
+    color: "#b91c1c",
+    padding: "8px 10px",
+    cursor: "pointer",
+    fontWeight: 700,
+  },
   btnRow: {
-    marginTop: 20,
+    marginTop: 4,
     display: "flex",
     justifyContent: "flex-end",
     gap: 10,
   },
-
   cancel: {
     padding: "10px 15px",
     border: "1px solid #ddd",
     borderRadius: 10,
     cursor: "pointer",
   },
-
   submit: {
     padding: "10px 15px",
     background: "#111827",

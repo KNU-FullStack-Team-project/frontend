@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import RichTextEditor from "../components/community/RichTextEditor";
 
 const REPORT_REASON_OPTIONS = [
   { value: "ABUSE", label: "욕설/비방" },
@@ -25,6 +26,8 @@ const CommunityPostDetailPage = ({
     content: "",
     isNotice: false,
   });
+  const [editAttachedFiles, setEditAttachedFiles] = useState([]);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const [isLiking, setIsLiking] = useState(false);
 
@@ -88,6 +91,7 @@ const CommunityPostDetailPage = ({
         content: postDetail.content || "",
         isNotice: !!postDetail.isNotice,
       });
+      setEditAttachedFiles(postDetail.attachments || []);
     }
   }, [postDetail]);
 
@@ -128,6 +132,9 @@ const CommunityPostDetailPage = ({
 
     return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
   };
+
+  const toPlainText = (html) =>
+    (html || "").replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").trim();
 
   const openPostReportModal = () => {
     if (!isLoggedIn || !currentUser?.userId) {
@@ -365,6 +372,7 @@ const CommunityPostDetailPage = ({
       content: postDetail?.content || "",
       isNotice: !!postDetail?.isNotice,
     });
+    setEditAttachedFiles(postDetail?.attachments || []);
     setIsEditMode(true);
   };
 
@@ -374,7 +382,74 @@ const CommunityPostDetailPage = ({
       content: postDetail?.content || "",
       isNotice: !!postDetail?.isNotice,
     });
+    setEditAttachedFiles(postDetail?.attachments || []);
     setIsEditMode(false);
+  };
+
+  const uploadImage = async (file) => {
+    const token = localStorage.getItem("accessToken") || currentUser?.token;
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch("http://localhost:8081/api/community/uploads/images", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || "이미지 업로드 실패");
+    }
+
+    return response.json();
+  };
+
+  const handleAttachFiles = async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+
+    if (!files.length) return;
+
+    try {
+      setUploadingFile(true);
+
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
+      const uploadedResults = [];
+
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("http://localhost:8081/api/community/uploads/files", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text || `${file.name} 업로드 실패`);
+        }
+
+        uploadedResults.push(await response.json());
+      }
+
+      setEditAttachedFiles((prev) => [...prev, ...uploadedResults]);
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "파일 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleRemoveAttachedFile = (attachmentId) => {
+    setEditAttachedFiles((prev) => prev.filter((file) => file.attachmentId !== attachmentId));
   };
 
   const handleUpdatePost = async () => {
@@ -383,7 +458,7 @@ const CommunityPostDetailPage = ({
       return;
     }
 
-    if (!editForm.content.trim()) {
+    if (!toPlainText(editForm.content)) {
       alert("내용을 입력해주세요.");
       return;
     }
@@ -406,8 +481,9 @@ const CommunityPostDetailPage = ({
           },
           body: JSON.stringify({
             title: editForm.title.trim(),
-            content: editForm.content.trim(),
+            content: editForm.content,
             isNotice: editForm.isNotice,
+            attachmentIds: editAttachedFiles.map((file) => file.attachmentId),
           }),
         }
       );
@@ -581,13 +657,51 @@ const CommunityPostDetailPage = ({
                 <span>추천 {postDetail.likeCount ?? 0}</span>
               </div>
 
-              <textarea
-                name="content"
+              <RichTextEditor
                 value={editForm.content}
-                onChange={handleEditChange}
-                placeholder="내용을 입력하세요."
-                style={styles.editContentInput}
+                onChange={(html) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    content: html,
+                  }))
+                }
+                onUploadImage={uploadImage}
+                minHeight={320}
               />
+
+              <div style={styles.attachSection}>
+                <div style={styles.attachHeader}>
+                  <strong>첨부파일</strong>
+                  <label style={styles.attachButton}>
+                    파일 선택
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleAttachFiles}
+                      style={{ display: "none" }}
+                    />
+                  </label>
+                </div>
+
+                {uploadingFile && <div style={styles.helperText}>파일 업로드 중...</div>}
+
+                {editAttachedFiles.length > 0 && (
+                  <div style={styles.fileList}>
+                    {editAttachedFiles.map((file) => (
+                      <div key={file.attachmentId} style={styles.fileItem}>
+                        <span style={styles.fileName}>{file.originalName}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAttachedFile(file.attachmentId)}
+                          style={styles.removeFileButton}
+                        >
+                          제거
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {canManagePost && (
                 <div style={styles.actionRow}>
@@ -675,7 +789,29 @@ const CommunityPostDetailPage = ({
                 </div>
               )}
 
-              <div style={styles.contentBox}>{postDetail.content}</div>
+              <div
+                style={styles.contentBox}
+                dangerouslySetInnerHTML={{ __html: postDetail.content || "" }}
+              />
+
+              {Array.isArray(postDetail.attachments) && postDetail.attachments.length > 0 && (
+                <div style={styles.attachSectionView}>
+                  <h4 style={styles.attachTitle}>첨부파일</h4>
+                  <div style={styles.fileList}>
+                    {postDetail.attachments.map((file) => (
+                      <a
+                        key={file.attachmentId}
+                        href={`http://localhost:8081${file.fileUrl}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={styles.downloadLink}
+                      >
+                        {file.originalName}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -973,7 +1109,7 @@ const styles = {
     display: "flex",
     gap: "8px",
     justifyContent: "flex-end",
-    marginBottom: "16px",
+    marginTop: "16px",
   },
   actionButton: {
     padding: "10px 14px",
@@ -1008,26 +1144,92 @@ const styles = {
   contentBox: {
     borderTop: "1px solid #f1f3f5",
     paddingTop: "20px",
-    whiteSpace: "pre-wrap",
     fontSize: "15px",
     lineHeight: "1.8",
     color: "#111827",
     minHeight: "180px",
     textAlign: "left",
+    wordBreak: "break-word",
   },
-  editContentInput: {
-    width: "100%",
-    minHeight: "220px",
-    borderRadius: "12px",
-    border: "1px solid #d1d5db",
-    padding: "14px",
-    fontSize: "15px",
-    resize: "vertical",
-    outline: "none",
-    marginBottom: "12px",
-    fontFamily: "inherit",
-    lineHeight: "1.8",
-    textAlign: "left",
+  attachSection: {
+    border: "1px solid #e5e7eb",
+    borderRadius: "14px",
+    padding: "16px",
+    background: "#fafafa",
+    marginTop: "16px",
+  },
+  attachSectionView: {
+    borderTop: "1px solid #f1f3f5",
+    marginTop: "24px",
+    paddingTop: "20px",
+  },
+  attachTitle: {
+    margin: "0 0 12px",
+    fontSize: "16px",
+    fontWeight: "800",
+  },
+  attachHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "10px",
+  },
+  attachButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "38px",
+    padding: "0 14px",
+    borderRadius: "10px",
+    background: "#111827",
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "700",
+  },
+  helperText: {
+    fontSize: "13px",
+    color: "#6b7280",
+  },
+  fileList: {
+    display: "grid",
+    gap: "10px",
+    marginTop: "10px",
+  },
+  fileItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "10px",
+    padding: "10px 12px",
+  },
+  fileName: {
+    fontSize: "14px",
+    color: "#111827",
+    wordBreak: "break-all",
+  },
+  removeFileButton: {
+    border: "none",
+    borderRadius: "8px",
+    background: "#fee2e2",
+    color: "#b91c1c",
+    padding: "8px 10px",
+    cursor: "pointer",
+    fontWeight: "700",
+  },
+  downloadLink: {
+    display: "block",
+    padding: "10px 12px",
+    borderRadius: "10px",
+    border: "1px solid #e5e7eb",
+    background: "#fff",
+    color: "#2563eb",
+    textDecoration: "none",
+    fontWeight: "700",
   },
   commentWriteCard: {
     background: "#fff",
