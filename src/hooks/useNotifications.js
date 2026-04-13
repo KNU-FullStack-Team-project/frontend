@@ -48,24 +48,21 @@ const useNotifications = (userId) => {
   useEffect(() => {
     if (!userId) return;
 
-    // 초기 데이터 로딩 (비동기 호출)
     const loadInitialData = async () => {
       await Promise.all([fetchNotifications(), fetchUnreadCount()]);
     };
     loadInitialData();
 
-    // SSE 연결 설정
     const token = localStorage.getItem("accessToken");
-    if (!token) return; // 토큰이 없으면 연결 시도 안 함
+    if (!token) return;
 
     const sseUrl = `http://localhost:8081/api/notifications/subscribe/${userId}`;
 
-    // event-source-polyfill을 사용하여 헤더에 토큰을 포함시킵니다.
     const eventSource = new EventSourcePolyfill(sseUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      heartbeatTimeout: 1860000, // 31분 (서버 타임아웃 30분보다 약간 길게 설정)
+      heartbeatTimeout: 1860000,
     });
 
     eventSource.addEventListener("connect", (event) => {
@@ -76,26 +73,12 @@ const useNotifications = (userId) => {
       const newNotification = JSON.parse(event.data);
       setNotifications((prev) => [newNotification, ...prev]);
       setUnreadCount((prev) => prev + 1);
-
-      // 브라우저 기본 알람 표시 (권한이 있을 경우)
-      if (Notification.permission === "granted") {
-        new Notification("주식 알람", { body: newNotification.message });
-      }
     });
-
-    eventSource.onerror = (error) => {
-      // 인증 에러(401, 403)인 경우에만 로그를 남기고 연결을 종료합니다.
-      if (error.status === 401 || error.status === 403) {
-        console.error("SSE connection closed due to authentication error");
-        eventSource.close();
-      }
-      // 일반적인 타임아웃이나 일시적 연결 끊김은 polyfill이 자동 재연결하므로 콘솔에 찍지 않습니다.
-    };
 
     return () => {
       eventSource.close();
     };
-  }, [userId, fetchNotifications, fetchUnreadCount]);
+  }, [userId]);
 
   const markAsRead = async (notificationId) => {
     const token = localStorage.getItem("accessToken");
