@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 const ROLE_OPTIONS = ["USER", "ADMIN"];
 const STATUS_OPTIONS = ["ACTIVE", "SUSPENDED"];
 
-const AdminPage = ({ onOpenUserMyPage, currentUser }) => {
+const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
   const [users, setUsers] = useState([]);
   const [editedUsers, setEditedUsers] = useState({});
   const [savingUserId, setSavingUserId] = useState(null);
@@ -38,7 +38,7 @@ const AdminPage = ({ onOpenUserMyPage, currentUser }) => {
     };
 
     loadUsers();
-  }, []);
+  }, [currentUser?.token]);
 
   const handleUserFieldChange = (userId, field, value) => {
     setEditedUsers((prev) => ({
@@ -98,9 +98,7 @@ const AdminPage = ({ onOpenUserMyPage, currentUser }) => {
   return (
     <div className="content-card">
       <h3>관리자 페이지</h3>
-      <p className="page-desc">
-        회원 계정 정보를 확인하고 권한/상태를 설정합니다.
-      </p>
+      <p className="page-desc">회원 계정 정보와 활동을 확인합니다.</p>
 
       {error ? <p className="page-desc">{error}</p> : null}
 
@@ -115,13 +113,14 @@ const AdminPage = ({ onOpenUserMyPage, currentUser }) => {
                 <th>Role</th>
                 <th>Status</th>
                 <th>Accounts</th>
+                <th>Logs</th>
                 <th>Apply</th>
               </tr>
             </thead>
             <tbody>
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan="7">조회된 회원이 없습니다.</td>
+                  <td colSpan="8">조회된 회원이 없습니다.</td>
                 </tr>
               ) : (
                 users.map((user) => {
@@ -195,6 +194,17 @@ const AdminPage = ({ onOpenUserMyPage, currentUser }) => {
                         </select>
                       </td>
                       <td>{user.accountCount ?? 0}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="admin-apply-button"
+                          onClick={() =>
+                            onOpenUserActivity && onOpenUserActivity(user)
+                          }
+                        >
+                          로그
+                        </button>
+                      </td>
                       <td>
                         <button
                           type="button"

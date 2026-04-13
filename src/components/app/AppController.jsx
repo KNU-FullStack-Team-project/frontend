@@ -10,6 +10,7 @@ import MyPage from "../../pages/MyPage";
 import AccountSettingsPage from "../../pages/AccountSettingsPage";
 import AuthPage from "../../pages/AuthPage";
 import AdminPage from "../../pages/AdminPage";
+import UserActivityPage from "../../pages/UserActivityPage";
 import RankingPage from "../../pages/RankingPage";
 import CommunityPage from "../../pages/CommunityPage";
 import StockCommunityPage from "../../pages/StockCommunityPage";
@@ -45,6 +46,10 @@ const pageTexts = {
     title: "대회 랭킹",
     description: "현재 진행 중인 대회의 순위를 확인하세요.",
   },
+  userActivity: {
+    title: "유저 활동 로그",
+    description: "기존 데이터 기준으로 유저 활동을 확인합니다.",
+  },
 };
 
 const AppController = () => {
@@ -53,6 +58,7 @@ const AppController = () => {
   const [pendingPage, setPendingPage] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedMyPageUser, setSelectedMyPageUser] = useState(null);
+  const [selectedActivityUser, setSelectedActivityUser] = useState(null);
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
   const [selectedCommunitySymbol, setSelectedCommunitySymbol] = useState(null);
   const [selectedCommunityPostId, setSelectedCommunityPostId] = useState(null);
@@ -340,6 +346,7 @@ const AppController = () => {
     setCurrentPage("home");
     setSelectedCompetitionId(null);
     setSelectedMyPageUser(null);
+    setSelectedActivityUser(null);
     setSelectedCommunitySymbol(null);
     setSelectedCommunityPostId(null);
     setLoginCaptchaRequired(false);
@@ -379,6 +386,10 @@ const AppController = () => {
 
     if (page === "mypage") {
       setSelectedMyPageUser(null);
+    }
+
+    if (page === "userActivity") {
+      setSelectedActivityUser(null);
     }
 
     if (page === "ranking") {
@@ -631,6 +642,19 @@ const AppController = () => {
               setSelectedMyPageUser(user);
               setCurrentPage("mypage");
             }}
+            onOpenUserActivity={(user) => {
+              setSelectedActivityUser(user);
+              setCurrentPage("userActivity");
+            }}
+          />
+        );
+
+      case "userActivity":
+        return (
+          <UserActivityPage
+            currentUser={currentUser}
+            targetUser={selectedActivityUser}
+            onBack={() => setCurrentPage("admin")}
           />
         );
 
