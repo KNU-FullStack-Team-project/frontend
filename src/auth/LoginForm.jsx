@@ -1,18 +1,39 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import ReCAPTCHA from "react-google-recaptcha";
 import AppInput from "../common/AppInput";
 import AppButton from "../common/AppButton";
 
-const LoginForm = ({ onLogin }) => {
+const LoginForm = ({
+  onLogin,
+  captchaRequired = false,
+  captchaResetKey = 0,
+  loginErrorMessage = "",
+}) => {
   const [form, setForm] = useState({
     email: "",
     password: "",
+    captchaToken: "",
   });
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      captchaToken: "",
+    }));
+  }, [captchaResetKey]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({
       ...prev,
       [name]: value,
+    }));
+  };
+
+  const handleCaptchaChange = (token) => {
+    setForm((prev) => ({
+      ...prev,
+      captchaToken: token || "",
     }));
   };
 
@@ -41,6 +62,23 @@ const LoginForm = ({ onLogin }) => {
         value={form.password}
         onChange={handleChange}
       />
+
+      {loginErrorMessage && !captchaRequired && (
+        <p className="helper-text error">{loginErrorMessage}</p>
+      )}
+
+      {captchaRequired && (
+        <div className="login-captcha-box">
+          <p className="helper-text error">
+            로그인 실패가 누적되어 reCAPTCHA 인증이 필요합니다.
+          </p>
+          <ReCAPTCHA
+            key={captchaResetKey}
+            sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+            onChange={handleCaptchaChange}
+          />
+        </div>
+      )}
 
       <AppButton type="submit" variant="primary" fullWidth>
         로그인

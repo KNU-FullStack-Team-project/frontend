@@ -301,6 +301,16 @@ input {
   gap: 10px;
 }
 
+.login-captcha-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
 .signup-form {
   gap: 16px;
 }

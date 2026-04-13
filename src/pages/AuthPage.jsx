@@ -8,8 +8,8 @@ import FindPasswordForm from "../auth/FindPasswordForm";
 const messages = [
   "실수해도 괜찮습니다.\n여기는 연습하는 곳이니까요.",
   "오늘의 연습이\n내일의 자신감이 됩니다.",
-  "투자는 타이밍보다\n준비가 중요합니다.",
-  "작은 시작이\n큰 차이를 만듭니다.",
+  "투자는 대박보다\n준비가 중요합니다.",
+  "작은 시작은\n큰 차이를 만들어냅니다.",
 ];
 
 const AuthPage = ({
@@ -20,6 +20,9 @@ const AuthPage = ({
   initialMode = "login",
   onChangeMode,
   authMessage,
+  loginCaptchaRequired = false,
+  loginCaptchaResetKey = 0,
+  loginErrorMessage = "",
 }) => {
   const [mode, setMode] = useState(initialMode);
   const [messageIndex, setMessageIndex] = useState(0);
@@ -54,7 +57,7 @@ const AuthPage = ({
       <div className="auth-container">
         <PageHero badge="Mock Invest" title={title} description={description}>
           <div className="market-card">
-            <div className="quote-label">💡 투자 조언</div>
+            <div className="quote-label">오늘의 투자 조언</div>
             <div
               className={`quote-message ${isVisible ? "fade-in" : "fade-out"}`}
             >
@@ -81,7 +84,12 @@ const AuthPage = ({
                 <p className="auth-success-message">{authMessage}</p>
               )}
 
-              <LoginForm onLogin={onLogin} />
+              <LoginForm
+                onLogin={onLogin}
+                captchaRequired={loginCaptchaRequired}
+                captchaResetKey={loginCaptchaResetKey}
+                loginErrorMessage={loginErrorMessage}
+              />
 
               <div className="auth-help-row">
                 <button

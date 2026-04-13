@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import HomePage from "../../pages/HomePage";
 import StockPage from "../../pages/StockPage";
@@ -23,7 +23,7 @@ import "../../auth.css";
 const pageTexts = {
   home: {
     title: "모의투자 플랫폼",
-    description: "안전하게 연습하고, 실전 감각을 키워보세요.",
+    description: "안전하게 연습하고, 실전 감각까지 익혀보세요.",
   },
   stock: {
     title: "주식",
@@ -31,7 +31,7 @@ const pageTexts = {
   },
   contest: {
     title: "대회",
-    description: "랭킹과 대회 정보를 확인해보세요.",
+    description: "대회와 참가자 정보를 확인해보세요.",
   },
   mypage: {
     title: "마이페이지",
@@ -57,8 +57,10 @@ const AppController = () => {
   const [selectedCommunitySymbol, setSelectedCommunitySymbol] = useState(null);
   const [selectedCommunityPostId, setSelectedCommunityPostId] = useState(null);
   const [authMode, setAuthMode] = useState("login");
+  const [loginCaptchaRequired, setLoginCaptchaRequired] = useState(false);
+  const [loginCaptchaResetKey, setLoginCaptchaResetKey] = useState(0);
+  const [loginErrorMessage, setLoginErrorMessage] = useState("");
 
-  // --- 자동 로그아웃 (인액티비티 타이머) 로직 ---
   const inactivityTimerRef = useRef(null);
   const autoLogoutTimeoutRef = useRef(null);
 
@@ -66,16 +68,10 @@ const AppController = () => {
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
 
     if (isLoggedIn) {
-      // 활동이 감지되면 인액티비티 타이머 리셋 (30분)
-      inactivityTimerRef.current = setTimeout(
-        () => {
-          alert(
-            "30분 동안 활동이 없어 보안을 위해 자동으로 로그아웃되었습니다.",
-          );
-          handleLogout();
-        },
-        30 * 60 * 1000,
-      ); // 30분
+      inactivityTimerRef.current = setTimeout(() => {
+        alert("30분 동안 활동이 없어 자동으로 로그아웃되었습니다.");
+        handleLogout();
+      }, 30 * 60 * 1000);
     }
   }, [isLoggedIn]);
 
@@ -147,9 +143,9 @@ const AppController = () => {
   };
 
   const setupAutoLogout = (token) => {
-    // 기존에 예약된 로그아웃 타이머가 있다면 제거 (중복 방지)
-    if (autoLogoutTimeoutRef.current)
+    if (autoLogoutTimeoutRef.current) {
       clearTimeout(autoLogoutTimeoutRef.current);
+    }
 
     try {
       if (!token || token.split(".").length !== 3) return;
@@ -178,14 +174,11 @@ const AppController = () => {
     });
   }, []);
 
-  // 주식 상세창 등에서 호출할 하트비트 (세션 연장) 로직
   const handleHeartbeat = useCallback(async () => {
     if (!isLoggedIn || !currentUser) return;
 
-    // 1. 프론트엔드 미활동 타이머(30분) 리셋
     resetInactivityTimer();
 
-    // 2. 백엔드 토큰 만료 연장
     try {
       const currentToken =
         localStorage.getItem("accessToken") || currentUser?.token;
@@ -202,7 +195,6 @@ const AppController = () => {
         localStorage.setItem("accessToken", data.token);
         handleUpdateCurrentUser({ token: data.token });
         setupAutoLogout(data.token);
-        console.log("Heartbeat: Backend session extended.");
       }
     } catch (e) {
       console.error("Heartbeat backend sync failed:", e);
@@ -211,6 +203,11 @@ const AppController = () => {
 
   const handleLogin = async (form) => {
     try {
+      if (loginCaptchaRequired && !form.captchaToken) {
+        setLoginErrorMessage("reCAPTCHA 인증을 완료해 주세요.");
+        return;
+      }
+
       const res = await fetch("http://localhost:8081/users/login", {
         method: "POST",
         headers: {
@@ -219,6 +216,7 @@ const AppController = () => {
         body: JSON.stringify({
           email: form.email.trim(),
           password: form.password,
+          captchaToken: form.captchaToken || "",
         }),
       });
 
@@ -234,13 +232,22 @@ const AppController = () => {
       }
 
       if (!res.ok) {
-        alert(data?.message || responseText || "로그인에 실패했습니다.");
+        setLoginCaptchaRequired(!!data?.captchaRequired);
+        if (data?.captchaRequired) {
+          setLoginCaptchaResetKey((prev) => prev + 1);
+        }
+        setLoginErrorMessage(
+          data?.message || responseText || "로그인에 실패했습니다.",
+        );
         return;
       }
 
-      if (data?.message === "로그인 성공") {
-        const token = data.token || "";
+      if (res.ok && data?.token) {
+        setLoginCaptchaRequired(false);
+        setLoginCaptchaResetKey((prev) => prev + 1);
+        setLoginErrorMessage("");
 
+        const token = data.token || "";
         const loginUser = {
           userId: data.id || data.userId,
           email: data.email,
@@ -268,11 +275,11 @@ const AppController = () => {
           setCurrentPage("home");
         }
       } else {
-        alert(data?.message || "로그인 실패");
+        setLoginErrorMessage(data?.message || "로그인에 실패했습니다.");
       }
     } catch (error) {
       console.error("로그인 fetch 중 에러 발생:", error);
-      alert("로그인 오류");
+      setLoginErrorMessage("로그인 오류");
     }
   };
 
@@ -308,8 +315,7 @@ const AppController = () => {
           if (!imageResponse.ok) {
             const imageError = await imageResponse.text();
             alert(
-              imageError ||
-                "회원가입은 완료됐지만 프로필 사진 저장에 실패했습니다.",
+              imageError || "회원가입은 완료됐지만 프로필 사진 저장에 실패했습니다.",
             );
           }
         }
@@ -318,9 +324,9 @@ const AppController = () => {
         setAuthMode("login");
         setCurrentPage("auth");
         return "success";
-      } else {
-        alert(data);
       }
+
+      alert(data);
     } catch (error) {
       alert("회원가입 오류");
     }
@@ -336,6 +342,8 @@ const AppController = () => {
     setSelectedMyPageUser(null);
     setSelectedCommunitySymbol(null);
     setSelectedCommunityPostId(null);
+    setLoginCaptchaRequired(false);
+    setLoginErrorMessage("");
   };
 
   const handleViewRanking = (competitionId, status) => {
@@ -387,6 +395,7 @@ const AppController = () => {
 
   const handleOpenLogin = () => {
     setAuthMode("login");
+    setLoginErrorMessage("");
     setCurrentPage("auth");
   };
 
@@ -398,6 +407,7 @@ const AppController = () => {
       setCurrentPage("auth");
       return;
     }
+
     setSelectedCompetitionId(competitionId);
     setCurrentPage("contestDetail");
   };
@@ -472,7 +482,7 @@ const AppController = () => {
     setCurrentPage("stockCommunity");
     setSelectedCommunityPostId(null);
   };
-  ///////////////
+
   const handleOpenCommunityWritePage = () => {
     setCurrentPage("communityPostWrite");
   };
@@ -484,7 +494,6 @@ const AppController = () => {
   const handleCommunityPostCreated = () => {
     setCurrentPage("stockCommunity");
   };
-  //////////
 
   if (currentPage === "auth") {
     return (
@@ -495,6 +504,9 @@ const AppController = () => {
         onSignup={handleSignup}
         initialMode={authMode}
         onChangeMode={setAuthMode}
+        loginCaptchaRequired={loginCaptchaRequired}
+        loginCaptchaResetKey={loginCaptchaResetKey}
+        loginErrorMessage={loginErrorMessage}
       />
     );
   }
@@ -622,15 +634,6 @@ const AppController = () => {
           />
         );
 
-      case "home":
-      default:
-        return (
-          <HomePage
-            isLoggedIn={isLoggedIn}
-            onOpenLogin={handleOpenLogin}
-            currentUser={currentUser}
-          />
-        );
       case "communityPostWrite":
         return (
           <CommunityPostWritePage
@@ -639,6 +642,16 @@ const AppController = () => {
             isLoggedIn={isLoggedIn}
             onBack={handleBackToCommunityListFromWrite}
             onSuccess={handleCommunityPostCreated}
+          />
+        );
+
+      case "home":
+      default:
+        return (
+          <HomePage
+            isLoggedIn={isLoggedIn}
+            onOpenLogin={handleOpenLogin}
+            currentUser={currentUser}
           />
         );
     }
