@@ -15,29 +15,25 @@ const CandleChart = ({ data, width = 800, height = 500 }) => {
   const [containerWidth, setContainerWidth] = useState(width); 
   const containerRef = useRef(null);
 
-  if (!data || data.length === 0) {
-    return (
-      <div style={{ height, display: "flex", alignItems: "center", justifyContent: "center", color: "#888" }}>
-        차트 데이터를 불러올 수 없습니다.
-      </div>
-    );
-  }
-
-  // KIS 데이터는 최신순(내림차순)이므로 시간순(오름차순)으로 반환
-  const sortedData = useMemo(() => [...data].reverse(), [data]);
+  // [최적화] 모든 Hook은 최상위 레벨에서 호출되어야 합니다. (Rules of Hooks 준수)
+  const sortedData = useMemo(() => {
+    if (!Array.isArray(data)) return [];
+    try {
+      return [...data].reverse();
+    } catch (e) {
+      return [];
+    }
+  }, [data]);
 
   const margin = { top: 30, right: 70, bottom: 40, left: 10 };
   const candleWidth = 24; 
-  const totalChartWidth = sortedData.length * candleWidth;
-  const svgWidth = totalChartWidth + margin.left + margin.right;
-  const chartHeight = height - margin.top - margin.bottom;
-  const volumeHeight = chartHeight * 0.2;
 
   const priceRangeData = useMemo(() => {
-    const prices = sortedData.flatMap((d) => [parseFloat(d.high), parseFloat(d.low)]);
+    if (sortedData.length === 0) return { min: 0, max: 0, range: 1 };
+    const prices = sortedData.flatMap((d) => [parseFloat(d.high) || 0, parseFloat(d.low) || 0]);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
-    const headRoom = (maxPrice - minPrice) * 0.1;
+    const headRoom = (maxPrice - minPrice) * 0.1 || 10;
     return {
       min: minPrice - headRoom,
       max: maxPrice + headRoom,
@@ -45,112 +41,28 @@ const CandleChart = ({ data, width = 800, height = 500 }) => {
     };
   }, [sortedData]);
 
-  const maxVolume = useMemo(() => Math.max(...sortedData.map(d => parseFloat(d.volume))), [sortedData]);
+  const maxVolume = useMemo(() => {
+    if (sortedData.length === 0) return 1;
+    return Math.max(...sortedData.map(d => parseFloat(d.volume) || 0)) || 1;
+  }, [sortedData]);
+
+  // 차트 기초 치수 계산 (sortedData 의존)
+  const totalChartWidth = sortedData.length * candleWidth;
+  const svgWidth = totalChartWidth + margin.left + margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+  const volumeHeight = chartHeight * 0.2;
 
   const getY = (price) => {
+    if (priceRangeData.range === 0) return margin.top;
     return (chartHeight - volumeHeight - 10) * (1 - (price - priceRangeData.min) / priceRangeData.range) + margin.top;
   };
 
   const getVolY = (vol) => {
+    if (maxVolume === 0) return height - margin.bottom;
     return height - margin.bottom - (vol / maxVolume) * volumeHeight;
   };
 
-  const currentPrice = parseFloat(sortedData[sortedData.length - 1].close);
-  const currentY = getY(currentPrice);
-
-  // 캔들 및 거래량 막대 렌더링 최적화 (useMemo 사용)
-  const chartElements = useMemo(() => {
-    return (
-      <>
-        {/* 그리드 라인 (수평) */}
-        {[0, 0.25, 0.5, 0.75, 1].map((p, i) => {
-          const price = priceRangeData.min + p * priceRangeData.range;
-          const y = getY(price);
-          return (
-            <line
-              key={`grid-${i}`}
-              x1={margin.left}
-              y1={y}
-              x2={svgWidth - margin.right}
-              y2={y}
-              stroke="#e5e7eb"
-              strokeWidth="0.5"
-              strokeDasharray="4,4"
-            />
-          );
-        })}
-
-        {/* 현재가 라인 */}
-        <line
-          x1={margin.left}
-          y1={currentY}
-          x2={svgWidth - margin.right}
-          y2={currentY}
-          stroke="var(--accent)"
-          strokeWidth="1"
-          strokeDasharray="2,2"
-        />
-
-        {/* 거래량 막대 */}
-        {sortedData.map((d, i) => {
-          const x = margin.left + i * candleWidth;
-          const isUp = parseFloat(d.close) >= parseFloat(d.open);
-          const volY = getVolY(parseFloat(d.volume));
-          return (
-            <rect
-              key={`vol-${i}`}
-              x={x + candleWidth * 0.2}
-              y={volY}
-              width={candleWidth * 0.6}
-              height={height - margin.bottom - volY}
-              fill={isUp ? "#f43f5e33" : "#3b82f633"}
-            />
-          );
-        })}
-
-        {/* 캔들 */}
-        {sortedData.map((d, i) => {
-          const x = margin.left + i * candleWidth;
-          const open = parseFloat(d.open);
-          const close = parseFloat(d.close);
-          const high = parseFloat(d.high);
-          const low = parseFloat(d.low);
-
-          const isUp = close >= open;
-          const color = isUp ? "#f43f5e" : "#3b82f6";
-
-          const yOpen = getY(open);
-          const yClose = getY(close);
-          const yHigh = getY(high);
-          const yLow = getY(low);
-
-          return (
-            <g key={i}>
-              <line
-                x1={x + candleWidth / 2}
-                y1={yHigh}
-                x2={x + candleWidth / 2}
-                y2={yLow}
-                stroke={color}
-                strokeWidth="1.2"
-              />
-              <rect
-                x={x + candleWidth * 0.15}
-                y={Math.min(yOpen, yClose)}
-                width={Math.max(1, candleWidth * 0.7)}
-                height={Math.max(1, Math.abs(yOpen - yClose))}
-                fill={isUp ? "url(#upGradient)" : "url(#downGradient)"}
-                stroke={color}
-                strokeWidth="0.5"
-                rx={1}
-              />
-            </g>
-          );
-        })}
-      </>
-    );
-  }, [sortedData, candleWidth, priceRangeData, currentY, height, margin.bottom, margin.left, svgWidth, volumeHeight]);
-
+  // [중요] useEffect 등 다른 Hook들도 조기 반환 이전에 위치해야 합니다.
   useEffect(() => {
     if (containerRef.current) {
       containerRef.current.scrollLeft = containerRef.current.scrollWidth;
@@ -169,6 +81,109 @@ const CandleChart = ({ data, width = 800, height = 500 }) => {
     
     return () => observer.disconnect();
   }, [width]);
+
+  // [수정] 조기 반환(Early Return)은 모든 Hook 호출 이후에 수행합니다.
+  if (!Array.isArray(data) || data.length === 0) {
+    return (
+      <div style={{ height, display: "flex", alignItems: "center", justifyContent: "center", color: "#888" }}>
+        차트 데이터를 불러올 수 없습니다.
+      </div>
+    );
+  }
+
+  const currentPrice = parseFloat(sortedData[sortedData.length - 1].close) || 0;
+  const currentY = getY(currentPrice);
+
+  // 캔들 및 거래량 막대 렌더링 최적화
+  const chartElements = (
+    <>
+      {/* 그리드 라인 (수평) */}
+      {[0, 0.25, 0.5, 0.75, 1].map((p, i) => {
+        const price = priceRangeData.min + p * priceRangeData.range;
+        const y = getY(price);
+        return (
+          <line
+            key={`grid-${i}`}
+            x1={margin.left}
+            y1={y}
+            x2={svgWidth - margin.right}
+            y2={y}
+            stroke="#e5e7eb"
+            strokeWidth="0.5"
+            strokeDasharray="4,4"
+          />
+        );
+      })}
+
+      {/* 현재가 라인 */}
+      <line
+        x1={margin.left}
+        y1={currentY}
+        x2={svgWidth - margin.right}
+        y2={currentY}
+        stroke="var(--accent)"
+        strokeWidth="1"
+        strokeDasharray="2,2"
+      />
+
+      {/* 거래량 막대 */}
+      {sortedData.map((d, i) => {
+        const x = margin.left + i * candleWidth;
+        const isUp = parseFloat(d.close) >= parseFloat(d.open);
+        const volY = getVolY(parseFloat(d.volume) || 0);
+        return (
+          <rect
+            key={`vol-${i}`}
+            x={x + candleWidth * 0.2}
+            y={volY}
+            width={candleWidth * 0.6}
+            height={Math.max(0, height - margin.bottom - volY)}
+            fill={isUp ? "#f43f5e33" : "#3b82f633"}
+          />
+        );
+      })}
+
+      {/* 캔들 */}
+      {sortedData.map((d, i) => {
+        const x = margin.left + i * candleWidth;
+        const open = parseFloat(d.open) || 0;
+        const close = parseFloat(d.close) || 0;
+        const high = parseFloat(d.high) || 0;
+        const low = parseFloat(d.low) || 0;
+
+        const isUp = close >= open;
+        const color = isUp ? "#f43f5e" : "#3b82f6";
+
+        const yOpen = getY(open);
+        const yClose = getY(close);
+        const yHigh = getY(high);
+        const yLow = getY(low);
+
+        return (
+          <g key={i}>
+            <line
+              x1={x + candleWidth / 2}
+              y1={yHigh}
+              x2={x + candleWidth / 2}
+              y2={yLow}
+              stroke={color}
+              strokeWidth="1.2"
+            />
+            <rect
+              x={x + candleWidth * 0.15}
+              y={Math.min(yOpen, yClose)}
+              width={Math.max(1, candleWidth * 0.7)}
+              height={Math.max(1, Math.abs(yOpen - yClose))}
+              fill={isUp ? "url(#upGradient)" : "url(#downGradient)"}
+              stroke={color}
+              strokeWidth="0.5"
+              rx={1}
+            />
+          </g>
+        );
+      })}
+    </>
+  );
 
   const handleMouseDown = (e) => {
     setIsDragging(true);

@@ -194,6 +194,7 @@ const AppController = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${currentToken}`,
         },
+        body: JSON.stringify({ email: currentUser.email }),
       });
 
       if (res.ok) {

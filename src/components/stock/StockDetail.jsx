@@ -9,6 +9,10 @@ const cleanNumber = (val) => {
   return parseInt(String(val).replace(/,/g, "")) || 0;
 };
 
+// [최적화] 프론트엔드 차트 데이터 캐시 (모달을 닫았다 열어도 1분간 유지)
+const chartCache = new Map();
+const CACHE_DURATION_MS = 60 * 1000; // 1분
+
 const StockDetail = ({ stock, user, onOpenCommunity }) => {
   const [candles, setCandles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,24 +71,57 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   };
 
   useEffect(() => {
+    const abortController = new AbortController();
+
     const fetchHistory = async () => {
+      if (!stock?.symbol) return;
+      
+      const cacheKey = `${stock.symbol}:${period}`;
+      const cached = chartCache.get(cacheKey);
+      const now = Date.now();
+
+      // [최적화] 1분 이내의 동일 종목/기간 요청인 경우 캐시 사용
+      if (cached && (now - cached.timestamp < CACHE_DURATION_MS)) {
+        console.log(`[Cache Hit] Using cached chart data for ${cacheKey}`);
+        setCandles(cached.data);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const response = await fetch(
-          `http://localhost:8081/api/stocks/${stock.symbol}/history?period=${period}`
+          `http://localhost:8081/api/stocks/${stock.symbol}/history?period=${period}`,
+          { signal: abortController.signal }
         );
         if (!response.ok) throw new Error("Failed to fetch history");
         const data = await response.json();
-        setCandles(data);
+        
+        // [수정] 데이터가 배열인 경우에만 캐시 및 상태 업데이트
+        if (Array.isArray(data)) {
+          chartCache.set(cacheKey, { data, timestamp: Date.now() });
+          setCandles(data);
+        } else {
+          console.error("Invalid chart data format:", data);
+          setCandles([]);
+        }
       } catch (err) {
-        console.error(err);
+        if (err.name === 'AbortError') {
+          console.log('[Abort] Previous chart request cancelled');
+        } else {
+          console.error(err);
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    if (stock) fetchHistory();
-  }, [stock, period]);
+    fetchHistory();
+
+    return () => {
+      abortController.abort(); // 컴포넌트 언마운트 또는 의존성 변경 시 이전 요청 취소
+    };
+  }, [stock?.symbol, period]); // stock 개체 전체가 아닌 symbol을 의존성으로 설정
 
   const fetchAccountData = React.useCallback(async () => {
     if (!user?.email) return;
