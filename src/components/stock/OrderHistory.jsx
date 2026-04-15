@@ -123,7 +123,8 @@ const OrderHistory = ({ accountId, currentUser }) => {
           <thead>
             <tr>
               <th>주문 일시</th>
-              <th>종목</th>
+              <th>종목명</th>
+              <th>종목코드</th>
               <th>구분</th>
               <th>수량</th>
               <th>가격</th>
@@ -135,7 +136,7 @@ const OrderHistory = ({ accountId, currentUser }) => {
             {!Array.isArray(orders) || orders.length === 0 ? (
               <tr>
                 <td
-                  colSpan="7"
+                  colSpan="8"
                   style={{
                     textAlign: "center",
                     padding: "40px",
@@ -153,16 +154,8 @@ const OrderHistory = ({ accountId, currentUser }) => {
                       ? new Date(order.orderedAt).toLocaleString()
                       : "-"}
                   </td>
-                  <td>
-                    <div className="stock-info-cell">
-                      <span className="stock-name">
-                        {order?.stock?.stockName ?? "알 수 없음"}
-                      </span>
-                      <span className="stock-code">
-                        {order?.stock?.stockCode ?? "-"}
-                      </span>
-                    </div>
-                  </td>
+                  <td>{order?.stock?.stockName ?? "알 수 없음"}</td>
+                  <td>{order?.stock?.stockCode ?? "-"}</td>
                   <td className={order?.orderSide === "BUY" ? "up" : "down"}>
                     {order?.orderSide === "BUY" ? "매수" : "매도"}
                   </td>
