@@ -96,6 +96,15 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">회원 정보를 불러오는 중입니다...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="content-card">
       <h3>관리자 페이지</h3>

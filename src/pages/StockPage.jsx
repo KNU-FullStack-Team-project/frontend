@@ -370,7 +370,10 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
 
   if (loading && page === 1 && stocks.length === 0) {
     return (
-      <div className="loading-spinner">주식 정보를 업데이트하는 중...</div>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">주식 정보를 업데이트하는 중입니다...</div>
+      </div>
     );
   }
 

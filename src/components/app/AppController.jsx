@@ -487,8 +487,8 @@ const AppController = () => {
   if (currentPage === "auth") {
     return (
       <AuthPage
-        title={pageTexts.auth.title}
-        description={pageTexts.auth.description}
+        title="모의투자 시작하기"
+        description="가상 자산으로 안전하게 투자 연습을 시작해보세요."
         onLogin={handleLogin}
         onSignup={handleSignup}
         initialMode={authMode}

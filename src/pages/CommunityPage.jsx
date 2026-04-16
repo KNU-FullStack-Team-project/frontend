@@ -56,11 +56,7 @@ const CommunityPage = ({ onSelectStockCommunity }) => {
         />
       </div>
 
-      {loading ? (
-        <div style={styles.emptyCard}>
-          <p style={styles.emptyText}>종목 커뮤니티 목록을 불러오는 중입니다...</p>
-        </div>
-      ) : filteredStocks.length === 0 ? (
+      {filteredStocks.length === 0 ? (
         <div style={styles.emptyCard}>
           <p style={styles.emptyTitle}>검색 결과가 없습니다.</p>
           <p style={styles.emptyText}>다른 종목명이나 종목코드로 다시 검색해보세요.</p>

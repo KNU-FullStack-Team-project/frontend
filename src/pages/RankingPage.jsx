@@ -288,18 +288,10 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
 
   if (competitionLoading) {
     return (
-      <section style={styles.page}>
-        <div style={styles.hero}>
-          <div>
-            <div style={styles.heroBadge}>RANKING</div>
-            <h1 style={styles.heroTitle}>대회 랭킹</h1>
-          </div>
-        </div>
-
-        <div style={styles.emptyCard}>
-          <p style={styles.emptyText}>대회 목록을 불러오는 중입니다...</p>
-        </div>
-      </section>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">대회 목록을 불러오는 중입니다...</div>
+      </div>
     );
   }
 
