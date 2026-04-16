@@ -25,7 +25,6 @@ const StockRow = ({
         {favorites.has(stock.symbol) ? "❤️" : "🤍"}
       </button>
 
-      <div className="stock-index">{index + 1}</div>
 
       <div className="stock-name-section">
         <span className="stock-name-text">{stock.name}</span>
@@ -491,7 +490,6 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
       <div className="stock-list-container">
         <div className="stock-list-header">
           <div style={{ textAlign: "center" }}>관심</div>
-          <div style={{ textAlign: "center" }}>순번</div>
           <div style={{ paddingLeft: "15px" }}>종목명</div>
           <div style={{ textAlign: "right" }}>현재가</div>
           <div style={{ textAlign: "right" }}>등락률</div>
@@ -522,7 +520,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
                 {searchResults !== null
                   ? "검색 결과가 없습니다."
                   : activeTab === "favorites"
-                    ? "관심종목이 없습니다. 별표를 눌러 추가해보세요!"
+                    ? "아직 관심 종목이 없습니다. 하트(❤️)를 눌러 나만의 목록을 만들어보세요!"
                     : "종목 정보를 가져올 수 없습니다."}
               </div>
             );

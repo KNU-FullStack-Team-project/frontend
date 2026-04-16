@@ -105,7 +105,7 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
       <div style={styles.hero}>
         <div style={styles.heroBadge}>MAIN</div>
         <h1 style={styles.heroTitle}>메인</h1>
-        <p style={styles.heroText}>반갑습니다</p>
+        <p style={styles.heroText}>내 자산 현황을 한눈에 파악하고, 오늘의 투자 목표를 설정해보세요.</p>
       </div>
 
       <div className="dashboard-grid">
@@ -159,7 +159,7 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
                     colSpan="4"
                     style={{ textAlign: "center", padding: "20px" }}
                   >
-                    관심 종목이 없습니다.
+                    아직 등록된 관심 종목이 없습니다.
                   </td>
                 </tr>
               )}
@@ -208,7 +208,7 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
 
 const styles = {
   page: {
-    maxWidth: "1180px",
+    maxWidth: "1320px",
     margin: "0 auto",
     padding: "28px 20px 56px",
   },

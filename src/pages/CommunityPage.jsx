@@ -44,6 +44,9 @@ const CommunityPage = ({ onSelectStockCommunity }) => {
       <div style={styles.hero}>
         <div style={styles.heroBadge}>COMMUNITY</div>
         <h1 style={styles.heroTitle}>종목 커뮤니티</h1>
+        <p style={styles.heroText}>
+          투자 정보를 공유하고 소통하며, 더 넓은 시장의 통찰력을 얻어보세요.
+        </p>
       </div>
 
       <div style={styles.searchWrap}>
@@ -109,10 +112,15 @@ const styles = {
     padding: "28px 20px 56px",
   },
   hero: {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    textAlign: "center",
+    gap: "16px",
+    padding: "40px 30px",
     borderRadius: "24px",
-    padding: "28px 30px",
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
     boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
     marginBottom: "18px",
   },

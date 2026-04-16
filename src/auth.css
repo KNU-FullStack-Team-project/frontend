@@ -4,7 +4,7 @@
 
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: inherit;
   background: #f4f8fc;
   color: #1e293b;
 }
