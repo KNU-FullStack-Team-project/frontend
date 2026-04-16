@@ -378,7 +378,16 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
   }
 
   return (
-    <div className="content-card">
+    <div style={styles.page}>
+      <div style={styles.hero}>
+        <div style={styles.heroBadge}>STOCK</div>
+        <h1 style={styles.heroTitle}>주식 시장</h1>
+        <p style={styles.heroText}>
+          종목 정보를 확인하고, 나만의 거래 전략을 세워보세요.
+        </p>
+      </div>
+
+      <div className="content-card">
       <div className="section-header">
         <h3>실시간 주식 정보</h3>
         <button
@@ -570,7 +579,53 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
         />
       </Modal>
     </div>
+  </div>
   );
+};
+
+const styles = {
+  page: {
+    maxWidth: "1180px",
+    margin: "0 auto",
+    padding: "28px 20px 56px",
+  },
+  hero: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    textAlign: "center",
+    gap: "16px",
+    padding: "40px 30px",
+    borderRadius: "24px",
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
+    marginBottom: "16px",
+  },
+  heroBadge: {
+    display: "inline-block",
+    padding: "6px 12px",
+    borderRadius: "999px",
+    background: "#eef2ff",
+    color: "#4c6ef5",
+    fontSize: "12px",
+    fontWeight: "800",
+    letterSpacing: "0.06em",
+    marginBottom: "4px",
+  },
+  heroTitle: {
+    margin: 0,
+    fontSize: "32px",
+    fontWeight: "800",
+    color: "#111827",
+  },
+  heroText: {
+    margin: 0,
+    fontSize: "15px",
+    lineHeight: "1.7",
+    color: "#6b7280",
+    maxWidth: "600px",
+  },
 };
 
 export default StockPage;

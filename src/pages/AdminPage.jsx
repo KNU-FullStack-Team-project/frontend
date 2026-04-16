@@ -7,6 +7,7 @@ const STATUS_OPTIONS = ["ACTIVE", "SUSPENDED"];
 const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
   const [users, setUsers] = useState([]);
   const [editedUsers, setEditedUsers] = useState({});
+  const [loading, setLoading] = useState(true);
   const [savingUserId, setSavingUserId] = useState(null);
   const [error, setError] = useState("");
 
@@ -33,8 +34,8 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
             return acc;
           }, {}),
         );
-      } catch {
-        setError("사용자 정보를 불러오지 못했습니다.");
+      } finally {
+        setLoading(false);
       }
     };
 
