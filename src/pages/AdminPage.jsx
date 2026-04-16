@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import AppButton from "../common/AppButton";
 
 const ROLE_OPTIONS = ["USER", "ADMIN"];
 const STATUS_OPTIONS = ["ACTIVE", "SUSPENDED"];
@@ -139,19 +140,18 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
                       <td>{user.id}</td>
                       <td>{user.email}</td>
                       <td>
-                        <button
-                          type="button"
-                          className="admin-user-link"
+                        <AppButton
+                          variant="secondary"
+                          size="sm"
                           onClick={() =>
                             onOpenUserMyPage && onOpenUserMyPage(user)
                           }
                         >
                           {user.nickname}
-                        </button>
+                        </AppButton>
                       </td>
                       <td>
                         <select
-                          className="admin-inline-select"
                           value={editedUser.role}
                           disabled={isQuitUser}
                           onChange={(event) =>
@@ -161,6 +161,16 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
                               event.target.value,
                             )
                           }
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '8px',
+                            border: '1px solid #d1d5db',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            outline: 'none',
+                            cursor: 'pointer',
+                            background: '#f9fafb'
+                          }}
                         >
                           {ROLE_OPTIONS.map((role) => (
                             <option key={role} value={role}>
@@ -171,7 +181,6 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
                       </td>
                       <td>
                         <select
-                          className="admin-inline-select"
                           value={isQuitUser ? "QUIT" : editedUser.status}
                           disabled={isQuitUser}
                           onChange={(event) =>
@@ -181,6 +190,16 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
                               event.target.value,
                             )
                           }
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '8px',
+                            border: '1px solid #d1d5db',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            outline: 'none',
+                            cursor: 'pointer',
+                            background: '#f9fafb'
+                          }}
                         >
                           {isQuitUser ? (
                             <option value="QUIT">QUIT</option>
@@ -195,27 +214,25 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
                       </td>
                       <td>{user.accountCount ?? 0}</td>
                       <td>
-                        <button
-                          type="button"
-                          className="admin-apply-button"
+                        <AppButton
+                          size="sm"
                           onClick={() =>
                             onOpenUserActivity && onOpenUserActivity(user)
                           }
                         >
                           로그
-                        </button>
+                        </AppButton>
                       </td>
                       <td>
-                        <button
-                          type="button"
-                          className="admin-apply-button"
+                        <AppButton
+                          size="sm"
                           onClick={() => handleApplyUser(user.id)}
                           disabled={
                             isQuitUser || !isChanged || savingUserId === user.id
                           }
                         >
                           {savingUserId === user.id ? "저장 중" : "적용"}
-                        </button>
+                        </AppButton>
                       </td>
                     </tr>
                   );

@@ -243,9 +243,9 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                   </span>
                   <div className="mypage-balance-controls">
                     {isMyOwnPage && isMainAccount ? (
-                      <button
-                        type="button"
-                        className="mypage-deposit-button"
+                      <AppButton
+                        variant="danger"
+                        size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleResetCash(account.accountId);
@@ -255,7 +255,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                         {resettingAccountId === account.accountId
                           ? "초기화 중..."
                           : "계좌 초기화"}
-                      </button>
+                      </AppButton>
                     ) : null}
                     <strong style={{ color: isSelected ? '#111827' : '#374151' }}>{account.cashBalance ?? "-"}</strong>
                   </div>

@@ -20,12 +20,36 @@ input {
 
 .app-button {
   border: none;
-  border-radius: 14px;
+  border-radius: 12px;
   font-weight: 700;
   cursor: pointer;
   transition: 0.2s;
   padding: 0 18px;
-  height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 크기별 스타일 */
+.app-button.sm {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+
+.app-button.md {
+  height: 44px;
+  padding: 0 20px;
+  font-size: 15px;
+  border-radius: 12px;
+}
+
+.app-button.lg {
+  height: 54px;
+  padding: 0 28px;
+  font-size: 17px;
+  border-radius: 16px;
 }
 
 .app-button.full-width {
@@ -48,6 +72,16 @@ input {
 
 .app-button.danger:hover {
   background: #dc2626;
+}
+
+.app-button.secondary {
+  background: #cbd5e1;
+  color: #475569;
+}
+
+.app-button.secondary:hover {
+  background: #94a3b8;
+  color: white;
 }
 
 .app-button.disabled,
