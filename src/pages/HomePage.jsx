@@ -109,22 +109,30 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
       </div>
 
       <div className="dashboard-grid">
-        <InfoCard title="총 자산" value={accountData?.totalAsset || "₩0"} />
-        <InfoCard title="보유 현금" value={accountData?.cashBalance || "₩0"} />
-        <InfoCard
-          title="평가 손익"
-          value={accountData?.totalProfitAmount || "₩0"}
-          valueClassName={
-            accountData?.totalProfitAmount?.startsWith("+") ? "up" : "down"
-          }
-        />
-        <InfoCard
-          title="수익률"
-          value={accountData?.totalReturnRate || "0%"}
-          valueClassName={
-            accountData?.totalReturnRate?.startsWith("+") ? "up" : "down"
-          }
-        />
+        <article className="mypage-stat-card tone-primary">
+          <span className="mypage-stat-label">총 자산</span>
+          <strong className="mypage-stat-value">
+            {accountData?.totalAsset || "₩0"}
+          </strong>
+        </article>
+        <article className="mypage-stat-card tone-neutral">
+          <span className="mypage-stat-label">보유 현금</span>
+          <strong className="mypage-stat-value">
+            {accountData?.cashBalance || "₩0"}
+          </strong>
+        </article>
+        <article className="mypage-stat-card tone-profit">
+          <span className="mypage-stat-label">평가 손익</span>
+          <strong className="mypage-stat-value">
+            {accountData?.totalProfitAmount || "₩0"}
+          </strong>
+        </article>
+        <article className="mypage-stat-card tone-accent">
+          <span className="mypage-stat-label">수익률</span>
+          <strong className="mypage-stat-value">
+            {accountData?.totalReturnRate || "0%"}
+          </strong>
+        </article>
 
         <div className="content-card large">
           <SectionTitle title="관심 종목" />

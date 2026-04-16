@@ -15,7 +15,7 @@
   --heading: Arial, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 18px/145% var(--sans);
+  font: 16px/145% var(--sans);
   letter-spacing: 0.18px;
   color: var(--text);
   background: var(--bg);
@@ -55,20 +55,20 @@ h2 {
 }
 
 h1 {
-  font-size: 56px;
+  font-size: 48px;
   letter-spacing: -1.68px;
   margin: 32px 0;
 }
 
 @media (max-width: 1024px) {
   h1 {
-    font-size: 36px;
+    font-size: 32px;
     margin: 20px 0;
   }
 }
 
 h2 {
-  font-size: 24px;
+  font-size: 22px;
   line-height: 118%;
   letter-spacing: -0.24px;
   margin: 0 0 8px;
@@ -76,7 +76,7 @@ h2 {
 
 @media (max-width: 1024px) {
   h2 {
-    font-size: 20px;
+    font-size: 18px;
   }
 }
 
@@ -323,6 +323,38 @@ p {
   font-size: 13px;
 }
 
+/* 차트 진입 애니메이션 */
+@keyframes chartFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.portfolio-chart-wrapper {
+  animation: chartFadeIn 0.8s ease-out forwards;
+}
+
+@keyframes legendFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.legend-item {
+  opacity: 0;
+  animation: legendFadeIn 0.5s ease-out forwards;
+}
+
 .empty-chart-container {
   margin-top: 20px;
   color: var(--text);
@@ -423,7 +455,7 @@ p {
 
 .mypage-title {
   margin: 0;
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 800;
   line-height: 1.2;
   color: #0f172a;
@@ -503,13 +535,13 @@ p {
 
 .mypage-info-label {
   color: #64748b;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .mypage-info-value {
   color: #0f172a;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   text-align: right;
 }
@@ -638,7 +670,7 @@ p {
 }
 
 .mypage-account-balance {
-  font-size: 28px;
+  font-size: 24px;
   line-height: 1;
   color: #0f172a;
 }
@@ -709,21 +741,21 @@ p {
   display: block;
   margin-bottom: 10px;
   color: #64748b;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .mypage-stat-value {
   display: block;
   color: #0f172a;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 800;
   line-height: 1.2;
 }
 
 .mypage-selected-account {
   min-width: 180px;
-  padding: 12px 16px;
+  padding: 16px 20px;
   border-radius: 14px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -732,7 +764,7 @@ p {
 .mypage-selected-account span {
   display: block;
   color: #64748b;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -740,22 +772,22 @@ p {
   display: block;
   margin-top: 6px;
   color: #0f172a;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .portfolio-section-layout {
-  gap: 28px;
+  gap: 32px;
 }
 
 .portfolio-chart-container {
-  padding: 22px;
+  padding: 30px;
   border-radius: 20px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
 }
 
 .portfolio-list-container {
-  padding: 22px;
+  padding: 30px;
   border-radius: 20px;
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -779,7 +811,7 @@ p {
   border-radius: 999px;
   background: #eff6ff;
   color: #2563eb;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -793,7 +825,7 @@ p {
 
 .mypage-table th {
   padding: 14px 16px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   color: #64748b;
   background: #f8fafc;
@@ -802,7 +834,7 @@ p {
 
 .mypage-table td {
   padding: 16px;
-  font-size: 14px;
+  font-size: 13px;
   color: #0f172a;
   border-bottom: 1px solid #eef2f7;
   white-space: nowrap;
@@ -810,6 +842,16 @@ p {
 
 .mypage-table tbody tr:hover {
   background: #f8fbff;
+}
+
+.stock-profit-up {
+  color: #ef4444 !important;
+  font-weight: 700;
+}
+
+.stock-profit-down {
+  color: #2563eb !important;
+  font-weight: 700;
 }
 
 .mypage-empty-cell {
@@ -1151,7 +1193,7 @@ p {
 }
 
 .price-big {
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: 700;
   color: var(--text-h);
   margin-right: 12px;
@@ -1451,4 +1493,37 @@ p {
 .control-input-wrapper .control-btn:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+}
+
+/* 스켈레톤 애니메이션 */
+@keyframes skeleton-loading {
+  0% { background-color: #f1f5f9; }
+  50% { background-color: #e2e8f0; }
+  100% { background-color: #f1f5f9; }
+}
+
+.skeleton-box {
+  animation: skeleton-loading 1.5s infinite ease-in-out;
+  border-radius: 8px;
+  background-color: #f1f5f9;
+}
+
+.skeleton-text { height: 18px; margin-bottom: 8px; }
+.skeleton-title { height: 32px; width: 60%; margin-bottom: 16px; }
+.skeleton-circle { border-radius: 50%; }
+.skeleton-card { height: 120px; width: 100%; }
+
+.mypage-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.mypage-skeleton-table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1.5fr;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid #eef2f7;
 }

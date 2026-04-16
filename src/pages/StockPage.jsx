@@ -92,15 +92,24 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
 
       const data = await response.json();
 
-      if (isReset) {
+      if (isReset && pageNum === 1) {
         setStocks(data.content);
       } else {
         setStocks((prev) => {
-          const existingSymbols = new Set(prev.map((s) => s.symbol));
-          const newStocks = data.content.filter(
+          // 1. 기존 목록의 내용을 새로 받아온 데이터로 업데이트 (Partial Update)
+          const newItemsMap = new Map(data.content.map((item) => [item.symbol, item]));
+          const updatedStocks = prev.map((oldItem) => {
+            const newItem = newItemsMap.get(oldItem.symbol);
+            return newItem ? { ...oldItem, ...newItem } : oldItem;
+          });
+
+          // 2. 만약 기존 목록에 없던 새 종목이 있다면 추가 (Pagination)
+          const existingSymbols = new Set(updatedStocks.map((s) => s.symbol));
+          const appendStocks = data.content.filter(
             (s) => !existingSymbols.has(s.symbol),
           );
-          return [...prev, ...newStocks];
+
+          return [...updatedStocks, ...appendStocks];
         });
       }
 
@@ -272,10 +281,8 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
 
     if (hasIncompleteData) {
       const timer = setTimeout(() => {
-        // 현재 페이지의 정보를 다시 요청하여 캐시된 시세를 가져옵니다.
-        // 백엔드에서는 이미 리스트 요청 시 우선순위 큐에 등록했으므로, 
-        // 몇 초 뒤에 다시 요청하면 정보가 채워져 있을 확률이 높습니다.
-        fetchStocks(page, true);
+        // [수정] isReset을 false로 넘겨 기존 목록을 유지하면서 데이터만 보정합니다.
+        fetchStocks(page, false);
       }, 3500); // 3.5초 대기 후 재시도
 
       return () => clearTimeout(timer);

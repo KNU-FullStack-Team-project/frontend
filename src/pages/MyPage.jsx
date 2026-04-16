@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import AppButton from "../common/AppButton";
 import OrderHistory from "../components/stock/OrderHistory";
 import PortfolioChart from "../components/stock/PortfolioChart";
+import DashboardSkeleton from "../components/common/DashboardSkeleton";
 
 const TEXT = {
   loginMissing: "\uB85C\uADF8\uC778 \uC815\uBCF4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4. \uB2E4\uC2DC \uB85C\uADF8\uC778\uD574 \uC8FC\uC138\uC694.",
@@ -46,6 +47,7 @@ const TEXT = {
   valuation: "\uD3C9\uAC00\uAE08\uC561",
   noHoldings: "\uBCF4\uC720 \uC911\uC778 \uC885\uBAA9\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.",
   shares: "\uC8FC",
+  profitRate: "\uC218\uC775\uB960",
 };
 
 const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
@@ -55,6 +57,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [resettingAccountId, setResettingAccountId] = useState(null);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const targetEmail = viewedUser?.email || currentUser?.email;
   const isMyOwnPage = !viewedUser || viewedUser.email === currentUser?.email;
@@ -62,9 +65,13 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     accounts.find((account) => account.accountId === selectedAccountId) || null;
 
   const fetchDashboardData = async (accountId) => {
+    setIsLoading(true);
     try {
       const token = localStorage.getItem("accessToken") || currentUser?.token;
-      if (!token) return;
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
 
       const response = await fetch(
         `http://localhost:8081/api/accounts/my/dashboard?email=${targetEmail}&accountId=${accountId}`,
@@ -81,6 +88,8 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
       }
     } catch (err) {
       console.error("Dashboard load failed:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -382,99 +391,128 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
         </aside>
 
         <main className="mypage-right">
-          <section className="mypage-stats-grid">
-            {summaryItems.map((item) => (
-              <article
-                key={item.label}
-                className={`mypage-stat-card tone-${item.tone}`}
-              >
-                <span className="mypage-stat-label">{item.label}</span>
-                <strong className="mypage-stat-value">{item.value}</strong>
-              </article>
-            ))}
-          </section>
+          {isLoading ? (
+            <DashboardSkeleton />
+          ) : (
+            <>
+              <section className="mypage-stats-grid">
+                {summaryItems.map((item) => (
+                  <article
+                    key={item.label}
+                    className={`mypage-stat-card tone-${item.tone}`}
+                  >
+                    <span className="mypage-stat-label">{item.label}</span>
+                    <strong className="mypage-stat-value">{item.value}</strong>
+                  </article>
+                ))}
+              </section>
 
-          <section className="content-card mypage-portfolio-card">
-            <div className="mypage-card-header">
-              <div>
-                <p className="mypage-eyebrow">Portfolio</p>
-                <h2 className="mypage-title">{TEXT.assetStatus}</h2>
-              </div>
-              <div className="mypage-selected-account">
-                <span>{TEXT.selectedAccountLabel}</span>
-                <strong>
-                  {selectedAccount?.accountName || TEXT.selectAccountHelp}
-                </strong>
-              </div>
-            </div>
-
-            <div className="portfolio-section-layout">
-              <div className="portfolio-chart-container">
-                <div className="mypage-section-head">
+              <section className="content-card mypage-portfolio-card">
+                <div className="mypage-card-header">
                   <div>
-                    <h3>{TEXT.portfolioRatio}</h3>
-                    <p>{TEXT.portfolioRatioDesc}</p>
+                    <p className="mypage-eyebrow">Portfolio</p>
+                    <h2 className="mypage-title">{TEXT.assetStatus}</h2>
+                  </div>
+                  <div className="mypage-selected-account">
+                    <span>{TEXT.selectedAccountLabel}</span>
+                    <strong>
+                      {selectedAccount?.accountName || TEXT.selectAccountHelp}
+                    </strong>
                   </div>
                 </div>
-                <PortfolioChart holdings={visibleHoldings} />
-              </div>
 
-              <div className="portfolio-list-container">
-                <div className="mypage-section-head">
-                  <div>
-                    <h3>{TEXT.holdingsStatus}</h3>
-                    <p>{TEXT.holdingsStatusDesc}</p>
+                <div className="portfolio-section-layout">
+                  <div className="portfolio-chart-container">
+                    <div className="mypage-section-head">
+                      <div>
+                        <h3>{TEXT.portfolioRatio}</h3>
+                        <p>{TEXT.portfolioRatioDesc}</p>
+                      </div>
+                    </div>
+                    <PortfolioChart holdings={visibleHoldings} />
                   </div>
-                  <span className="mypage-table-count">
-                    {`${visibleHoldings.length}${TEXT.stockCountSuffix}`}
-                  </span>
-                </div>
 
-                <div className="mypage-table-wrap">
-                  <table className="stock-table mypage-table">
-                    <thead>
-                      <tr>
-                        <th>{TEXT.stockName}</th>
-                        <th>{TEXT.quantity}</th>
-                        <th>{TEXT.averageBuyPrice}</th>
-                        <th>{TEXT.currentPrice}</th>
-                        <th>{TEXT.valuation}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleHoldings.length === 0 ? (
-                        <tr>
-                          <td colSpan="5" className="mypage-empty-cell">
-                            {TEXT.noHoldings}
-                          </td>
-                        </tr>
-                      ) : (
-                        visibleHoldings.map((item, index) => (
-                          <tr key={`${item.stockName}-${index}`}>
-                            <td>{item.stockName}</td>
-                            <td>{`${item.quantity?.toLocaleString()}${TEXT.shares}`}</td>
-                            <td>{item.averageBuyPrice}</td>
-                            <td>{item.currentPrice}</td>
-                            <td>
-                              <strong>{item.holdingValue}</strong>
-                            </td>
+                  <div className="portfolio-list-container">
+                    <div className="mypage-section-head">
+                      <div>
+                        <h3>{TEXT.holdingsStatus}</h3>
+                        <p>{TEXT.holdingsStatusDesc}</p>
+                      </div>
+                      <span className="mypage-table-count">
+                        {`${visibleHoldings.length}${TEXT.stockCountSuffix}`}
+                      </span>
+                    </div>
+
+                    <div className="mypage-table-wrap">
+                      <table className="stock-table mypage-table">
+                        <thead>
+                          <tr>
+                            <th>{TEXT.stockName}</th>
+                            <th>{TEXT.quantity}</th>
+                            <th>{TEXT.averageBuyPrice}</th>
+                            <th>{TEXT.currentPrice}</th>
+                            <th>{TEXT.profitRate}</th>
+                            <th>{TEXT.valuation}</th>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </section>
+                        </thead>
+                        <tbody>
+                          {visibleHoldings.length === 0 ? (
+                            <tr>
+                              <td colSpan="6" className="mypage-empty-cell">
+                                {TEXT.noHoldings}
+                              </td>
+                            </tr>
+                          ) : (
+                            visibleHoldings.map((item, index) => {
+                              const parsePrice = (str) =>
+                                parseFloat(String(str).replace(/[^0-9.]/g, "")) || 0;
+                              const avg = parsePrice(item.averageBuyPrice);
+                              const curr = parsePrice(item.currentPrice);
+                              const rate = avg > 0 ? ((curr - avg) / avg) * 100 : 0;
+                              const rateClass =
+                                rate > 0
+                                  ? "stock-profit-up"
+                                  : rate < 0
+                                  ? "stock-profit-down"
+                                  : "";
+                              const rateSign = rate > 0 ? "+" : "";
 
-          {selectedAccountId ? (
-            <OrderHistory
-              accountId={selectedAccountId}
-              accountName={selectedAccount?.accountName}
-              currentUser={currentUser}
-            />
-          ) : null}
+                              return (
+                                <tr key={`${item.stockName}-${index}`}>
+                                  <td>{item.stockName}</td>
+                                  <td>{`${item.quantity?.toLocaleString()}${
+                                    TEXT.shares
+                                  }`}</td>
+                                  <td>{item.averageBuyPrice}</td>
+                                  <td>{item.currentPrice}</td>
+                                  <td className={rateClass}>
+                                    {rate === 0
+                                      ? "0.00%"
+                                      : `${rateSign}${rate.toFixed(2)}%`}
+                                  </td>
+                                  <td>
+                                    <strong>{item.holdingValue}</strong>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {selectedAccountId ? (
+                <OrderHistory
+                  accountId={selectedAccountId}
+                  accountName={selectedAccount?.accountName}
+                  currentUser={currentUser}
+                />
+              ) : null}
+            </>
+          )}
         </main>
       </div>
     </div>
