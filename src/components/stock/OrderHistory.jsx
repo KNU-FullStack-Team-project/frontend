@@ -106,7 +106,7 @@ const OrderHistory = ({ accountId, currentUser }) => {
     }
   };
 
-  if (loading) return <div className="loading-spinner">로딩 중...</div>;
+  if (loading) return <div className="loading-spinner">주문 내역을 불러오는 중입니다...</div>;
   if (error) return <div className="error-message">{error}</div>;
 
   return (
