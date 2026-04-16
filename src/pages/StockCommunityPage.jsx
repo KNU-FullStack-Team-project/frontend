@@ -239,7 +239,7 @@ const StockCommunityPage = ({
       </button>
 
       <div style={styles.heroCard}>
-        <div>
+        <div style={styles.heroLeft}>
           <div style={styles.heroBadge}>STOCK COMMUNITY</div>
           <h1 style={styles.heroTitle}>
             {stockInfo?.stockName || stockInfo?.name || symbol} 커뮤니티
@@ -469,7 +469,7 @@ const StockCommunityPage = ({
 
 const styles = {
   page: {
-    maxWidth: "1180px",
+    maxWidth: "1440px",
     margin: "0 auto",
     padding: "28px 20px 56px",
   },
@@ -519,6 +519,10 @@ const styles = {
   heroRight: {
     textAlign: "right",
     minWidth: "180px",
+  },
+  heroLeft: {
+  flex: 1,
+  textAlign: "center",
   },
   heroSymbol: {
     fontSize: "13px",
