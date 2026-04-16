@@ -11,6 +11,7 @@ import AccountSettingsPage from "../../pages/AccountSettingsPage";
 import AuthPage from "../../pages/AuthPage";
 import AdminPage from "../../pages/AdminPage";
 import UserActivityPage from "../../pages/UserActivityPage";
+import ReportListPage from "../../pages/ReportListPage";
 import RankingPage from "../../pages/RankingPage";
 import CommunityPage from "../../pages/CommunityPage";
 import StockCommunityPage from "../../pages/StockCommunityPage";
@@ -616,6 +617,9 @@ const AppController = () => {
         return (
           <AdminPage
             currentUser={currentUser}
+            onOpenReportList={() => {
+              setCurrentPage("reportList");
+            }}
             onOpenUserMyPage={(user) => {
               setSelectedMyPageUser(user);
               setCurrentPage("mypage");
@@ -632,6 +636,14 @@ const AppController = () => {
           <UserActivityPage
             currentUser={currentUser}
             targetUser={selectedActivityUser}
+            onBack={() => setCurrentPage("admin")}
+          />
+        );
+
+      case "reportList":
+        return (
+          <ReportListPage
+            currentUser={currentUser}
             onBack={() => setCurrentPage("admin")}
           />
         );

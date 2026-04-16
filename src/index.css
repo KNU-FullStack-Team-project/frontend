@@ -102,6 +102,92 @@ p {
   color: var(--accent);
 }
 
+.admin-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-toolbar-button {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-toolbar-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.admin-toolbar-button-disabled,
+.admin-toolbar-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: var(--border);
+  color: var(--text);
+  background: var(--bg);
+}
+
+.admin-toolbar-button-disabled:hover,
+.admin-toolbar-button:disabled:hover {
+  border-color: var(--border);
+  color: var(--text);
+  background: var(--bg);
+}
+
+.admin-search-wrap {
+  width: min(280px, 100%);
+}
+
+.admin-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 14px;
+}
+
+.admin-search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(170, 59, 255, 0.08);
+}
+
+.report-detail-text {
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.report-sub-text {
+  margin-top: 4px;
+  color: var(--text);
+  font-size: 12px;
+}
+
 .user-activity-header {
   display: flex;
   justify-content: space-between;

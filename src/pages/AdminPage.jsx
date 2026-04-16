@@ -4,12 +4,18 @@ import AppButton from "../common/AppButton";
 const ROLE_OPTIONS = ["USER", "ADMIN"];
 const STATUS_OPTIONS = ["ACTIVE", "SUSPENDED"];
 
-const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
+const AdminPage = ({
+  onOpenUserMyPage,
+  onOpenUserActivity,
+  onOpenReportList,
+  currentUser,
+}) => {
   const [users, setUsers] = useState([]);
   const [editedUsers, setEditedUsers] = useState({});
   const [loading, setLoading] = useState(true);
   const [savingUserId, setSavingUserId] = useState(null);
   const [error, setError] = useState("");
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -97,6 +103,20 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
     }
   };
 
+  const filteredUsers = users.filter((user) => {
+    const keyword = searchKeyword.trim().toLowerCase();
+
+    if (!keyword) {
+      return true;
+    }
+
+    return (
+      String(user.id).includes(keyword) ||
+      (user.email || "").toLowerCase().includes(keyword) ||
+      (user.nickname || "").toLowerCase().includes(keyword)
+    );
+  });
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -114,6 +134,40 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
 
       {!error ? (
         <div className="admin-table-wrap">
+          <div className="admin-toolbar">
+            <div className="admin-toolbar-actions">
+              <button
+                type="button"
+                className="admin-toolbar-button"
+                onClick={() => setSearchKeyword("")}
+              >
+                전체보기
+              </button>
+              <button
+                type="button"
+                className="admin-toolbar-button admin-toolbar-button-disabled"
+                disabled
+              >
+                문의내역
+              </button>
+              <button
+                type="button"
+                className="admin-toolbar-button"
+                onClick={() => onOpenReportList && onOpenReportList()}
+              >
+                신고목록
+              </button>
+            </div>
+            <div className="admin-search-wrap">
+              <input
+                type="text"
+                className="admin-search-input"
+                placeholder="유저 검색"
+                value={searchKeyword}
+                onChange={(event) => setSearchKeyword(event.target.value)}
+              />
+            </div>
+          </div>
           <table className="stock-table admin-table">
             <thead>
               <tr>
@@ -128,12 +182,12 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
               </tr>
             </thead>
             <tbody>
-              {users.length === 0 ? (
+              {filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan="8">조회된 회원이 없습니다.</td>
                 </tr>
               ) : (
-                users.map((user) => {
+                filteredUsers.map((user) => {
                   const isQuitUser = user.status === "QUIT";
                   const editedUser = editedUsers[user.id] || {
                     role: user.role || "USER",
