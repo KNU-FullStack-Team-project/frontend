@@ -181,20 +181,27 @@ const AppController = () => {
   }, []);
 
   const handleHeartbeat = useCallback(async () => {
-    if (!isLoggedIn || !currentUser) return;
+    if (!isLoggedIn) return;
 
     resetInactivityTimer();
 
     try {
-      const currentToken =
-        localStorage.getItem("accessToken") || currentUser?.token;
+      // currentUser state를 의존성에 넣지 않기 위해 localStorage에서 직접 가져오거나 
+      // handleUpdateCurrentUser와 연동된 로직을 사용합니다.
+      const savedUserStr = localStorage.getItem("currentUser");
+      if (!savedUserStr) return;
+      const savedUser = JSON.parse(savedUserStr);
+      
+      const currentToken = localStorage.getItem("accessToken") || savedUser?.token;
+      if (!currentToken || !savedUser?.email) return;
+
       const res = await fetch("http://localhost:8081/users/refresh", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${currentToken}`,
         },
-        body: JSON.stringify({ email: currentUser.email }),
+        body: JSON.stringify({ email: savedUser.email }),
       });
 
       if (res.ok) {
@@ -206,7 +213,7 @@ const AppController = () => {
     } catch (e) {
       console.error("Heartbeat backend sync failed:", e);
     }
-  }, [isLoggedIn, currentUser, resetInactivityTimer, handleUpdateCurrentUser]);
+  }, [isLoggedIn, resetInactivityTimer, handleUpdateCurrentUser]);
 
   const handleLogin = async (form) => {
     try {

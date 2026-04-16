@@ -32,8 +32,8 @@ const StockRow = ({
       </div>
 
       <div className="stock-price-section">
-        {stock.currentPrice === "0" ? (
-          <span style={{ color: "#9ca3af", fontSize: "12px" }}>조회 중...</span>
+        {stock.currentPrice === "0" || !stock.currentPrice ? (
+          <span style={{ color: "#9ca3af", fontSize: "12px", fontWeight: "500" }}>시세 확인 중...</span>
         ) : (
           `${parseInt(stock.currentPrice).toLocaleString()}원`
         )}
@@ -197,22 +197,29 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
     }
   }, [searchKeyword]);
 
+  const prevUserEmailRef = useRef(null);
+
   useEffect(() => {
-    setPage(1);
-    fetchStocks(1, true);
+    // 사용자가 실제로 바뀌었을 때만 리스트와 즐겨찾기를 다시 불러옵니다.
+    // 토큰 갱신 등의 사소한 currentUser 변경으로 인한 무한 루프를 방지합니다.
+    if (prevUserEmailRef.current !== user?.email) {
+      setPage(1);
+      fetchStocks(1, true);
 
-    const userId = user?.userId || user?.id;
-    const token = localStorage.getItem("accessToken") || user?.token;
+      const userId = user?.userId || user?.id;
+      const token = localStorage.getItem("accessToken") || user?.token;
 
-    if (userId && token) {
-      fetchFavorites();
-    } else {
-      const savedFavs = localStorage.getItem("favoriteStocks");
-      if (savedFavs) {
-        setFavorites(new Set(JSON.parse(savedFavs)));
+      if (userId && token) {
+        fetchFavorites();
+      } else {
+        const savedFavs = localStorage.getItem("favoriteStocks");
+        if (savedFavs) {
+          setFavorites(new Set(JSON.parse(savedFavs)));
+        }
       }
+      prevUserEmailRef.current = user?.email;
     }
-  }, [user, fetchStocks, fetchFavorites]);
+  }, [user?.email, fetchStocks, fetchFavorites]);
 
   useEffect(() => {
     if (activeTab === "favorites") {
@@ -224,15 +231,13 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
   useEffect(() => {
     let interval;
     if (isModalOpen && user && onActivity) {
-      // 모달이 열리자마자 한 번 호출하여 타이머 리셋
-      onActivity();
-
+      // 30초마다 활동 타이머 리셋
       interval = setInterval(() => {
         onActivity();
-      }, 30000); // 30초마다 활동 타이머 리셋
+      }, 30000);
     }
     return () => clearInterval(interval);
-  }, [isModalOpen, user, onActivity]);
+  }, [isModalOpen, user?.email, onActivity]);
 
   useEffect(() => {
     if (activeTab !== "all") return;
@@ -257,6 +262,26 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
       if (currentTarget) observer.unobserve(currentTarget);
     };
   }, [hasMore, loading, page, fetchStocks, activeTab]);
+
+  // 시세 미수집 종목(0원)이 있을 경우 자동으로 정보를 다시 불러오는 로직 (지능형 자동 갱신)
+  useEffect(() => {
+    if (activeTab !== "all" || loading || stocks.length === 0) return;
+
+    const hasIncompleteData = stocks.some(
+      (s) => s.currentPrice === "0" || !s.currentPrice || s.currentPrice === "null"
+    );
+
+    if (hasIncompleteData) {
+      const timer = setTimeout(() => {
+        // 현재 페이지의 정보를 다시 요청하여 캐시된 시세를 가져옵니다.
+        // 백엔드에서는 이미 리스트 요청 시 우선순위 큐에 등록했으므로, 
+        // 몇 초 뒤에 다시 요청하면 정보가 채워져 있을 확률이 높습니다.
+        fetchStocks(page, true);
+      }, 3500); // 3.5초 대기 후 재시도
+
+      return () => clearTimeout(timer);
+    }
+  }, [stocks, loading, page, fetchStocks, activeTab]);
 
   const toggleFavorite = async (e, symbol) => {
     e.stopPropagation();
@@ -326,15 +351,21 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
   };
 
   const getTradingAmountLabel = (price, volume) => {
-    if (!price || !volume) return "0원";
-    const amount = parseInt(price) * parseInt(volume);
+    if (!price || !volume || isNaN(parseInt(price)) || isNaN(parseInt(volume)) || price === "0") return "-";
+    
+    try {
+      // 큰 숫자를 다루기 위해 BigInt 사용 (정밀도 유지)
+      const amount = BigInt(parseInt(price)) * BigInt(parseInt(volume));
 
-    if (amount >= 100000000) {
-      return (amount / 100000000).toFixed(1) + "억원";
-    } else if (amount >= 10000) {
-      return (amount / 10000).toLocaleString() + "만원";
+      if (amount >= 100000000n) {
+        return (Number(amount) / 100000000).toFixed(1) + "억원";
+      } else if (amount >= 10000n) {
+        return (Number(amount) / 10000).toLocaleString() + "만원";
+      }
+      return Number(amount).toLocaleString() + "원";
+    } catch (e) {
+      return "0원";
     }
-    return amount.toLocaleString() + "원";
   };
 
   if (loading && page === 1 && stocks.length === 0) {

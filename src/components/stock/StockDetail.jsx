@@ -22,6 +22,8 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   const [targetPrice, setTargetPrice] = useState(0);
   const [period, setPeriod] = useState("1M");
   const [accountData, setAccountData] = useState(null);
+  const [userAccounts, setUserAccounts] = useState([]);
+  const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [detailTab, setDetailTab] = useState("trade");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
@@ -123,15 +125,41 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
     };
   }, [stock?.symbol, period]); // stock 개체 전체가 아닌 symbol을 의존성으로 설정
 
-  const fetchAccountData = React.useCallback(async () => {
+  const fetchUserAccounts = React.useCallback(async () => {
     if (!user?.email) return;
+    const token = localStorage.getItem("accessToken") || user?.token;
+    if (!token) return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:8081/api/accounts/my?email=${user.email}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setUserAccounts(data);
+        if (data.length > 0 && !selectedAccountId) {
+          setSelectedAccountId(data[0].accountId);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch user accounts:", err);
+    }
+  }, [user?.email, user?.token, selectedAccountId]);
+
+  const fetchAccountData = React.useCallback(async () => {
+    if (!user?.email || !selectedAccountId) return;
 
     const token = localStorage.getItem("accessToken") || user?.token;
     if (!token) return;
 
     try {
       const response = await fetch(
-        `http://localhost:8081/api/accounts/my/dashboard?email=${user.email}`,
+        `http://localhost:8081/api/accounts/my/dashboard?email=${user.email}&accountId=${selectedAccountId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -146,11 +174,17 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
     } catch (err) {
       console.error("Failed to fetch account data:", err);
     }
-  }, [user?.email, user?.token]);
+  }, [user?.email, user?.token, selectedAccountId]);
 
   useEffect(() => {
-    fetchAccountData();
-  }, [fetchAccountData]);
+    fetchUserAccounts();
+  }, [fetchUserAccounts]);
+
+  useEffect(() => {
+    if (selectedAccountId) {
+      fetchAccountData();
+    }
+  }, [selectedAccountId, fetchAccountData]);
 
   const handleOrder = async () => {
     const token = localStorage.getItem("accessToken") || user?.token;
@@ -199,7 +233,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          accountId: accountData.id || accountData.accountId || 1,
+          accountId: selectedAccountId,
           stockCode: stock.symbol,
           orderSide,
           orderType,
@@ -449,8 +483,30 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
           </div>
 
           <div className="trading-section detail-card">
-            <div className="trading-form-header">
+            <div className="trading-form-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h4>주문하기</h4>
+              {userAccounts.length > 1 && (
+                <select 
+                  value={selectedAccountId} 
+                  onChange={(e) => setSelectedAccountId(Number(e.target.value))}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    background: '#f9fafb'
+                  }}
+                >
+                  {userAccounts.map(acc => (
+                    <option key={acc.accountId} value={acc.accountId}>
+                      {acc.accountName} ({acc.accountType === 'MAIN' ? '기본' : '대회'})
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div className="trading-tabs">

@@ -7,11 +7,35 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   const [profile, setProfile] = useState(null);
   const [dashboard, setDashboard] = useState(null);
   const [accounts, setAccounts] = useState([]);
+  const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [resettingAccountId, setResettingAccountId] = useState(null);
   const [error, setError] = useState("");
 
   const targetEmail = viewedUser?.email || currentUser?.email;
   const isMyOwnPage = !viewedUser || viewedUser.email === currentUser?.email;
+
+  const fetchDashboardData = async (accountId) => {
+    try {
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
+      if (!token) return;
+
+      const response = await fetch(
+        `http://localhost:8081/api/accounts/my/dashboard?email=${targetEmail}&accountId=${accountId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setDashboard(data);
+      }
+    } catch (err) {
+      console.error("대시보드 로드 실패:", err);
+    }
+  };
 
   const loadMyPageData = async () => {
     if (!targetEmail) {
@@ -32,17 +56,11 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
         Authorization: `Bearer ${token}`,
       };
 
-      const [profileResponse, dashboardResponse, accountsResponse] =
+      const [profileResponse, accountsResponse] =
         await Promise.all([
           fetch(`http://localhost:8081/users/profile?${params.toString()}`, {
             headers: commonHeaders,
           }),
-          fetch(
-            `http://localhost:8081/api/accounts/my/dashboard?${params.toString()}`,
-            {
-              headers: commonHeaders,
-            },
-          ),
           fetch(`http://localhost:8081/api/accounts/my?${params.toString()}`, {
             headers: commonHeaders,
           }),
@@ -50,26 +68,28 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
 
       if (
         !profileResponse.ok ||
-        !dashboardResponse.ok ||
         !accountsResponse.ok
       ) {
-        console.error("API 응답 에러:", {
-          profile: profileResponse.status,
-          dashboard: dashboardResponse.status,
-          accounts: accountsResponse.status,
-        });
         throw new Error("failed");
       }
 
-      const [profileData, dashboardData, accountsData] = await Promise.all([
+      const [profileData, accountsData] = await Promise.all([
         profileResponse.json(),
-        dashboardResponse.json(),
         accountsResponse.json(),
       ]);
 
       setProfile(profileData);
-      setDashboard(dashboardData);
       setAccounts(accountsData);
+      
+      if (accountsData.length > 0) {
+          const firstAccountId = accountsData[0].accountId;
+          if (!selectedAccountId) {
+            setSelectedAccountId(firstAccountId);
+          } else {
+            fetchDashboardData(selectedAccountId);
+          }
+      }
+      
       setError("");
     } catch (loadError) {
       console.error("마이페이지 조회 오류:", loadError);
@@ -80,6 +100,12 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   useEffect(() => {
     loadMyPageData();
   }, [targetEmail, currentUser]);
+
+  useEffect(() => {
+    if (selectedAccountId) {
+      fetchDashboardData(selectedAccountId);
+    }
+  }, [selectedAccountId]);
 
   const handleResetCash = async (accountId) => {
     if (!accountId || resettingAccountId || !isMyOwnPage) {
@@ -194,16 +220,36 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
           {accounts.length > 0 ? (
             accounts.map((account, index) => {
               const isMainAccount = account.accountType === "MAIN";
+              const isSelected = selectedAccountId === account.accountId;
 
               return (
-                <div className="mypage-row" key={account.accountId}>
-                  <span>{account.accountName || `계좌 ${index + 1}`}</span>
+                <div 
+                  className={`mypage-row ${isSelected ? 'active-account' : ''}`} 
+                  key={account.accountId}
+                  onClick={() => setSelectedAccountId(account.accountId)}
+                  style={{
+                    cursor: 'pointer',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    margin: '4px -12px',
+                    transition: 'all 0.2s',
+                    backgroundColor: isSelected ? '#f3f4f6' : 'transparent',
+                    border: isSelected ? '1px solid #e5e7eb' : '1px solid transparent'
+                  }}
+                >
+                  <span style={{ fontWeight: isSelected ? '800' : 'normal', color: isSelected ? '#111827' : '#6b7280' }}>
+                    {account.accountName || `계좌 ${index + 1}`}
+                    {isSelected && <span style={{ marginLeft: '8px', fontSize: '12px', color: '#10b981' }}>● 선택됨</span>}
+                  </span>
                   <div className="mypage-balance-controls">
                     {isMyOwnPage && isMainAccount ? (
                       <button
                         type="button"
                         className="mypage-deposit-button"
-                        onClick={() => handleResetCash(account.accountId)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleResetCash(account.accountId);
+                        }}
                         disabled={resettingAccountId === account.accountId}
                       >
                         {resettingAccountId === account.accountId
@@ -211,7 +257,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                           : "계좌 초기화"}
                       </button>
                     ) : null}
-                    <strong>{account.cashBalance ?? "-"}</strong>
+                    <strong style={{ color: isSelected ? '#111827' : '#374151' }}>{account.cashBalance ?? "-"}</strong>
                   </div>
                 </div>
               );
@@ -285,8 +331,8 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
         </div>
       </div>
 
-      {accountId ? (
-        <OrderHistory accountId={accountId} currentUser={currentUser} />
+      {selectedAccountId ? (
+        <OrderHistory accountId={selectedAccountId} currentUser={currentUser} />
       ) : null}
     </div>
   );
