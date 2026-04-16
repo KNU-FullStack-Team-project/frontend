@@ -46,44 +46,46 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
 
   if (!isLoggedIn) {
     return (
-      <div className="landing-page">
-        <section className="landing-hero">
-          <div className="landing-badge">Mock Invest</div>
-          <h1 className="landing-title">가볍게 시작하는 모의투자</h1>
-          <p className="landing-description">
-            실제 돈 없이 투자 감각을 익히고, 다양한 전략을 연습해보세요.
-          </p>
-          <div className="landing-actions">
-            <AppButton variant="primary" onClick={onOpenLogin}>
-              로그인하고 시작하기
-            </AppButton>
-          </div>
-        </section>
+      <div style={styles.page}>
+        <div className="landing-page">
+          <section className="landing-hero">
+            <div className="landing-badge">Mock Invest</div>
+            <h1 className="landing-title">가볍게 시작하는 모의투자</h1>
+            <p className="landing-description">
+              실제 돈 없이 투자 감각을 익히고, 다양한 전략을 연습해보세요.
+            </p>
+            <div className="landing-actions">
+              <AppButton variant="primary" onClick={onOpenLogin}>
+                로그인하고 시작하기
+              </AppButton>
+            </div>
+          </section>
 
-        <section className="landing-section" style={{ textAlign: "center" }}>
-          <SectionTitle title="서비스 소개" />
-          <div
-            className="stock-grid"
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "20px",
-            }}
-          >
-            <div className="mini-stock-card" style={{ textAlign: "center" }}>
-              <h4>모의 매매</h4>
-              <p>실전처럼 사고 팔며 투자 흐름을 익혀보세요.</p>
+          <section className="landing-section" style={{ textAlign: "center" }}>
+            <SectionTitle value="서비스 소개" />
+            <div
+              className="stock-grid"
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: "20px",
+              }}
+            >
+              <div className="mini-stock-card" style={{ textAlign: "center" }}>
+                <h4>모의 매매</h4>
+                <p>실전처럼 사고 팔며 투자 흐름을 익혀보세요.</p>
+              </div>
+              <div className="mini-stock-card" style={{ textAlign: "center" }}>
+                <h4>대회 참여</h4>
+                <p>다른 사용자와 수익률을 비교하며 경쟁해보세요.</p>
+              </div>
+              <div className="mini-stock-card" style={{ textAlign: "center" }}>
+                <h4>포트폴리오 확인</h4>
+                <p>내 투자 결과를 한눈에 정리해서 볼 수 있습니다.</p>
+              </div>
             </div>
-            <div className="mini-stock-card" style={{ textAlign: "center" }}>
-              <h4>대회 참여</h4>
-              <p>다른 사용자와 수익률을 비교하며 경쟁해보세요.</p>
-            </div>
-            <div className="mini-stock-card" style={{ textAlign: "center" }}>
-              <h4>포트폴리오 확인</h4>
-              <p>내 투자 결과를 한눈에 정리해서 볼 수 있습니다.</p>
-            </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
     );
   }
@@ -109,33 +111,48 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
       </div>
 
       <div className="dashboard-grid">
-        <article className="mypage-stat-card tone-primary">
+        <article className="mypage-stat-card">
           <span className="mypage-stat-label">총 자산</span>
-          <strong className="mypage-stat-value">
+          <span className="mypage-stat-value">
             {accountData?.totalAsset || "₩0"}
-          </strong>
+          </span>
         </article>
-        <article className="mypage-stat-card tone-neutral">
+        <article className="mypage-stat-card">
           <span className="mypage-stat-label">보유 현금</span>
-          <strong className="mypage-stat-value">
+          <span className="mypage-stat-value">
             {accountData?.cashBalance || "₩0"}
-          </strong>
+          </span>
         </article>
-        <article className="mypage-stat-card tone-profit">
+        <article className="mypage-stat-card">
           <span className="mypage-stat-label">평가 손익</span>
-          <strong className="mypage-stat-value">
+          <span
+            className={`mypage-stat-value ${Number(accountData?.totalProfitAmount?.replace(/[^0-9.-]/g, "")) > 0
+              ? "up"
+              : Number(accountData?.totalProfitAmount?.replace(/[^0-9.-]/g, "")) < 0
+                ? "down"
+                : ""
+              }`}
+          >
             {accountData?.totalProfitAmount || "₩0"}
-          </strong>
+          </span>
         </article>
-        <article className="mypage-stat-card tone-accent">
+
+        <article className="mypage-stat-card">
           <span className="mypage-stat-label">수익률</span>
-          <strong className="mypage-stat-value">
+          <span
+            className={`mypage-stat-value ${parseFloat(accountData?.totalReturnRate) > 0
+              ? "up"
+              : parseFloat(accountData?.totalReturnRate) < 0
+                ? "down"
+                : ""
+              }`}
+          >
             {accountData?.totalReturnRate || "0%"}
-          </strong>
+          </span>
         </article>
 
         <div className="content-card large">
-          <SectionTitle title="관심 종목" />
+          <SectionTitle value="관심 종목" />
           <table className="stock-table">
             <thead>
               <tr>
@@ -147,7 +164,7 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
             </thead>
             <tbody>
               {accountData?.favoriteStocks &&
-              accountData.favoriteStocks.length > 0 ? (
+                accountData.favoriteStocks.length > 0 ? (
                 accountData.favoriteStocks.map((s, i) => (
                   <tr key={i}>
                     <td>{s.name}</td>
@@ -176,7 +193,7 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
         </div>
 
         <div className="content-card large">
-          <SectionTitle title="보유 종목" />
+          <SectionTitle value="보유 종목" />
           <table className="stock-table">
             <thead>
               <tr>

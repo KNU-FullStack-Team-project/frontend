@@ -5,49 +5,46 @@ import PortfolioChart from "../components/stock/PortfolioChart";
 import DashboardSkeleton from "../components/common/DashboardSkeleton";
 
 const TEXT = {
-  loginMissing: "\uB85C\uADF8\uC778 \uC815\uBCF4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4. \uB2E4\uC2DC \uB85C\uADF8\uC778\uD574 \uC8FC\uC138\uC694.",
-  loadFailed: "\uB9C8\uC774\uD398\uC774\uC9C0 \uC815\uBCF4\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.",
-  resetConfirm:
-    "\uC608\uC218\uAE08\uACFC \uBCF4\uC720 \uC911\uC778 \uC8FC\uC2DD\uC744 \uCD08\uAE30\uD654\uD560\uAE4C\uC694?",
-  resetFailed: "\uCD08\uAE30\uD654\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.",
-  myInfo: "\uB0B4 \uC815\uBCF4",
-  infoSuffix: "\uC815\uBCF4",
-  edit: "\uC218\uC815",
-  user: "\uC0AC\uC6A9\uC790",
-  nickname: "\uB2C9\uB124\uC784",
-  email: "\uC774\uBA54\uC77C",
-  joinedAt: "\uAC00\uC785\uC77C",
-  myAccounts: "\uB0B4 \uACC4\uC88C",
-  chooseAccount: "\uC870\uD68C\uD560 \uACC4\uC88C\uB97C \uC120\uD0DD\uD558\uC138\uC694.",
-  account: "\uACC4\uC88C",
-  mainAccount: "\uAE30\uBCF8 \uACC4\uC88C",
-  selected: "\uC120\uD0DD\uB428",
-  cashBalance: "\uC608\uC218\uAE08",
-  reset: "\uB9AC\uC14B",
-  processing: "\uCC98\uB9AC \uC911",
-  noAccounts: "\uD45C\uC2DC\uD560 \uACC4\uC88C\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.",
-  totalAsset: "\uCD1D \uC790\uC0B0",
-  cashOnHand: "\uBCF4\uC720 \uD604\uAE08",
-  totalProfit: "\uCD1D \uC218\uC775",
-  returnRate: "\uC218\uC775\uB960",
-  assetStatus: "\uC790\uC0B0 \uD604\uD669",
-  selectedAccountLabel: "\uC120\uD0DD \uACC4\uC88C",
-  selectAccountHelp: "\uACC4\uC88C\uB97C \uC120\uD0DD\uD574 \uC8FC\uC138\uC694",
-  portfolioRatio: "\uC790\uC0B0 \uAD6C\uC131 \uBE44\uC911",
-  portfolioRatioDesc:
-    "\uBCF4\uC720 \uC885\uBAA9\uC758 \uD3C9\uAC00\uAE08\uC561 \uBE44\uC911\uC785\uB2C8\uB2E4.",
-  holdingsStatus: "\uBCF4\uC720 \uC885\uBAA9 \uD604\uD669",
-  holdingsStatusDesc:
-    "\uD3C9\uAC00\uAE08\uC561\uC774 \uD070 \uC21C\uC11C\uB300\uB85C \uC815\uB82C\uB429\uB2C8\uB2E4.",
-  stockCountSuffix: "\uAC1C \uC885\uBAA9",
-  stockName: "\uC885\uBAA9\uBA85",
-  quantity: "\uBCF4\uC720 \uC218\uB7C9",
-  averageBuyPrice: "\uD3C9\uADE0 \uB9E4\uC218\uAC00",
-  currentPrice: "\uD604\uC7AC\uAC00",
-  valuation: "\uD3C9\uAC00\uAE08\uC561",
-  noHoldings: "\uBCF4\uC720 \uC911\uC778 \uC885\uBAA9\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.",
-  shares: "\uC8FC",
-  profitRate: "\uC218\uC775\uB960",
+  loginMissing: "로그인 정보가 없습니다. 다시 로그인해 주세요.",
+  loadFailed: "마이페이지 정보를 불러오지 못했습니다.",
+  resetConfirm: "예수금과 보유 중인 주식을 초기화할까요?",
+  resetFailed: "초기화에 실패했습니다.",
+  myInfo: "내 정보",
+  infoSuffix: "정보",
+  edit: "수정",
+  user: "사용자",
+  nickname: "닉네임",
+  email: "이메일",
+  joinedAt: "가입일",
+  myAccounts: "내 계좌",
+  chooseAccount: "조회할 계좌를 선택하세요.",
+  account: "계좌",
+  mainAccount: "기본 계좌",
+  selected: "선택됨",
+  cashBalance: "예수금",
+  reset: "리셋",
+  processing: "처리 중",
+  noAccounts: "표시할 계좌가 없습니다.",
+  totalAsset: "총 자산",
+  cashOnHand: "보유 현금",
+  totalProfit: "총 수익",
+  returnRate: "수익률",
+  assetStatus: "자산 현황",
+  selectedAccountLabel: "선택 계좌",
+  selectAccountHelp: "계좌를 선택해 주세요",
+  portfolioRatio: "자산 구성 비중",
+  portfolioRatioDesc: "보유 종목의 평가금액 비중입니다.",
+  holdingsStatus: "보유 종목 현황",
+  holdingsStatusDesc: "평가금액이 큰 순서대로 정렬됩니다.",
+  stockCountSuffix: "개 종목",
+  stockName: "종목명",
+  quantity: "보유 수량",
+  averageBuyPrice: "평균 매수가",
+  currentPrice: "현재가",
+  valuation: "평가금액",
+  noHoldings: "보유 중인 종목이 없습니다.",
+  shares: "주",
+  profitRate: "수익률",
 };
 
 const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
@@ -293,19 +290,19 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
             <div className="mypage-info-list">
               <div className="mypage-info-item">
                 <span className="mypage-info-label">{TEXT.nickname}</span>
-                <strong className="mypage-info-value">
+                <span className="mypage-info-value">
                   {profile?.nickname ?? "-"}
-                </strong>
+                </span>
               </div>
               <div className="mypage-info-item">
                 <span className="mypage-info-label">{TEXT.email}</span>
-                <strong className="mypage-info-value mypage-email">
+                <span className="mypage-info-value mypage-email">
                   {profile?.email ?? targetEmail ?? "-"}
-                </strong>
+                </span>
               </div>
               <div className="mypage-info-item">
                 <span className="mypage-info-label">{TEXT.joinedAt}</span>
-                <strong className="mypage-info-value">{createdAtText}</strong>
+                <span className="mypage-info-value">{createdAtText}</span>
               </div>
             </div>
 
@@ -324,12 +321,11 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                     const isSelected = selectedAccountId === account.accountId;
 
                     return (
-                      <button
+                      <div
                         key={account.accountId}
                         type="button"
-                        className={`mypage-account-card ${
-                          isSelected ? "is-selected" : ""
-                        }`}
+                        className={`mypage-account-card ${isSelected ? "is-selected" : ""
+                          }`}
                         onClick={() => setSelectedAccountId(account.accountId)}
                       >
                         <div className="mypage-account-top">
@@ -377,7 +373,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                             </button>
                           ) : null}
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -399,7 +395,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                 {summaryItems.map((item) => (
                   <article
                     key={item.label}
-                    className={`mypage-stat-card tone-${item.tone}`}
+                    className={`mypage-stat-card`}
                   >
                     <span className="mypage-stat-label">{item.label}</span>
                     <strong className="mypage-stat-value">{item.value}</strong>
@@ -473,16 +469,15 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                                 rate > 0
                                   ? "stock-profit-up"
                                   : rate < 0
-                                  ? "stock-profit-down"
-                                  : "";
+                                    ? "stock-profit-down"
+                                    : "";
                               const rateSign = rate > 0 ? "+" : "";
 
                               return (
                                 <tr key={`${item.stockName}-${index}`}>
                                   <td>{item.stockName}</td>
-                                  <td>{`${item.quantity?.toLocaleString()}${
-                                    TEXT.shares
-                                  }`}</td>
+                                  <td>{`${item.quantity?.toLocaleString()}${TEXT.shares
+                                    }`}</td>
                                   <td>{item.averageBuyPrice}</td>
                                   <td>{item.currentPrice}</td>
                                   <td className={rateClass}>

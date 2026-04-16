@@ -1,38 +1,38 @@
 import React, { useState, useEffect, useCallback } from "react";
 import AppButton from "../../common/AppButton";
+import "./OrderHistory.css";
 
 const TEXT = {
-  loginTokenMissing: "\uB85C\uADF8\uC778 \uD1A0\uD070\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.",
-  loadFailed: "\uC8FC\uBB38 \uB0B4\uC5ED\uC744 \uBD88\uB7EC\uC62C \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.",
-  cancelConfirm: "\uC815\uB9D0 \uC8FC\uBB38\uC744 \uCDE8\uC18C\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?",
-  canceled: "\uC8FC\uBB38\uC774 \uCDE8\uC18C\uB418\uC5C8\uC2B5\uB2C8\uB2E4.",
-  cancelFailed: "\uCDE8\uC18C \uC2E4\uD328: ",
-  completed: "\uCCB4\uACB0",
-  pending: "\uBBF8\uCCB4\uACB0",
-  canceledStatus: "\uCDE8\uC18C",
-  loading: "\uC8FC\uBB38 \uB0B4\uC5ED\uC744 \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4...",
-  orderHistory: "\uC8FC\uBB38 \uB0B4\uC5ED",
-  orderDescSuffix:
-    "\uACC4\uC88C\uC758 \uC8FC\uBB38 \uAE30\uB85D\uC785\uB2C8\uB2E4.",
-  recentOrders: "\uCD5C\uADFC \uC8FC\uBB38 \uAE30\uB85D\uC785\uB2C8\uB2E4.",
-  countSuffix: "\uAC74",
-  refresh: "\uC0C8\uB85C\uACE0\uCE68",
-  orderedAt: "\uC8FC\uBB38 \uC77C\uC2DC",
-  stockName: "\uC885\uBAA9\uBA85",
-  stockCode: "\uC885\uBAA9\uCF54\uB4DC",
-  side: "\uAD6C\uBD84",
-  quantity: "\uC218\uB7C9",
-  price: "\uAC00\uACA9",
-  status: "\uC0C1\uD0DC",
-  action: "\uC791\uC5C5",
-  noOrders: "\uC8FC\uBB38 \uB0B4\uC5ED\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.",
-  noStockInfo: "\uC885\uBAA9 \uC815\uBCF4 \uC5C6\uC74C",
-  buy: "\uB9E4\uC218",
-  sell: "\uB9E4\uB3C4",
-  shares: "\uC8FC",
-  won: "\uC6D0",
-  marketPrice: "\uC2DC\uC7A5\uAC00",
-  cancel: "\uCDE8\uC18C",
+  loginTokenMissing: "로그인 토큰이 없습니다.",
+  loadFailed: "주문 내역을 불러올 수 없습니다.",
+  cancelConfirm: "정말 주문을 취소하시겠습니까?",
+  canceled: "주문이 취소되었습니다.",
+  cancelFailed: "취소 실패: ",
+  completed: "체결",
+  pending: "미체결",
+  canceledStatus: "취소",
+  loading: "주문 내역을 불러오는 중입니다...",
+  orderHistory: "주문 내역",
+  orderDescSuffix: "계좌의 주문 기록입니다.",
+  recentOrders: "최근 주문 기록입니다.",
+  countSuffix: "건",
+  refresh: "새로고침",
+  orderedAt: "주문 일시",
+  stockName: "종목명",
+  stockCode: "종목코드",
+  side: "구분",
+  quantity: "수량",
+  price: "가격",
+  status: "상태",
+  action: "작업",
+  noOrders: "주문 내역이 없습니다.",
+  noStockInfo: "종목 정보 없음",
+  buy: "매수",
+  sell: "매도",
+  shares: "주",
+  won: "원",
+  marketPrice: "시장가",
+  cancel: "취소",
 };
 
 const OrderHistory = ({ accountId, accountName, currentUser }) => {
@@ -223,13 +223,13 @@ const OrderHistory = ({ accountId, accountName, currentUser }) => {
                   <td>
                     {(order?.orderStatus === "PENDING" ||
                       order?.orderStatus === "QUEUED") && (
-                      <button
-                        className="btn-cancel"
-                        onClick={() => handleCancel(order.id)}
-                      >
-                        {TEXT.cancel}
-                      </button>
-                    )}
+                        <button
+                          className="btn-cancel"
+                          onClick={() => handleCancel(order.id)}
+                        >
+                          {TEXT.cancel}
+                        </button>
+                      )}
                   </td>
                 </tr>
               ))

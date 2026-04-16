@@ -1,0 +1,18 @@
+.mypage-table-wrap {
+    overflow: auto;
+    /* 스크롤바가 표시되도록 설정 */
+    max-height: 500px;
+    /* (선택 사항) 세로 스크롤을 보려면 높이 제한 필요 */
+}
+
+.mypage-table-wrap::-webkit-scrollbar {
+    width: 6px;
+    /* 세로 스크롤바 너비 */
+    height: 6px;
+    /* 가로 스크롤바 높이 */
+}
+
+.mypage-table-wrap::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
