@@ -29,6 +29,18 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [alertTargetPrice, setAlertTargetPrice] = useState(0);
   const [alertDirection, setAlertDirection] = useState("ABOVE"); // ABOVE or BELOW
+  const [activeIndicators, setActiveIndicators] = useState({
+    ma: true,
+    bb: false,
+    rsi: false,
+    macd: false
+  });
+
+  const hasBottomIndicator = activeIndicators.rsi || activeIndicators.macd;
+
+  const toggleIndicator = (key) => {
+    setActiveIndicators(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   useEffect(() => {
     if (stock) {
@@ -473,12 +485,48 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
                 ))}
               </div>
             </div>
+            <div className="indicator-tabs" style={{ 
+              display: 'flex', 
+              gap: '8px', 
+              marginBottom: '12px',
+              padding: '0 4px'
+            }}>
+              {[
+                { key: 'ma', label: '이동평균' },
+                { key: 'bb', label: '볼린저밴드' },
+                { key: 'rsi', label: 'RSI' },
+                { key: 'macd', label: 'MACD' }
+              ].map(ind => (
+                <button
+                  key={ind.key}
+                  onClick={() => toggleIndicator(ind.key)}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    border: '1px solid',
+                    borderColor: activeIndicators[ind.key] ? '#111827' : '#e5e7eb',
+                    background: activeIndicators[ind.key] ? '#111827' : '#fff',
+                    color: activeIndicators[ind.key] ? '#fff' : '#6b7280',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {ind.label}
+                </button>
+              ))}
+            </div>
             {loading ? (
               <div className="loading-placeholder">
                 차트 데이터를 불러오는 중...
               </div>
             ) : (
-              <CandleChart data={candles} />
+              <CandleChart 
+                data={candles} 
+                indicators={activeIndicators} 
+                height={hasBottomIndicator ? 700 : 500} 
+              />
             )}
           </div>
 
