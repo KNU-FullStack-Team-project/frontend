@@ -11,92 +11,52 @@ const StockRow = ({
   handleStockClick,
   getTradingAmountLabel,
 }) => {
-  const [localStock, setLocalStock] = useState(stock);
-  const rowRef = useRef(null);
-
-  useEffect(() => {
-    setLocalStock(stock);
-  }, [stock]);
-
-  useEffect(() => {
-    if (localStock.currentPrice !== "0") return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          fetch(`http://localhost:8081/api/stocks/${localStock.symbol}`)
-            .then((res) => {
-              if (!res.ok) throw new Error("Failed");
-              return res.json();
-            })
-            .then((data) => {
-              if (data && data.currentPrice && data.currentPrice !== "0") {
-                setLocalStock(data);
-              }
-            })
-            .catch((err) => console.error("Lazy load failed:", err));
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 },
-    );
-
-    const currentRef = rowRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
-    return () => {
-      if (currentRef) observer.unobserve(currentRef);
-    };
-  }, [localStock.currentPrice, localStock.symbol]);
-
   return (
     <div
-      ref={rowRef}
       className="stock-list-item clickable"
-      onClick={() => handleStockClick(localStock)}
+      onClick={() => handleStockClick(stock)}
     >
       <button
         className={`favorite-btn ${
-          favorites.has(localStock.symbol) ? "active" : ""
+          favorites.has(stock.symbol) ? "active" : ""
         }`}
-        onClick={(e) => toggleFavorite(e, localStock.symbol)}
+        onClick={(e) => toggleFavorite(e, stock.symbol)}
       >
-        {favorites.has(localStock.symbol) ? "❤️" : "🤍"}
+        {favorites.has(stock.symbol) ? "❤️" : "🤍"}
       </button>
 
       <div className="stock-index">{index + 1}</div>
 
       <div className="stock-name-section">
-        <span className="stock-name-text">{localStock.name}</span>
+        <span className="stock-name-text">{stock.name}</span>
       </div>
 
       <div className="stock-price-section">
-        {localStock.currentPrice === "0" ? (
+        {stock.currentPrice === "0" ? (
           <span style={{ color: "#9ca3af", fontSize: "12px" }}>조회 중...</span>
         ) : (
-          `${parseInt(localStock.currentPrice).toLocaleString()}원`
+          `${parseInt(stock.currentPrice).toLocaleString()}원`
         )}
       </div>
 
       <div className="stock-rate-section">
         <span
           className={`rate-text ${
-            localStock.currentPrice === "0"
+            stock.currentPrice === "0"
               ? ""
-              : parseFloat(localStock.changeRate) >= 0
+              : parseFloat(stock.changeRate) >= 0
                 ? "up"
                 : "down"
           }`}
         >
-          {localStock.currentPrice === "0"
+          {stock.currentPrice === "0"
             ? ""
-            : `${parseFloat(localStock.changeRate) >= 0 ? "+" : ""}${localStock.changeRate}%`}
+            : `${parseFloat(stock.changeRate) >= 0 ? "+" : ""}${stock.changeRate}%`}
         </span>
       </div>
 
       <div className="stock-volume-section">
-        {getTradingAmountLabel(localStock.currentPrice, localStock.volume)}
+        {getTradingAmountLabel(stock.currentPrice, stock.volume)}
       </div>
     </div>
   );
