@@ -182,9 +182,6 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                 ? "마이페이지"
                 : `${profile?.nickname || "회원"} 마이페이지`}
             </h3>
-            <p className="page-desc">
-              내 계정 정보와 보유 자산, 최근 주문 내역을 확인할 수 있습니다.
-            </p>
           </div>
 
           {isMyOwnPage ? (
@@ -280,12 +277,10 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
         <div className="portfolio-section-layout">
           <div className="portfolio-chart-container">
             <h3>자산 구성 비중</h3>
-            <p className="page-desc">보유 중인 주식 종목별 비중입니다.</p>
             <PortfolioChart holdings={visibleHoldings} />
           </div>
           <div className="portfolio-list-container">
             <h3>보유 종목 현황</h3>
-            <p className="page-desc">현재 계좌에 보유 중인 종목 리스트입니다.</p>
             <div className="table-responsive">
               <table className="stock-table">
                 <thead>

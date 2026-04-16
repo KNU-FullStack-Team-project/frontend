@@ -89,7 +89,12 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
   }
 
   if (loading) {
-    return <div className="dashboard-grid">데이터를 불러오는 중...</div>;
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">데이터를 불러오는 중입니다...</div>
+      </div>
+    );
   }
 
   const visibleHoldings =

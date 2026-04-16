@@ -21,36 +21,6 @@ import TopNav from "../../layout/TopNav";
 
 import "../../auth.css";
 
-const pageTexts = {
-  home: {
-    title: "모의투자 플랫폼",
-    description: "안전하게 연습하고, 실전 감각까지 익혀보세요.",
-  },
-  stock: {
-    title: "주식",
-    description: "종목 정보와 시장 흐름을 확인해보세요.",
-  },
-  contest: {
-    title: "대회",
-    description: "대회와 참가자 정보를 확인해보세요.",
-  },
-  mypage: {
-    title: "마이페이지",
-    description: "내 자산과 투자 기록을 관리해보세요.",
-  },
-  auth: {
-    title: "모의투자 시작하기",
-    description: "가상 자산으로 안전하게 투자 연습을 시작해보세요.",
-  },
-  ranking: {
-    title: "대회 랭킹",
-    description: "현재 진행 중인 대회의 순위를 확인하세요.",
-  },
-  userActivity: {
-    title: "유저 활동 로그",
-    description: "기존 데이터 기준으로 유저 활동을 확인합니다.",
-  },
-};
 
 const AppController = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -702,16 +672,6 @@ const AppController = () => {
       />
       <main className="main-content">
         <div className="container">
-          {currentPage !== "home" && (
-            <header className="page-header">
-              <h2 className="page-title">
-                {pageTexts[currentPage]?.title || "페이지"}
-              </h2>
-              <p className="page-description">
-                {pageTexts[currentPage]?.description || ""}
-              </p>
-            </header>
-          )}
           {renderPage()}
         </div>
       </main>

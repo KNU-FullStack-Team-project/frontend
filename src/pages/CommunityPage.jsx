@@ -44,9 +44,6 @@ const CommunityPage = ({ onSelectStockCommunity }) => {
       <div style={styles.hero}>
         <div style={styles.heroBadge}>COMMUNITY</div>
         <h1 style={styles.heroTitle}>종목 커뮤니티</h1>
-        <p style={styles.heroText}>
-          관심 있는 종목의 토론방으로 들어가 투자자들의 의견을 확인해보세요.
-        </p>
       </div>
 
       <div style={styles.searchWrap}>

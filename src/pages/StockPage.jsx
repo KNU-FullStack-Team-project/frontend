@@ -445,10 +445,6 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
         </form>
       </div>
 
-      <p className="page-desc">
-        현재 시장의 실시간 시세를 확인하세요. 종목을 클릭하면 상세 차트와 함께
-        매수/매도를 진행할 수 있습니다.
-      </p>
 
       <div className="stock-tabs">
         <button

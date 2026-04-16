@@ -99,7 +99,6 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
   return (
     <div className="content-card">
       <h3>관리자 페이지</h3>
-      <p className="page-desc">회원 계정 정보와 활동을 확인합니다.</p>
 
       {error ? <p className="page-desc">{error}</p> : null}
 
