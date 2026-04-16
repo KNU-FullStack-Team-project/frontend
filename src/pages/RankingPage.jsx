@@ -566,7 +566,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
 
 const styles = {
   page: {
-    maxWidth: "1180px",
+    maxWidth: "1440px",
     margin: "0 auto",
     padding: "28px 20px 56px",
   },
