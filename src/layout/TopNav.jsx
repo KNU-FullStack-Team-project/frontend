@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import AppButton from "../common/AppButton";
 import useNotifications from "../hooks/useNotifications";
 import NotificationDropdown from "../components/notification/NotificationDropdown";
+import InquiryModal from "../components/inquiry/InquiryModal";
 
 const menus = [
   { key: "home", label: "홈" },
@@ -22,6 +23,7 @@ const TopNav = ({
   onLogout,
 }) => {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isInquiryOpen, setIsInquiryOpen] = useState(false);
   
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(
     currentUser?.id || currentUser?.userId
@@ -56,6 +58,23 @@ const TopNav = ({
         <div className="top-nav-right">
           {isLoggedIn ? (
             <div className="nav-user-actions" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <button 
+                className="inquiry-trigger" 
+                onClick={() => setIsInquiryOpen(true)}
+                title="1:1 문의하기"
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  cursor: 'pointer', 
+                  fontSize: '20px', 
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                ✉️
+              </button>
+
               <div className="notification-wrapper" style={{ position: 'relative' }}>
                 <button 
                   className="notification-trigger" 
@@ -98,6 +117,11 @@ const TopNav = ({
                   />
                 )}
               </div>
+
+              <InquiryModal 
+                isOpen={isInquiryOpen} 
+                onClose={() => setIsInquiryOpen(false)} 
+              />
 
               {isAdmin ? (
                 <AppButton
