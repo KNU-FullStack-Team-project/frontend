@@ -392,15 +392,31 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
           ) : (
             <>
               <section className="mypage-stats-grid">
-                {summaryItems.map((item) => (
-                  <article
-                    key={item.label}
-                    className={`mypage-stat-card`}
-                  >
-                    <span className="mypage-stat-label">{item.label}</span>
-                    <strong className="mypage-stat-value">{item.value}</strong>
-                  </article>
-                ))}
+                {summaryItems.map((item) => {
+                  const isProfit = item.label === TEXT.totalProfit;
+                  const isRate = item.label === TEXT.returnRate;
+
+                  let valueClass = "";
+
+                  if (isProfit) {
+                    const num = Number(String(item.value).replace(/[^0-9.-]/g, ""));
+                    valueClass = num > 0 ? "up" : num < 0 ? "down" : "";
+                  }
+
+                  if (isRate) {
+                    const num = parseFloat(item.value);
+                    valueClass = num > 0 ? "up" : num < 0 ? "down" : "";
+                  }
+
+                  return (
+                    <article key={item.label} className="mypage-stat-card">
+                      <span className="mypage-stat-label">{item.label}</span>
+                      <span className={`mypage-stat-value ${valueClass}`}>
+                        {item.value}
+                      </span>
+                    </article>
+                  );
+                })}
               </section>
 
               <section className="content-card mypage-portfolio-card">
