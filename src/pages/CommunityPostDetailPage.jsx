@@ -14,6 +14,7 @@ const CommunityPostDetailPage = ({
   postId,
   currentUser,
   isLoggedIn,
+  boardType = "stock",
   onBack,
 }) => {
   const [postDetail, setPostDetail] = useState(null);
@@ -119,6 +120,13 @@ const CommunityPostDetailPage = ({
     if (!currentUser || !postDetail) return false;
     return currentUser.userId !== postDetail.userId;
   }, [currentUser, postDetail]);
+
+  const boardBadgeText = useMemo(() => {
+    if (postDetail?.isNotice) return "공지";
+    if (boardType === "free") return "자유게시판";
+    if (boardType === "discussion") return "토론게시판";
+    return postDetail?.stockName || postDetail?.stockCode || "종목 커뮤니티";
+  }, [boardType, postDetail]);
 
   const formatDateTime = (value) => {
     if (!value) return "-";
@@ -299,7 +307,11 @@ const CommunityPostDetailPage = ({
         return;
       }
 
-      alert(reportTarget.type === "post" ? "게시글 신고가 접수되었습니다." : "댓글 신고가 접수되었습니다.");
+      alert(
+        reportTarget.type === "post"
+          ? "게시글 신고가 접수되었습니다."
+          : "댓글 신고가 접수되었습니다."
+      );
       closeReportModal();
     } catch (error) {
       console.error("신고 오류:", error);
@@ -533,7 +545,7 @@ const CommunityPostDetailPage = ({
       }
 
       alert("게시글이 삭제되었습니다.");
-      onBack();
+      onBack?.();
     } catch (error) {
       console.error("게시글 삭제 오류:", error);
       alert("게시글 삭제 중 오류가 발생했습니다.");
@@ -617,9 +629,7 @@ const CommunityPostDetailPage = ({
 
         <div style={styles.detailCard}>
           <div style={styles.stockBadgeWrap}>
-            <span style={styles.stockBadge}>
-              {postDetail.stockName || postDetail.stockCode || "종목 커뮤니티"}
-            </span>
+            <span style={styles.stockBadge}>{boardBadgeText}</span>
             {postDetail.isNotice && <span style={styles.noticeBadge}>공지</span>}
           </div>
 
@@ -725,7 +735,9 @@ const CommunityPostDetailPage = ({
           ) : (
             <>
               <h1 style={styles.title}>
-                {postDetail.isNotice && <span style={styles.noticeTitlePrefix}>[공지] </span>}
+                {postDetail.isNotice && (
+                  <span style={styles.noticeTitlePrefix}>[공지] </span>
+                )}
                 {postDetail.title}
               </h1>
 
@@ -748,7 +760,9 @@ const CommunityPostDetailPage = ({
                     disabled={!isLoggedIn || postDetail.likedByCurrentUser || isLiking || isMyPost}
                     style={{
                       ...styles.likeButton,
-                      ...((postDetail.likedByCurrentUser || isMyPost) ? styles.likeButtonDisabled : {}),
+                      ...((postDetail.likedByCurrentUser || isMyPost)
+                        ? styles.likeButtonDisabled
+                        : {}),
                     }}
                   >
                     {isMyPost
@@ -1151,6 +1165,10 @@ const styles = {
     textAlign: "left",
     wordBreak: "break-word",
   },
+  contentImage: {
+    maxWidth: "100%",
+    borderRadius: "12px",
+  },
   attachSection: {
     border: "1px solid #e5e7eb",
     borderRadius: "14px",
@@ -1209,26 +1227,32 @@ const styles = {
   },
   fileName: {
     fontSize: "14px",
-    color: "#111827",
-    wordBreak: "break-all",
+    color: "#374151",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   },
   removeFileButton: {
     border: "none",
-    borderRadius: "8px",
     background: "#fee2e2",
     color: "#b91c1c",
-    padding: "8px 10px",
+    borderRadius: "8px",
+    padding: "6px 10px",
     cursor: "pointer",
+    fontSize: "12px",
     fontWeight: "700",
+    flexShrink: 0,
   },
   downloadLink: {
-    display: "block",
+    display: "inline-flex",
+    alignItems: "center",
     padding: "10px 12px",
     borderRadius: "10px",
-    border: "1px solid #e5e7eb",
-    background: "#fff",
-    color: "#2563eb",
+    border: "1px solid #dbeafe",
+    background: "#f8fbff",
+    color: "#1d4ed8",
     textDecoration: "none",
+    fontSize: "14px",
     fontWeight: "700",
   },
   commentWriteCard: {
@@ -1239,13 +1263,6 @@ const styles = {
     boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)",
     marginBottom: "20px",
   },
-  commentListCard: {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
-    borderRadius: "18px",
-    padding: "20px",
-    boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)",
-  },
   sectionTitle: {
     margin: "0 0 14px",
     fontSize: "20px",
@@ -1254,24 +1271,23 @@ const styles = {
   },
   commentInput: {
     width: "100%",
-    minHeight: "120px",
-    borderRadius: "12px",
+    minHeight: "110px",
+    borderRadius: "14px",
     border: "1px solid #d1d5db",
     padding: "14px",
     fontSize: "14px",
     resize: "vertical",
     outline: "none",
-    marginBottom: "12px",
     fontFamily: "inherit",
-    textAlign: "left",
   },
   writeActionRow: {
     display: "flex",
     justifyContent: "flex-end",
+    marginTop: "12px",
   },
   writeButton: {
-    padding: "12px 18px",
-    borderRadius: "12px",
+    padding: "10px 16px",
+    borderRadius: "10px",
     border: "none",
     background: "#111827",
     color: "#fff",
@@ -1279,72 +1295,24 @@ const styles = {
     fontWeight: "700",
     fontSize: "14px",
   },
+  commentListCard: {
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "18px",
+    padding: "20px",
+    boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)",
+  },
   listTitleRow: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "12px",
-    marginBottom: "14px",
+    marginBottom: "12px",
   },
   postCount: {
     fontSize: "14px",
     color: "#6b7280",
     fontWeight: "700",
-  },
-  commentList: {
-    display: "grid",
-    gap: "12px",
-  },
-  commentItem: {
-    border: "1px solid #ececec",
-    borderRadius: "14px",
-    padding: "16px",
-    background: "#fafafa",
-  },
-  commentTop: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "12px",
-    flexWrap: "wrap",
-    marginBottom: "10px",
-    fontSize: "13px",
-    color: "#6b7280",
-  },
-  commentTopRight: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    flexWrap: "wrap",
-  },
-  commentDate: {
-    color: "#6b7280",
-  },
-  commentReportButton: {
-    padding: "6px 10px",
-    borderRadius: "8px",
-    border: "1px solid #fed7aa",
-    background: "#fff7ed",
-    color: "#c2410c",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "12px",
-  },
-  commentDeleteButton: {
-    padding: "6px 10px",
-    borderRadius: "8px",
-    border: "1px solid #fecaca",
-    background: "#fff5f5",
-    color: "#dc2626",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "12px",
-  },
-  commentContent: {
-    whiteSpace: "pre-wrap",
-    fontSize: "14px",
-    lineHeight: "1.7",
-    color: "#111827",
-    textAlign: "left",
   },
   emptyCard: {
     backgroundColor: "#fff",
@@ -1367,44 +1335,96 @@ const styles = {
     lineHeight: "1.6",
   },
   emptyInner: {
-    border: "1px dashed #d1d5db",
-    borderRadius: "14px",
-    padding: "24px",
+    padding: "30px 12px",
     textAlign: "center",
-    fontSize: "14px",
     color: "#6b7280",
-    background: "#fcfcfc",
+    fontSize: "14px",
+  },
+  commentList: {
+    display: "grid",
+    gap: "12px",
+  },
+  commentItem: {
+    border: "1px solid #e5e7eb",
+    borderRadius: "14px",
+    padding: "14px 16px",
+    background: "#fff",
+  },
+  commentTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "12px",
+    alignItems: "center",
+    marginBottom: "8px",
+    flexWrap: "wrap",
+  },
+  commentTopRight: {
+    display: "flex",
+    gap: "8px",
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+  commentDate: {
+    fontSize: "12px",
+    color: "#6b7280",
+  },
+  commentDeleteButton: {
+    border: "none",
+    background: "#fee2e2",
+    color: "#b91c1c",
+    borderRadius: "8px",
+    padding: "6px 10px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "700",
+  },
+  commentReportButton: {
+    border: "1px solid #fed7aa",
+    background: "#fff7ed",
+    color: "#c2410c",
+    borderRadius: "8px",
+    padding: "6px 10px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "700",
+  },
+  commentContent: {
+    fontSize: "14px",
+    color: "#374151",
+    lineHeight: "1.7",
+    textAlign: "left",
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
   },
   modalOverlay: {
     position: "fixed",
     inset: 0,
-    background: "rgba(15, 23, 42, 0.45)",
+    background: "rgba(15, 23, 42, 0.52)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "20px",
     zIndex: 9999,
+    padding: "20px",
   },
   modalCard: {
     width: "100%",
     maxWidth: "640px",
     background: "#fff",
-    borderRadius: "20px",
-    border: "1px solid #e5e7eb",
-    boxShadow: "0 30px 60px rgba(15, 23, 42, 0.25)",
+    borderRadius: "18px",
     overflow: "hidden",
+    boxShadow: "0 24px 60px rgba(15, 23, 42, 0.25)",
   },
   modalHeader: {
-    padding: "18px 20px",
-    background: "#1d4ed8",
+    background: "#111827",
     color: "#fff",
+    padding: "18px 20px",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
   },
   modalTitle: {
     margin: 0,
-    fontSize: "20px",
+    fontSize: "18px",
     fontWeight: "800",
   },
   modalCloseButton: {

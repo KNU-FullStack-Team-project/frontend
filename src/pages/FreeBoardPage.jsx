@@ -2,15 +2,13 @@ import React, { useEffect, useMemo, useState } from "react";
 
 const PAGE_SIZE = 10;
 
-const StockCommunityPage = ({
-  symbol,
+const FreeBoardPage = ({
   currentUser,
   isLoggedIn,
   onBack,
   onSelectPost,
   onWritePost,
 }) => {
-  const [stockInfo, setStockInfo] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,33 +18,20 @@ const StockCommunityPage = ({
   const [currentPage, setCurrentPage] = useState(1);
 
   const fetchData = async () => {
-    if (!symbol) return;
-
     try {
       setLoading(true);
 
-      const [stockResponse, postResponse] = await Promise.all([
-        fetch(`http://localhost:8081/api/stocks/${symbol}`),
-        fetch(`http://localhost:8081/api/community/stocks/${symbol}/posts`),
-      ]);
+      const response = await fetch("http://localhost:8081/api/community/boards/free/posts");
 
-      if (!stockResponse.ok) {
-        throw new Error("종목 정보를 불러오지 못했습니다.");
+      if (!response.ok) {
+        throw new Error("자유게시판 목록을 불러오지 못했습니다.");
       }
 
-      if (!postResponse.ok) {
-        throw new Error("게시글 목록을 불러오지 못했습니다.");
-      }
-
-      const stockData = await stockResponse.json();
-      const postData = await postResponse.json();
-
-      setStockInfo(stockData);
-      setPosts(Array.isArray(postData) ? postData : []);
+      const data = await response.json();
+      setPosts(Array.isArray(data) ? data : []);
       setCurrentPage(1);
     } catch (e) {
       console.error(e);
-      setStockInfo(null);
       setPosts([]);
       setCurrentPage(1);
     } finally {
@@ -56,7 +41,7 @@ const StockCommunityPage = ({
 
   useEffect(() => {
     fetchData();
-  }, [symbol]);
+  }, []);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -159,34 +144,18 @@ const StockCommunityPage = ({
           <span style={styles.commentCount}>[{post.commentCount ?? 0}]</span>
         </span>
       </td>
-      <td style={styles.td}>
-        <span style={styles.nickname}>
-          {post.nickname}
-          {post.hasBoughtStock ? "★" : ""}
-        </span>
-      </td>
+      <td style={styles.td}>{post.nickname}</td>
       <td style={styles.td}>{formatDateTime(post.createdAt)}</td>
       <td style={styles.td}>{post.viewCount ?? 0}</td>
       <td style={styles.td}>{post.likeCount ?? 0}</td>
     </tr>
   );
 
-  if (!symbol) {
-    return (
-      <section style={styles.page}>
-        <div style={styles.emptyCard}>
-          <p style={styles.emptyTitle}>선택된 종목이 없습니다.</p>
-          <p style={styles.emptyText}>커뮤니티 메인에서 종목을 선택해주세요.</p>
-        </div>
-      </section>
-    );
-  }
-
   if (loading) {
     return (
       <section style={styles.page}>
         <div style={styles.emptyCard}>
-          <p style={styles.emptyText}>종목 커뮤니티를 불러오는 중입니다...</p>
+          <p style={styles.emptyText}>자유게시판을 불러오는 중입니다...</p>
         </div>
       </section>
     );
@@ -200,34 +169,11 @@ const StockCommunityPage = ({
 
       <div style={styles.heroCard}>
         <div>
-          <div style={styles.heroBadge}>STOCK COMMUNITY</div>
-          <h1 style={styles.heroTitle}>
-            {stockInfo?.stockName || stockInfo?.name || symbol} 커뮤니티
-          </h1>
+          <div style={styles.heroBadge}>FREE BOARD</div>
+          <h1 style={styles.heroTitle}>자유게시판</h1>
           <p style={styles.heroDesc}>
-            종목에 대한 의견, 매수/매도 관점, 시장 반응을 자유롭게 공유해보세요.
+            종목과 관계없이 자유롭게 의견과 정보를 나누는 공간입니다.
           </p>
-        </div>
-
-        <div style={styles.heroRight}>
-          <div style={styles.heroSymbol}>
-            {stockInfo?.stockCode || stockInfo?.symbol || symbol}
-          </div>
-          <div style={styles.heroPrice}>
-            {stockInfo?.currentPrice
-              ? `${Number(stockInfo.currentPrice).toLocaleString("ko-KR")}원`
-              : "-"}
-          </div>
-          <div
-            style={{
-              ...styles.heroChange,
-              color: Number(stockInfo?.changeRate) >= 0 ? "#e03131" : "#1971c2",
-            }}
-          >
-            {stockInfo?.changeRate != null
-              ? `${Number(stockInfo.changeRate) >= 0 ? "+" : ""}${stockInfo.changeRate}%`
-              : "-"}
-          </div>
         </div>
       </div>
 
@@ -318,7 +264,7 @@ const StockCommunityPage = ({
         </div>
 
         <div style={styles.noticeGuide}>
-          공지사항은 별도 공지 게시판에서 확인할 수 있으며, 이곳에는 일반 종목 게시글만 표시됩니다.
+          공지사항은 별도 공지 게시판에서 확인할 수 있으며, 이곳에는 일반 자유게시판 글만 표시됩니다.
         </div>
 
         <div style={styles.tableWrap}>
@@ -365,9 +311,7 @@ const StockCommunityPage = ({
                 onClick={() => setCurrentPage(pageNumber)}
                 style={{
                   ...styles.pageButton,
-                  ...(safeCurrentPage === pageNumber
-                    ? styles.pageButtonActive
-                    : {}),
+                  ...(safeCurrentPage === pageNumber ? styles.pageButtonActive : {}),
                 }}
               >
                 {pageNumber}
@@ -412,11 +356,6 @@ const styles = {
     padding: "28px 30px",
     boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
     marginBottom: "18px",
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "20px",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
   },
   heroBadge: {
     display: "inline-block",
@@ -439,26 +378,6 @@ const styles = {
     fontSize: "14px",
     color: "#6b7280",
     lineHeight: "1.6",
-  },
-  heroRight: {
-    textAlign: "right",
-    minWidth: "180px",
-  },
-  heroSymbol: {
-    fontSize: "13px",
-    color: "#6b7280",
-    fontWeight: "700",
-    marginBottom: "8px",
-  },
-  heroPrice: {
-    fontSize: "24px",
-    fontWeight: "800",
-    color: "#111827",
-    marginBottom: "6px",
-  },
-  heroChange: {
-    fontSize: "15px",
-    fontWeight: "800",
   },
   toolbarCard: {
     background: "#fff",
@@ -598,20 +517,18 @@ const styles = {
     cursor: "pointer",
     borderBottom: "1px solid #f1f5f9",
   },
-  popularRow: {
-    background: "#f8fbff",
-  },
   td: {
     padding: "14px 12px",
     fontSize: "14px",
     color: "#374151",
-    borderBottom: "1px solid #f1f5f9",
     textAlign: "center",
+    verticalAlign: "middle",
   },
   titleCell: {
     display: "inline-flex",
     alignItems: "center",
     gap: "8px",
+    flexWrap: "wrap",
     fontWeight: "700",
     color: "#111827",
   },
@@ -619,39 +536,27 @@ const styles = {
     color: "#1d4ed8",
   },
   popularBadge: {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    height: "24px",
-    padding: "0 10px",
+    display: "inline-block",
+    padding: "4px 8px",
     borderRadius: "999px",
-    background: "#e7f5ff",
-    color: "#1971c2",
-    fontSize: "12px",
+    background: "#dbeafe",
+    color: "#1d4ed8",
+    fontSize: "11px",
     fontWeight: "800",
-    flexShrink: 0,
   },
   commentCount: {
     color: "#6b7280",
+    fontSize: "13px",
     fontWeight: "700",
   },
-  nickname: {
-    fontWeight: "800",
-    color: "#374151",
+  popularRow: {
+    background: "#f8fbff",
   },
   emptyTableCell: {
     padding: "40px 16px",
     textAlign: "center",
     color: "#6b7280",
     fontSize: "14px",
-  },
-  dividerCell: {
-    padding: "10px 12px",
-    fontSize: "12px",
-    fontWeight: "800",
-    color: "#64748b",
-    background: "#f8fafc",
-    textAlign: "left",
   },
   pagination: {
     display: "flex",
@@ -684,12 +589,6 @@ const styles = {
     textAlign: "center",
     boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)",
   },
-  emptyTitle: {
-    margin: "0 0 8px",
-    fontSize: "18px",
-    fontWeight: "700",
-    color: "#111827",
-  },
   emptyText: {
     margin: 0,
     fontSize: "14px",
@@ -698,4 +597,4 @@ const styles = {
   },
 };
 
-export default StockCommunityPage;
+export default FreeBoardPage;

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import RichTextEditor from "../components/community/RichTextEditor";
 
 const CommunityPostWritePage = ({
+  boardType = "stock",
   symbol,
   currentUser,
   isLoggedIn,
@@ -9,7 +10,7 @@ const CommunityPostWritePage = ({
   onSuccess,
 }) => {
   const [stockInfo, setStockInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(boardType === "stock");
   const [submitting, setSubmitting] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
 
@@ -22,8 +23,22 @@ const CommunityPostWritePage = ({
   const [attachedFiles, setAttachedFiles] = useState([]);
 
   const isAdmin = currentUser?.role === "admin";
+  const isStockBoard = boardType === "stock";
+  const pageTitle = isStockBoard
+    ? `${stockInfo?.name || symbol} 게시글 작성`
+    : "자유게시판 글쓰기";
+
+  const submitUrl = isStockBoard
+    ? `http://localhost:8081/api/community/stocks/${symbol}/posts`
+    : "http://localhost:8081/api/community/boards/free/posts";
 
   useEffect(() => {
+    if (!isStockBoard) {
+      setLoading(false);
+      setStockInfo(null);
+      return;
+    }
+
     const fetchStockInfo = async () => {
       if (!symbol) return;
 
@@ -44,7 +59,7 @@ const CommunityPostWritePage = ({
     };
 
     fetchStockInfo();
-  }, [symbol]);
+  }, [symbol, isStockBoard]);
 
   const plainContent = useMemo(() => {
     return (form.content || "")
@@ -154,22 +169,19 @@ const CommunityPostWritePage = ({
     try {
       setSubmitting(true);
 
-      const response = await fetch(
-        `http://localhost:8081/api/community/stocks/${symbol}/posts`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            title: form.title.trim(),
-            content: form.content,
-            isNotice: form.isNotice,
-            attachmentIds: attachedFiles.map((file) => file.attachmentId),
-          }),
-        }
-      );
+      const response = await fetch(submitUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: form.title.trim(),
+          content: form.content,
+          isNotice: form.isNotice,
+          attachmentIds: attachedFiles.map((file) => file.attachmentId),
+        }),
+      });
 
       const text = await response.text();
 
@@ -201,11 +213,11 @@ const CommunityPostWritePage = ({
       <div style={styles.headerCard}>
         <div>
           <div style={styles.badge}>WRITE</div>
-          <h1 style={styles.title}>
-            {stockInfo?.name || symbol} 게시글 작성
-          </h1>
+          <h1 style={styles.title}>{pageTitle}</h1>
           <p style={styles.desc}>
-            분석, 의견, 매매 전략을 자유롭게 공유하세요
+            {isStockBoard
+              ? "분석, 의견, 매매 전략을 자유롭게 공유하세요."
+              : "자유롭게 글을 작성하고 다른 사용자와 의견을 나눠보세요."}
           </p>
 
           <div style={styles.tip}>
@@ -213,14 +225,16 @@ const CommunityPostWritePage = ({
           </div>
         </div>
 
-        <div style={styles.stockBox}>
-          <div>{stockInfo?.symbol || symbol}</div>
-          <div style={{ fontSize: 24, fontWeight: 800 }}>
-            {stockInfo?.currentPrice
-              ? `${stockInfo.currentPrice.toLocaleString()}원`
-              : "-"}
+        {isStockBoard && (
+          <div style={styles.stockBox}>
+            <div>{stockInfo?.symbol || symbol}</div>
+            <div style={{ fontSize: 24, fontWeight: 800 }}>
+              {stockInfo?.currentPrice
+                ? `${stockInfo.currentPrice.toLocaleString()}원`
+                : "-"}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div style={styles.formCard}>
@@ -421,37 +435,45 @@ const styles = {
   },
   fileName: {
     fontSize: 14,
-    color: "#111827",
-    wordBreak: "break-all",
+    color: "#374151",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   },
   removeFileButton: {
     border: "none",
-    borderRadius: 8,
     background: "#fee2e2",
     color: "#b91c1c",
-    padding: "8px 10px",
+    borderRadius: 8,
+    padding: "6px 10px",
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 700,
+    flexShrink: 0,
+  },
+  btnRow: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 12,
+  },
+  cancel: {
+    minWidth: 100,
+    height: 44,
+    borderRadius: 12,
+    border: "1px solid #d1d5db",
+    background: "#fff",
     cursor: "pointer",
     fontWeight: 700,
   },
-  btnRow: {
-    marginTop: 4,
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: 10,
-  },
-  cancel: {
-    padding: "10px 15px",
-    border: "1px solid #ddd",
-    borderRadius: 10,
-    cursor: "pointer",
-  },
   submit: {
-    padding: "10px 15px",
-    background: "#111827",
-    color: "white",
+    minWidth: 120,
+    height: 44,
+    borderRadius: 12,
     border: "none",
-    borderRadius: 10,
+    background: "#111827",
+    color: "#fff",
     cursor: "pointer",
+    fontWeight: 700,
   },
 };
 

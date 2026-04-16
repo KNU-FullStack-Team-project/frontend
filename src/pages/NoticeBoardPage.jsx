@@ -2,51 +2,29 @@ import React, { useEffect, useMemo, useState } from "react";
 
 const PAGE_SIZE = 10;
 
-const StockCommunityPage = ({
-  symbol,
-  currentUser,
-  isLoggedIn,
-  onBack,
-  onSelectPost,
-  onWritePost,
-}) => {
-  const [stockInfo, setStockInfo] = useState(null);
+const NoticeBoardPage = ({ onBack, onSelectPost }) => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [searchType, setSearchType] = useState("title");
   const [keyword, setKeyword] = useState("");
-  const [recommendFilter, setRecommendFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   const fetchData = async () => {
-    if (!symbol) return;
-
     try {
       setLoading(true);
 
-      const [stockResponse, postResponse] = await Promise.all([
-        fetch(`http://localhost:8081/api/stocks/${symbol}`),
-        fetch(`http://localhost:8081/api/community/stocks/${symbol}/posts`),
-      ]);
+      const response = await fetch("http://localhost:8081/api/community/notices");
 
-      if (!stockResponse.ok) {
-        throw new Error("종목 정보를 불러오지 못했습니다.");
+      if (!response.ok) {
+        throw new Error("공지사항 목록을 불러오지 못했습니다.");
       }
 
-      if (!postResponse.ok) {
-        throw new Error("게시글 목록을 불러오지 못했습니다.");
-      }
-
-      const stockData = await stockResponse.json();
-      const postData = await postResponse.json();
-
-      setStockInfo(stockData);
-      setPosts(Array.isArray(postData) ? postData : []);
+      const data = await response.json();
+      setPosts(Array.isArray(data) ? data : []);
       setCurrentPage(1);
     } catch (e) {
       console.error(e);
-      setStockInfo(null);
       setPosts([]);
       setCurrentPage(1);
     } finally {
@@ -56,11 +34,11 @@ const StockCommunityPage = ({
 
   useEffect(() => {
     fetchData();
-  }, [symbol]);
+  }, []);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [recommendFilter, searchType, keyword]);
+  }, [searchType, keyword]);
 
   const formatDateTime = (value) => {
     if (!value) return "-";
@@ -76,36 +54,22 @@ const StockCommunityPage = ({
   };
 
   const filteredPosts = useMemo(() => {
-    return posts
-      .filter((post) => {
-        const likeCount = post.likeCount ?? 0;
+    return posts.filter((post) => {
+      if (!keyword.trim()) return true;
 
-        if (recommendFilter === "5") {
-          return !post.isNotice && likeCount >= 5;
-        }
+      const value = keyword.toLowerCase();
 
-        if (recommendFilter === "10") {
-          return !post.isNotice && likeCount >= 10;
-        }
+      if (searchType === "title") {
+        return post.title?.toLowerCase().includes(value);
+      }
 
-        return !post.isNotice;
-      })
-      .filter((post) => {
-        if (!keyword.trim()) return true;
+      if (searchType === "nickname") {
+        return post.nickname?.toLowerCase().includes(value);
+      }
 
-        const value = keyword.toLowerCase();
-
-        if (searchType === "title") {
-          return post.title?.toLowerCase().includes(value);
-        }
-
-        if (searchType === "nickname") {
-          return post.nickname?.toLowerCase().includes(value);
-        }
-
-        return true;
-      });
-  }, [posts, recommendFilter, searchType, keyword]);
+      return true;
+    });
+  }, [posts, searchType, keyword]);
 
   const totalPages = useMemo(() => {
     return Math.max(1, Math.ceil(filteredPosts.length / PAGE_SIZE));
@@ -127,66 +91,32 @@ const StockCommunityPage = ({
     return pages;
   }, [totalPages]);
 
-  const getRowStyle = (post) => {
-    if ((post.likeCount ?? 0) >= 5) {
-      return {
-        ...styles.tr,
-        ...styles.popularRow,
-      };
-    }
-
-    return styles.tr;
-  };
-
   const renderPostRow = (post) => (
     <tr
       key={post.postId}
-      style={getRowStyle(post)}
+      style={styles.noticeRow}
       onClick={() => onSelectPost?.(post.postId)}
     >
       <td style={styles.td}>{post.postId}</td>
       <td style={{ ...styles.td, textAlign: "left" }}>
-        <span
-          style={{
-            ...styles.titleCell,
-            ...((post.likeCount ?? 0) >= 5 ? styles.popularTitle : {}),
-          }}
-        >
+        <span style={styles.titleCell}>
+          <span style={styles.noticeBadge}>공지</span>
           {post.title}
-          {(post.likeCount ?? 0) >= 5 && (
-            <span style={styles.popularBadge}>인기</span>
-          )}
           <span style={styles.commentCount}>[{post.commentCount ?? 0}]</span>
         </span>
       </td>
-      <td style={styles.td}>
-        <span style={styles.nickname}>
-          {post.nickname}
-          {post.hasBoughtStock ? "★" : ""}
-        </span>
-      </td>
+      <td style={styles.td}>{post.nickname}</td>
       <td style={styles.td}>{formatDateTime(post.createdAt)}</td>
       <td style={styles.td}>{post.viewCount ?? 0}</td>
       <td style={styles.td}>{post.likeCount ?? 0}</td>
     </tr>
   );
 
-  if (!symbol) {
-    return (
-      <section style={styles.page}>
-        <div style={styles.emptyCard}>
-          <p style={styles.emptyTitle}>선택된 종목이 없습니다.</p>
-          <p style={styles.emptyText}>커뮤니티 메인에서 종목을 선택해주세요.</p>
-        </div>
-      </section>
-    );
-  }
-
   if (loading) {
     return (
       <section style={styles.page}>
         <div style={styles.emptyCard}>
-          <p style={styles.emptyText}>종목 커뮤니티를 불러오는 중입니다...</p>
+          <p style={styles.emptyText}>공지사항을 불러오는 중입니다...</p>
         </div>
       </section>
     );
@@ -200,72 +130,16 @@ const StockCommunityPage = ({
 
       <div style={styles.heroCard}>
         <div>
-          <div style={styles.heroBadge}>STOCK COMMUNITY</div>
-          <h1 style={styles.heroTitle}>
-            {stockInfo?.stockName || stockInfo?.name || symbol} 커뮤니티
-          </h1>
+          <div style={styles.heroBadge}>NOTICE BOARD</div>
+          <h1 style={styles.heroTitle}>공지사항</h1>
           <p style={styles.heroDesc}>
-            종목에 대한 의견, 매수/매도 관점, 시장 반응을 자유롭게 공유해보세요.
+            운영 공지, 안내사항, 필독 내용을 모아보는 공간입니다.
           </p>
-        </div>
-
-        <div style={styles.heroRight}>
-          <div style={styles.heroSymbol}>
-            {stockInfo?.stockCode || stockInfo?.symbol || symbol}
-          </div>
-          <div style={styles.heroPrice}>
-            {stockInfo?.currentPrice
-              ? `${Number(stockInfo.currentPrice).toLocaleString("ko-KR")}원`
-              : "-"}
-          </div>
-          <div
-            style={{
-              ...styles.heroChange,
-              color: Number(stockInfo?.changeRate) >= 0 ? "#e03131" : "#1971c2",
-            }}
-          >
-            {stockInfo?.changeRate != null
-              ? `${Number(stockInfo.changeRate) >= 0 ? "+" : ""}${stockInfo.changeRate}%`
-              : "-"}
-          </div>
         </div>
       </div>
 
       <div style={styles.toolbarCard}>
-        <div style={styles.filterGroup}>
-          <button
-            type="button"
-            onClick={() => setRecommendFilter("all")}
-            style={{
-              ...styles.filterButton,
-              ...(recommendFilter === "all" ? styles.filterButtonActive : {}),
-            }}
-          >
-            전체
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setRecommendFilter("5")}
-            style={{
-              ...styles.filterButton,
-              ...(recommendFilter === "5" ? styles.filterButtonActive : {}),
-            }}
-          >
-            5추+
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setRecommendFilter("10")}
-            style={{
-              ...styles.filterButton,
-              ...(recommendFilter === "10" ? styles.filterButtonActive : {}),
-            }}
-          >
-            10추+
-          </button>
-        </div>
+        <div style={styles.filterSummary}>운영 공지 전용 게시판</div>
 
         <div style={styles.searchGroup}>
           <select
@@ -287,20 +161,6 @@ const StockCommunityPage = ({
           <button
             type="button"
             onClick={() => {
-              if (!isLoggedIn) {
-                alert("로그인 후 글을 작성할 수 있습니다.");
-                return;
-              }
-              onWritePost?.();
-            }}
-            style={styles.writeButton}
-          >
-            글쓰기
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
               fetchData();
               setCurrentPage(1);
             }}
@@ -313,12 +173,12 @@ const StockCommunityPage = ({
 
       <div style={styles.listCard}>
         <div style={styles.listHeaderRow}>
-          <h3 style={styles.sectionTitle}>게시글 목록</h3>
+          <h3 style={styles.sectionTitle}>공지 목록</h3>
           <span style={styles.postCount}>총 {filteredPosts.length}개</span>
         </div>
 
         <div style={styles.noticeGuide}>
-          공지사항은 별도 공지 게시판에서 확인할 수 있으며, 이곳에는 일반 종목 게시글만 표시됩니다.
+          공지사항만 별도로 모아둔 게시판입니다.
         </div>
 
         <div style={styles.tableWrap}>
@@ -365,9 +225,7 @@ const StockCommunityPage = ({
                 onClick={() => setCurrentPage(pageNumber)}
                 style={{
                   ...styles.pageButton,
-                  ...(safeCurrentPage === pageNumber
-                    ? styles.pageButtonActive
-                    : {}),
+                  ...(safeCurrentPage === pageNumber ? styles.pageButtonActive : {}),
                 }}
               >
                 {pageNumber}
@@ -412,18 +270,13 @@ const styles = {
     padding: "28px 30px",
     boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
     marginBottom: "18px",
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "20px",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
   },
   heroBadge: {
     display: "inline-block",
     padding: "6px 12px",
     borderRadius: "999px",
-    background: "#eef2ff",
-    color: "#4c6ef5",
+    background: "#fff7ed",
+    color: "#d9480f",
     fontSize: "12px",
     fontWeight: "800",
     marginBottom: "12px",
@@ -440,26 +293,6 @@ const styles = {
     color: "#6b7280",
     lineHeight: "1.6",
   },
-  heroRight: {
-    textAlign: "right",
-    minWidth: "180px",
-  },
-  heroSymbol: {
-    fontSize: "13px",
-    color: "#6b7280",
-    fontWeight: "700",
-    marginBottom: "8px",
-  },
-  heroPrice: {
-    fontSize: "24px",
-    fontWeight: "800",
-    color: "#111827",
-    marginBottom: "6px",
-  },
-  heroChange: {
-    fontSize: "15px",
-    fontWeight: "800",
-  },
   toolbarCard: {
     background: "#fff",
     border: "1px solid #e5e7eb",
@@ -473,25 +306,10 @@ const styles = {
     flexWrap: "wrap",
     alignItems: "center",
   },
-  filterGroup: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
-  },
-  filterButton: {
-    padding: "9px 14px",
-    borderRadius: "999px",
-    border: "1px solid #d1d5db",
-    background: "#fff",
-    color: "#374151",
-    fontSize: "13px",
+  filterSummary: {
+    fontSize: "14px",
     fontWeight: "700",
-    cursor: "pointer",
-  },
-  filterButtonActive: {
-    background: "#111827",
-    color: "#fff",
-    border: "1px solid #111827",
+    color: "#374151",
   },
   searchGroup: {
     display: "flex",
@@ -516,16 +334,6 @@ const styles = {
     padding: "0 12px",
     fontSize: "14px",
     outline: "none",
-  },
-  writeButton: {
-    padding: "10px 16px",
-    borderRadius: "10px",
-    border: "none",
-    background: "#111827",
-    color: "#fff",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "14px",
   },
   refreshButton: {
     padding: "10px 16px",
@@ -594,12 +402,10 @@ const styles = {
     borderBottom: "1px solid #e5e7eb",
     textAlign: "center",
   },
-  tr: {
+  noticeRow: {
     cursor: "pointer",
+    background: "#fffaf5",
     borderBottom: "1px solid #f1f5f9",
-  },
-  popularRow: {
-    background: "#f8fbff",
   },
   td: {
     padding: "14px 12px",
@@ -615,18 +421,15 @@ const styles = {
     fontWeight: "700",
     color: "#111827",
   },
-  popularTitle: {
-    color: "#1d4ed8",
-  },
-  popularBadge: {
+  noticeBadge: {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     height: "24px",
     padding: "0 10px",
     borderRadius: "999px",
-    background: "#e7f5ff",
-    color: "#1971c2",
+    background: "#fff0d9",
+    color: "#d9480f",
     fontSize: "12px",
     fontWeight: "800",
     flexShrink: 0,
@@ -635,23 +438,11 @@ const styles = {
     color: "#6b7280",
     fontWeight: "700",
   },
-  nickname: {
-    fontWeight: "800",
-    color: "#374151",
-  },
   emptyTableCell: {
     padding: "40px 16px",
     textAlign: "center",
     color: "#6b7280",
     fontSize: "14px",
-  },
-  dividerCell: {
-    padding: "10px 12px",
-    fontSize: "12px",
-    fontWeight: "800",
-    color: "#64748b",
-    background: "#f8fafc",
-    textAlign: "left",
   },
   pagination: {
     display: "flex",
@@ -684,12 +475,6 @@ const styles = {
     textAlign: "center",
     boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)",
   },
-  emptyTitle: {
-    margin: "0 0 8px",
-    fontSize: "18px",
-    fontWeight: "700",
-    color: "#111827",
-  },
   emptyText: {
     margin: 0,
     fontSize: "14px",
@@ -698,4 +483,4 @@ const styles = {
   },
 };
 
-export default StockCommunityPage;
+export default NoticeBoardPage;

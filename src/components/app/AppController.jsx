@@ -14,6 +14,8 @@ import UserActivityPage from "../../pages/UserActivityPage";
 import RankingPage from "../../pages/RankingPage";
 import CommunityPage from "../../pages/CommunityPage";
 import StockCommunityPage from "../../pages/StockCommunityPage";
+import FreeBoardPage from "../../pages/FreeBoardPage";
+import NoticeBoardPage from "../../pages/NoticeBoardPage";
 import CommunityPostDetailPage from "../../pages/CommunityPostDetailPage";
 import CommunityPostWritePage from "../../pages/CommunityPostWritePage";
 
@@ -50,6 +52,30 @@ const pageTexts = {
     title: "유저 활동 로그",
     description: "기존 데이터 기준으로 유저 활동을 확인합니다.",
   },
+  community: {
+    title: "커뮤니티",
+    description: "게시판과 종목별 커뮤니티를 탐색해보세요.",
+  },
+  stockCommunity: {
+    title: "종목 커뮤니티",
+    description: "선택한 종목 게시판의 글 목록을 확인하세요.",
+  },
+  freeBoard: {
+    title: "자유게시판",
+    description: "종목과 관계없는 자유로운 소통 공간입니다.",
+  },
+  noticeBoard: {
+    title: "공지사항",
+    description: "운영 공지 및 안내사항을 확인해보세요.",
+  },
+  communityPostDetail: {
+    title: "게시글 상세",
+    description: "게시글 내용과 댓글을 확인해보세요.",
+  },
+  communityPostWrite: {
+    title: "게시글 작성",
+    description: "새 게시글을 작성해보세요.",
+  },
 };
 
 const AppController = () => {
@@ -62,6 +88,7 @@ const AppController = () => {
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
   const [selectedCommunitySymbol, setSelectedCommunitySymbol] = useState(null);
   const [selectedCommunityPostId, setSelectedCommunityPostId] = useState(null);
+  const [selectedCommunityBoardType, setSelectedCommunityBoardType] = useState(null);
   const [authMode, setAuthMode] = useState("login");
   const [loginCaptchaRequired, setLoginCaptchaRequired] = useState(false);
   const [loginCaptchaResetKey, setLoginCaptchaResetKey] = useState(0);
@@ -93,14 +120,14 @@ const AppController = () => {
     if (isLoggedIn) {
       resetInactivityTimer();
       activityEvents.forEach((event) =>
-        window.addEventListener(event, resetInactivityTimer),
+        window.addEventListener(event, resetInactivityTimer)
       );
     }
 
     return () => {
       if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
       activityEvents.forEach((event) =>
-        window.removeEventListener(event, resetInactivityTimer),
+        window.removeEventListener(event, resetInactivityTimer)
       );
     };
   }, [isLoggedIn, resetInactivityTimer]);
@@ -243,7 +270,7 @@ const AppController = () => {
           setLoginCaptchaResetKey((prev) => prev + 1);
         }
         setLoginErrorMessage(
-          data?.message || responseText || "로그인에 실패했습니다.",
+          data?.message || responseText || "로그인에 실패했습니다."
         );
         return;
       }
@@ -315,13 +342,13 @@ const AppController = () => {
             {
               method: "POST",
               body: profileFormData,
-            },
+            }
           );
 
           if (!imageResponse.ok) {
             const imageError = await imageResponse.text();
             alert(
-              imageError || "회원가입은 완료됐지만 프로필 사진 저장에 실패했습니다.",
+              imageError || "회원가입은 완료됐지만 프로필 사진 저장에 실패했습니다."
             );
           }
         }
@@ -349,6 +376,7 @@ const AppController = () => {
     setSelectedActivityUser(null);
     setSelectedCommunitySymbol(null);
     setSelectedCommunityPostId(null);
+    setSelectedCommunityBoardType(null);
     setLoginCaptchaRequired(false);
     setLoginErrorMessage("");
   };
@@ -399,6 +427,7 @@ const AppController = () => {
     if (page === "community") {
       setSelectedCommunitySymbol(null);
       setSelectedCommunityPostId(null);
+      setSelectedCommunityBoardType(null);
     }
 
     setCurrentPage(page);
@@ -453,7 +482,7 @@ const AppController = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        },
+        }
       );
 
       const text = await res.text();
@@ -474,14 +503,30 @@ const AppController = () => {
 
   const handleMoveToStockCommunity = (symbol) => {
     setSelectedCommunitySymbol(symbol);
+    setSelectedCommunityBoardType("stock");
     setSelectedCommunityPostId(null);
     setCurrentPage("stockCommunity");
+  };
+
+  const handleMoveToFreeBoard = () => {
+    setSelectedCommunityBoardType("free");
+    setSelectedCommunitySymbol(null);
+    setSelectedCommunityPostId(null);
+    setCurrentPage("freeBoard");
+  };
+
+  const handleMoveToNoticeBoard = () => {
+    setSelectedCommunityBoardType("notice");
+    setSelectedCommunitySymbol(null);
+    setSelectedCommunityPostId(null);
+    setCurrentPage("noticeBoard");
   };
 
   const handleBackToCommunityMain = () => {
     setCurrentPage("community");
     setSelectedCommunitySymbol(null);
     setSelectedCommunityPostId(null);
+    setSelectedCommunityBoardType(null);
   };
 
   const handleOpenCommunityPostDetail = (postId) => {
@@ -489,8 +534,14 @@ const AppController = () => {
     setCurrentPage("communityPostDetail");
   };
 
-  const handleBackToStockCommunity = () => {
-    setCurrentPage("stockCommunity");
+  const handleBackToCommunityBoard = () => {
+    if (selectedCommunityBoardType === "free") {
+      setCurrentPage("freeBoard");
+    } else if (selectedCommunityBoardType === "notice") {
+      setCurrentPage("noticeBoard");
+    } else {
+      setCurrentPage("stockCommunity");
+    }
     setSelectedCommunityPostId(null);
   };
 
@@ -499,11 +550,23 @@ const AppController = () => {
   };
 
   const handleBackToCommunityListFromWrite = () => {
-    setCurrentPage("stockCommunity");
+    if (selectedCommunityBoardType === "free") {
+      setCurrentPage("freeBoard");
+    } else if (selectedCommunityBoardType === "notice") {
+      setCurrentPage("noticeBoard");
+    } else {
+      setCurrentPage("stockCommunity");
+    }
   };
 
   const handleCommunityPostCreated = () => {
-    setCurrentPage("stockCommunity");
+    if (selectedCommunityBoardType === "free") {
+      setCurrentPage("freeBoard");
+    } else if (selectedCommunityBoardType === "notice") {
+      setCurrentPage("noticeBoard");
+    } else {
+      setCurrentPage("stockCommunity");
+    }
   };
 
   if (currentPage === "auth") {
@@ -588,7 +651,30 @@ const AppController = () => {
 
       case "community":
         return (
-          <CommunityPage onSelectStockCommunity={handleMoveToStockCommunity} />
+          <CommunityPage
+            onSelectNoticeBoard={handleMoveToNoticeBoard}
+            onSelectFreeBoard={handleMoveToFreeBoard}
+            onSelectStockCommunity={handleMoveToStockCommunity}
+          />
+        );
+
+      case "noticeBoard":
+        return (
+          <NoticeBoardPage
+            onBack={handleBackToCommunityMain}
+            onSelectPost={handleOpenCommunityPostDetail}
+          />
+        );
+
+      case "freeBoard":
+        return (
+          <FreeBoardPage
+            currentUser={currentUser}
+            isLoggedIn={isLoggedIn}
+            onBack={handleBackToCommunityMain}
+            onSelectPost={handleOpenCommunityPostDetail}
+            onWritePost={handleOpenCommunityWritePage}
+          />
         );
 
       case "stockCommunity":
@@ -609,58 +695,15 @@ const AppController = () => {
             postId={selectedCommunityPostId}
             currentUser={currentUser}
             isLoggedIn={isLoggedIn}
-            onBack={handleBackToStockCommunity}
-          />
-        );
-
-      case "mypage":
-        return (
-          <MyPage
-            currentUser={currentUser}
-            viewedUser={selectedMyPageUser}
-            onMoveAccountSettings={() => {
-              setCurrentPage("accountSettings");
-            }}
-          />
-        );
-
-      case "accountSettings":
-        return (
-          <AccountSettingsPage
-            currentUser={currentUser}
-            onLogout={handleLogout}
-            onBackToMyPage={() => handleMovePage("mypage")}
-            onUpdateCurrentUser={handleUpdateCurrentUser}
-          />
-        );
-
-      case "admin":
-        return (
-          <AdminPage
-            currentUser={currentUser}
-            onOpenUserMyPage={(user) => {
-              setSelectedMyPageUser(user);
-              setCurrentPage("mypage");
-            }}
-            onOpenUserActivity={(user) => {
-              setSelectedActivityUser(user);
-              setCurrentPage("userActivity");
-            }}
-          />
-        );
-
-      case "userActivity":
-        return (
-          <UserActivityPage
-            currentUser={currentUser}
-            targetUser={selectedActivityUser}
-            onBack={() => setCurrentPage("admin")}
+            boardType={selectedCommunityBoardType || "stock"}
+            onBack={handleBackToCommunityBoard}
           />
         );
 
       case "communityPostWrite":
         return (
           <CommunityPostWritePage
+            boardType={selectedCommunityBoardType || "stock"}
             symbol={selectedCommunitySymbol}
             currentUser={currentUser}
             isLoggedIn={isLoggedIn}
@@ -669,43 +712,66 @@ const AppController = () => {
           />
         );
 
-      case "home":
-      default:
+      case "mypage":
         return (
-          <HomePage
-            isLoggedIn={isLoggedIn}
-            onOpenLogin={handleOpenLogin}
+          <MyPage
             currentUser={currentUser}
+            selectedUser={selectedMyPageUser}
+            onOpenUserActivity={(user) => {
+              setSelectedActivityUser(user);
+              setCurrentPage("userActivity");
+            }}
+            onOpenAccountSettings={() => setCurrentPage("accountSettings")}
           />
         );
+
+      case "accountSettings":
+        return (
+          <AccountSettingsPage
+            currentUser={currentUser}
+            onBack={() => setCurrentPage("mypage")}
+            onUpdateCurrentUser={handleUpdateCurrentUser}
+          />
+        );
+
+      case "admin":
+        return <AdminPage currentUser={currentUser} />;
+
+      case "userActivity":
+        return (
+          <UserActivityPage
+            selectedUser={selectedActivityUser}
+            onBack={() => setCurrentPage("mypage")}
+          />
+        );
+
+      case "home":
+      default:
+        return <HomePage isLoggedIn={isLoggedIn} currentUser={currentUser} />;
     }
   };
 
   return (
-    <div className="app-container">
+    <div className="app-shell">
       <TopNav
+        currentPage={currentPage}
+        onMovePage={handleMovePage}
         isLoggedIn={isLoggedIn}
         isAdmin={currentUser?.role === "admin"}
         currentUser={currentUser}
-        currentPage={currentPage}
-        onMovePage={handleMovePage}
         onOpenLogin={handleOpenLogin}
         onLogout={handleLogout}
       />
-      <main className="main-content">
-        <div className="container">
-          {currentPage !== "home" && (
-            <header className="page-header">
-              <h2 className="page-title">
-                {pageTexts[currentPage]?.title || "페이지"}
-              </h2>
-              <p className="page-description">
-                {pageTexts[currentPage]?.description || ""}
-              </p>
-            </header>
-          )}
-          {renderPage()}
-        </div>
+
+      <main className="app-main">
+        {currentPage !== "auth" && (
+          <div className="page-hero">
+            <h1>{pageTexts[currentPage]?.title || ""}</h1>
+            <p>{pageTexts[currentPage]?.description || ""}</p>
+          </div>
+        )}
+
+        {renderPage()}
       </main>
     </div>
   );
