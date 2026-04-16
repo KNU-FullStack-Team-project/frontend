@@ -25,7 +25,6 @@ const StockRow = ({
         {favorites.has(stock.symbol) ? "❤️" : "🤍"}
       </button>
 
-      <div className="stock-index">{index + 1}</div>
 
       <div className="stock-name-section">
         <span className="stock-name-text">{stock.name}</span>
@@ -378,7 +377,16 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
   }
 
   return (
-    <div className="content-card">
+    <div style={styles.page}>
+      <div style={styles.hero}>
+        <div style={styles.heroBadge}>STOCK</div>
+        <h1 style={styles.heroTitle}>주식 시장</h1>
+        <p style={styles.heroText}>
+          종목 정보를 확인하고, 나만의 거래 전략을 세워보세요.
+        </p>
+      </div>
+
+      <div className="content-card">
       <div className="section-header">
         <h3>실시간 주식 정보</h3>
         <button
@@ -482,7 +490,6 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
       <div className="stock-list-container">
         <div className="stock-list-header">
           <div style={{ textAlign: "center" }}>관심</div>
-          <div style={{ textAlign: "center" }}>순번</div>
           <div style={{ paddingLeft: "15px" }}>종목명</div>
           <div style={{ textAlign: "right" }}>현재가</div>
           <div style={{ textAlign: "right" }}>등락률</div>
@@ -513,7 +520,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
                 {searchResults !== null
                   ? "검색 결과가 없습니다."
                   : activeTab === "favorites"
-                    ? "관심종목이 없습니다. 별표를 눌러 추가해보세요!"
+                    ? "아직 관심 종목이 없습니다. 하트(❤️)를 눌러 나만의 목록을 만들어보세요!"
                     : "종목 정보를 가져올 수 없습니다."}
               </div>
             );
@@ -570,7 +577,53 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
         />
       </Modal>
     </div>
+  </div>
   );
+};
+
+const styles = {
+  page: {
+    maxWidth: "1440px",
+    margin: "0 auto",
+    padding: "28px 20px 56px",
+  },
+  hero: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    textAlign: "center",
+    gap: "16px",
+    padding: "40px 30px",
+    borderRadius: "24px",
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
+    marginBottom: "16px",
+  },
+  heroBadge: {
+    display: "inline-block",
+    padding: "6px 12px",
+    borderRadius: "999px",
+    background: "#eef2ff",
+    color: "#4c6ef5",
+    fontSize: "12px",
+    fontWeight: "800",
+    letterSpacing: "0.06em",
+    marginBottom: "4px",
+  },
+  heroTitle: {
+    margin: 0,
+    fontSize: "32px",
+    fontWeight: "800",
+    color: "#111827",
+  },
+  heroText: {
+    margin: 0,
+    fontSize: "15px",
+    lineHeight: "1.7",
+    color: "#6b7280",
+    maxWidth: "600px",
+  },
 };
 
 export default StockPage;
