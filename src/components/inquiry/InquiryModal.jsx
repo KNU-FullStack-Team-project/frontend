@@ -200,6 +200,7 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
 
         <div className="detail-date-line">
           작성 일시: {new Date(selectedInquiry.createdAt).toLocaleString("ko-KR")}
+          {isAdmin && selectedInquiry.nickname && ` | 작성자: ${selectedInquiry.nickname}`}
         </div>
 
         {/* 답변 내용 영역 */}
