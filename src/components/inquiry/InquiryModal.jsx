@@ -54,7 +54,7 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
       // 관리자인 경우 전체 목록, 일반 사용자인 경우 본인 목록 호출
       const url = isAdmin 
         ? "http://localhost:8081/api/inquiries/all" 
-        : "http://localhost:8081/api/inquiries";
+        : "http://localhost:8081/api/inquiries/my";
         
       const response = await fetch(url, {
         headers: {
