@@ -12,6 +12,13 @@
   align-items: center;
   padding-bottom: 12px;
   border-bottom: 1px solid #f1f5f9;
+  min-height: 50px; /* 컨테이너 최소 높이 확보 */
+}
+
+.inquiry-list-header .app-button {
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  min-height: 42px;
 }
 
 .inquiry-list-count {
@@ -336,7 +343,7 @@
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
-  padding: 6px 12px;
+  padding: 10px 16px; /* 세로 크기 확대 */
   border-radius: 8px;
   transition: all 0.2s;
 }
@@ -402,10 +409,16 @@
 
 .modal-actions {
   display: flex;
+  justify-content: flex-end; /* 우측 정렬 */
   gap: 12px;
   margin-top: 10px;
 }
 
-.modal-actions button {
-  flex: 1;
+.modal-actions .app-button,
+.inquiry-footer .app-button {
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+  min-height: 48px;
+  min-width: 100px; /* 버튼의 최소 너비 확보 */
+  font-weight: 700;
 }

@@ -254,13 +254,15 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
         <div className="inquiry-list-container">
           <div className="inquiry-list-header">
             <p className="inquiry-list-count">전체 <strong>{inquiries.length}</strong>건</p>
-            <AppButton 
-              variant="primary" 
-              size="small" 
-              onClick={() => setViewMode("write")}
-            >
-              + 새 문의하기
-            </AppButton>
+            {!isAdmin && (
+              <AppButton 
+                variant="primary" 
+                size="small" 
+                onClick={() => setViewMode("write")}
+              >
+                + 새 문의하기
+              </AppButton>
+            )}
           </div>
 
           <div className="inquiry-scroll-area">
@@ -384,7 +386,7 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
             variant="primary"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "전송 중..." : "전송하기"}
+            {isSubmitting ? "문의 중..." : "문의하기"}
           </AppButton>
         </div>
       </form>
