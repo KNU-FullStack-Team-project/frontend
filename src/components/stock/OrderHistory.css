@@ -1,18 +1,32 @@
 .mypage-table-wrap {
-    overflow: auto;
-    /* 스크롤바가 표시되도록 설정 */
-    max-height: 500px;
-    /* (선택 사항) 세로 스크롤을 보려면 높이 제한 필요 */
+    overflow-y: auto;
+    max-height: 520px;
+    border-radius: 8px;
+    border: 1px solid #eef2f7;
+}
+
+/* 테이블 헤더 고정 */
+.mypage-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f8fafc; /* 헤더 배경색 */
+}
+
+.mypage-table thead th {
+    border-bottom: 2px solid #e2e8f0;
 }
 
 .mypage-table-wrap::-webkit-scrollbar {
     width: 6px;
-    /* 세로 스크롤바 너비 */
     height: 6px;
-    /* 가로 스크롤바 높이 */
 }
 
 .mypage-table-wrap::-webkit-scrollbar-thumb {
-    background: #ccc;
+    background: #cbd5e1;
     border-radius: 4px;
+}
+
+.mypage-table-wrap::-webkit-scrollbar-track {
+    background: #f1f5f9;
 }

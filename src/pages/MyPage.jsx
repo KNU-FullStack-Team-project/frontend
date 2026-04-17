@@ -16,6 +16,8 @@ const TEXT = {
   nickname: "닉네임",
   email: "이메일",
   joinedAt: "가입일",
+  accountCount: "보유 계좌",
+  competitionCount: "참여 대회",
   myAccounts: "내 계좌",
   chooseAccount: "조회할 계좌를 선택하세요.",
   account: "계좌",
@@ -55,6 +57,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   const [resettingAccountId, setResettingAccountId] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [myCompetitions, setMyCompetitions] = useState([]);
 
   const targetEmail = viewedUser?.email || currentUser?.email;
   const isMyOwnPage = !viewedUser || viewedUser.email === currentUser?.email;
@@ -144,6 +147,21 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
       }
 
       setError("");
+
+      // 참여 대회 정보 가져오기
+      const userId = profileData?.id || currentUser?.userId;
+      if (userId) {
+        const compResponse = await fetch(
+          `http://localhost:8081/api/competitions/my?userId=${userId}`,
+          {
+            headers: commonHeaders,
+          }
+        );
+        if (compResponse.ok) {
+          const compData = await compResponse.json();
+          setMyCompetitions(compData);
+        }
+      }
     } catch (loadError) {
       console.error("MyPage load error:", loadError);
       setError(TEXT.loadFailed);
@@ -283,26 +301,24 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
               </div>
               <div className="mypage-profile-copy">
                 <strong>{profile?.nickname ?? TEXT.user}</strong>
-                <span>{profile?.email ?? targetEmail ?? "-"}</span>
+                <div className="mypage-email-wrapper">
+                  <span title={profile?.email ?? targetEmail}>{profile?.email ?? targetEmail ?? "-"}</span>
+                </div>
               </div>
             </div>
 
             <div className="mypage-info-list">
               <div className="mypage-info-item">
-                <span className="mypage-info-label">{TEXT.nickname}</span>
-                <span className="mypage-info-value">
-                  {profile?.nickname ?? "-"}
-                </span>
-              </div>
-              <div className="mypage-info-item">
-                <span className="mypage-info-label">{TEXT.email}</span>
-                <span className="mypage-info-value mypage-email">
-                  {profile?.email ?? targetEmail ?? "-"}
-                </span>
-              </div>
-              <div className="mypage-info-item">
                 <span className="mypage-info-label">{TEXT.joinedAt}</span>
                 <span className="mypage-info-value">{createdAtText}</span>
+              </div>
+              <div className="mypage-info-item">
+                <span className="mypage-info-label">{TEXT.accountCount}</span>
+                <span className="mypage-info-value">{`${accounts.length}개`}</span>
+              </div>
+              <div className="mypage-info-item">
+                <span className="mypage-info-label">{TEXT.competitionCount}</span>
+                <span className="mypage-info-value">{`${myCompetitions.length}개`}</span>
               </div>
             </div>
 

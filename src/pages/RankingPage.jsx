@@ -274,12 +274,18 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
           )}
         </div>
         <div style={styles.topNickname}>{user?.nickname || "-"}</div>
-        <div style={styles.topReturnRate}>
+        <div 
+          className={user?.returnRate > 0 ? "up" : user?.returnRate < 0 ? "down" : ""}
+          style={styles.topReturnRate}
+        >
           {user?.returnRate != null
-            ? `${Number(user.returnRate).toFixed(2)}%`
+            ? `${user.returnRate > 0 ? "+" : ""}${Number(user.returnRate).toFixed(2)}%`
             : "-"}
         </div>
-        <div style={styles.topProfit}>
+        <div 
+          className={user?.profitAmount > 0 ? "up" : user?.profitAmount < 0 ? "down" : ""}
+          style={styles.topProfit}
+        >
           {user?.profitAmount != null ? formatMoney(user.profitAmount) : "-"}
         </div>
       </div>
@@ -541,13 +547,19 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
                         <span style={styles.nameCell}>
                           {user?.nickname ?? "-"}
                         </span>
-                        <span style={styles.rateCell}>
+                        <span 
+                          className={user?.returnRate > 0 ? "up" : user?.returnRate < 0 ? "down" : ""}
+                          style={styles.rateCell}
+                        >
                           {user?.returnRate != null
-                            ? `${Number(user.returnRate).toFixed(2)}%`
+                            ? `${user.returnRate > 0 ? "+" : ""}${Number(user.returnRate).toFixed(2)}%`
                             : "-"}
                         </span>
-                        <span style={styles.profitCell}>
-                          {user?.profitAmount != null
+                        <span 
+                          className={user?.profitAmount > 0 ? "up" : user?.profitAmount < 0 ? "down" : ""}
+                          style={styles.profitCell}
+                        >
+                          {user?.returnRate != null
                             ? formatMoney(user.profitAmount)
                             : "-"}
                         </span>
@@ -906,7 +918,6 @@ const styles = {
   topReturnRate: {
     fontSize: "28px",
     fontWeight: "900",
-    color: "#e03131",
     marginBottom: "8px",
   },
   topProfit: {
@@ -953,7 +964,6 @@ const styles = {
   },
   rateCell: {
     fontWeight: "800",
-    color: "#e03131",
   },
   profitCell: {
     fontWeight: "700",

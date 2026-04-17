@@ -222,11 +222,11 @@ const ContestDetailPage = ({
 
       <div
         style={{
-          background: "linear-gradient(135deg, #111 0%, #2b2b2b 100%)",
+          background: "linear-gradient(135deg, #3ab5f0 0%, #3186d1 100%)",
           color: "#fff",
           borderRadius: "24px",
           padding: "32px",
-          boxShadow: "0 18px 40px rgba(0,0,0,0.15)",
+          boxShadow: "0 18px 40px rgba(58, 181, 240, 0.15)",
           marginBottom: "24px",
         }}
       >

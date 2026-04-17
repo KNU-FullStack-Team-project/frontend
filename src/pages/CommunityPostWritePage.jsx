@@ -199,18 +199,16 @@ const CommunityPostWritePage = ({
       </button>
 
       <div style={styles.headerCard}>
-        <div>
-          <div style={styles.badge}>WRITE</div>
-          <h1 style={styles.title}>
-            {stockInfo?.name || symbol} 게시글 작성
-          </h1>
-          <p style={styles.desc}>
-            분석, 의견, 매매 전략을 자유롭게 공유하세요
-          </p>
+        <div style={styles.badge}>WRITE</div>
+        <h1 style={styles.title}>
+          {stockInfo?.name || symbol} 게시글 작성
+        </h1>
+        <p style={styles.desc}>
+          분석, 의견, 매매 전략을 자유롭게 공유하세요
+        </p>
 
-          <div style={styles.tip}>
-            글꼴, 색상, 크기, 정렬, 이미지, 파일 첨부를 사용할 수 있습니다.
-          </div>
+        <div style={styles.tip}>
+          글꼴, 색상, 크기, 정렬, 이미지, 파일 첨부를 사용할 수 있습니다.
         </div>
 
         <div style={styles.stockBox}>
@@ -322,36 +320,44 @@ const styles = {
   headerCard: {
     background: "linear-gradient(135deg, #4874d4, #c6d2e7)",
     color: "white",
-    padding: 30,
+    padding: "50px 30px",
     borderRadius: 20,
     display: "flex",
-    justifyContent: "space-between",
+    flexDirection: "column",
+    alignItems: "center",
+    textAlign: "center",
     marginBottom: 20,
-    gap: 16,
+    gap: 12,
+    position: "relative",
   },
   badge: {
     fontSize: 12,
     background: "#4f46e5",
-    padding: "4px 10px",
+    padding: "4px 12px",
     borderRadius: 20,
     display: "inline-block",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 800,
-    margin: 0,
+    margin: "0 0 10px 0",
   },
   desc: {
-    fontSize: 14,
-    color: "#dbeafe",
+    fontSize: 15,
+    color: "#e2e8f0",
+    marginBottom: 4,
   },
   tip: {
-    marginTop: 10,
+    marginTop: 8,
     fontSize: 13,
     color: "#fef3c7",
+    opacity: 0.9,
   },
   stockBox: {
+    position: "absolute",
+    top: 25,
+    right: 30,
     textAlign: "right",
   },
   formCard: {

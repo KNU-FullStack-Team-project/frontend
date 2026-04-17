@@ -435,6 +435,18 @@ p {
 .mypage-portfolio-card,
 .mypage-order-card {
   padding: 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+.mypage-profile-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, #4c6ef5 0%, #748ffc 100%);
 }
 
 .mypage-card-header {
@@ -442,6 +454,7 @@ p {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  margin-bottom: 28px;
 }
 
 .mypage-eyebrow {
@@ -498,6 +511,28 @@ p {
   object-fit: cover;
 }
 
+.mypage-role-badge-wrap {
+  margin-bottom: 6px;
+}
+
+.mypage-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.mypage-role-badge.is-admin {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fee2e2;
+}
+
 .mypage-profile-copy {
   display: flex;
   flex-direction: column;
@@ -510,10 +545,40 @@ p {
   color: #0f172a;
 }
 
+.mypage-email-wrapper {
+  height: 22px;
+  position: relative;
+  width: 100%;
+}
+
 .mypage-profile-copy span {
   color: #64748b;
   font-size: 14px;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  width: 100%;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.mypage-profile-copy span:hover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  white-space: nowrap;
+  width: max-content;
+  max-width: 320px;
+  color: #0f172a;
+  background: #ffffff;
+  padding: 6px 12px;
+  margin: -6px -12px;
+  border-radius: 8px;
+  z-index: 100;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
 }
 
 .mypage-info-list {
@@ -527,10 +592,16 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 15px 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.mypage-info-item:hover {
+  border-color: #dbeafe;
+  background: #f8fbff;
 }
 
 .mypage-info-label {
@@ -562,7 +633,7 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 20px;
 }
 
 .mypage-section-head h3 {
@@ -777,6 +848,7 @@ p {
 
 .portfolio-section-layout {
   gap: 32px;
+  margin-top: 10px;
 }
 
 .portfolio-chart-container {
@@ -1526,4 +1598,13 @@ p {
   gap: 16px;
   padding: 16px 0;
   border-bottom: 1px solid #eef2f7;
+}
+
+.no-data {
+  text-align: center;
+  padding: 120px 20px;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  width: 100%;
 }
