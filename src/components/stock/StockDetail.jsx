@@ -9,6 +9,10 @@ const cleanNumber = (val) => {
   return parseInt(String(val).replace(/,/g, "")) || 0;
 };
 
+// [최적화] 프론트엔드 차트 데이터 캐시 (모달을 닫았다 열어도 1분간 유지)
+const chartCache = new Map();
+const CACHE_DURATION_MS = 60 * 1000; // 1분
+
 const StockDetail = ({ stock, user, onOpenCommunity }) => {
   const [candles, setCandles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +22,8 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   const [targetPrice, setTargetPrice] = useState(0);
   const [period, setPeriod] = useState("1M");
   const [accountData, setAccountData] = useState(null);
+  const [userAccounts, setUserAccounts] = useState([]);
+  const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [detailTab, setDetailTab] = useState("trade");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
@@ -67,34 +73,93 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   };
 
   useEffect(() => {
+    const abortController = new AbortController();
+
     const fetchHistory = async () => {
+      if (!stock?.symbol) return;
+      
+      const cacheKey = `${stock.symbol}:${period}`;
+      const cached = chartCache.get(cacheKey);
+      const now = Date.now();
+
+      // [최적화] 1분 이내의 동일 종목/기간 요청인 경우 캐시 사용
+      if (cached && (now - cached.timestamp < CACHE_DURATION_MS)) {
+        console.log(`[Cache Hit] Using cached chart data for ${cacheKey}`);
+        setCandles(cached.data);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const response = await fetch(
-          `http://localhost:8081/api/stocks/${stock.symbol}/history?period=${period}`
+          `http://localhost:8081/api/stocks/${stock.symbol}/history?period=${period}`,
+          { signal: abortController.signal }
         );
         if (!response.ok) throw new Error("Failed to fetch history");
         const data = await response.json();
-        setCandles(data);
+        
+        // [수정] 데이터가 배열인 경우에만 캐시 및 상태 업데이트
+        if (Array.isArray(data)) {
+          chartCache.set(cacheKey, { data, timestamp: Date.now() });
+          setCandles(data);
+        } else {
+          console.error("Invalid chart data format:", data);
+          setCandles([]);
+        }
       } catch (err) {
-        console.error(err);
+        if (err.name === 'AbortError') {
+          console.log('[Abort] Previous chart request cancelled');
+        } else {
+          console.error(err);
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    if (stock) fetchHistory();
-  }, [stock, period]);
+    fetchHistory();
+
+    return () => {
+      abortController.abort(); // 컴포넌트 언마운트 또는 의존성 변경 시 이전 요청 취소
+    };
+  }, [stock?.symbol, period]); // stock 개체 전체가 아닌 symbol을 의존성으로 설정
+
+  const fetchUserAccounts = React.useCallback(async () => {
+    if (!user?.email) return;
+    const token = localStorage.getItem("accessToken") || user?.token;
+    if (!token) return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:8081/api/accounts/my?email=${user.email}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setUserAccounts(data);
+        if (data.length > 0 && !selectedAccountId) {
+          setSelectedAccountId(data[0].accountId);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch user accounts:", err);
+    }
+  }, [user?.email, user?.token, selectedAccountId]);
 
   const fetchAccountData = React.useCallback(async () => {
-    if (!user?.email) return;
+    if (!user?.email || !selectedAccountId) return;
 
     const token = localStorage.getItem("accessToken") || user?.token;
     if (!token) return;
 
     try {
       const response = await fetch(
-        `http://localhost:8081/api/accounts/my/dashboard?email=${user.email}`,
+        `http://localhost:8081/api/accounts/my/dashboard?email=${user.email}&accountId=${selectedAccountId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -109,11 +174,17 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
     } catch (err) {
       console.error("Failed to fetch account data:", err);
     }
-  }, [user?.email, user?.token]);
+  }, [user?.email, user?.token, selectedAccountId]);
 
   useEffect(() => {
-    fetchAccountData();
-  }, [fetchAccountData]);
+    fetchUserAccounts();
+  }, [fetchUserAccounts]);
+
+  useEffect(() => {
+    if (selectedAccountId) {
+      fetchAccountData();
+    }
+  }, [selectedAccountId, fetchAccountData]);
 
   const handleOrder = async () => {
     const token = localStorage.getItem("accessToken") || user?.token;
@@ -162,7 +233,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          accountId: accountData.id || accountData.accountId || 1,
+          accountId: selectedAccountId,
           stockCode: stock.symbol,
           orderSide,
           orderType,
@@ -412,8 +483,30 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
           </div>
 
           <div className="trading-section detail-card">
-            <div className="trading-form-header">
+            <div className="trading-form-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h4>주문하기</h4>
+              {userAccounts.length > 1 && (
+                <select 
+                  value={selectedAccountId} 
+                  onChange={(e) => setSelectedAccountId(Number(e.target.value))}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '8px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    background: '#f9fafb'
+                  }}
+                >
+                  {userAccounts.map(acc => (
+                    <option key={acc.accountId} value={acc.accountId}>
+                      {acc.accountName} ({acc.accountType === 'MAIN' ? '기본' : '대회'})
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div className="trading-tabs">

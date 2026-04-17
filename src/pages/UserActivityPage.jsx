@@ -52,7 +52,12 @@ const UserActivityPage = ({ currentUser, targetUser, onBack }) => {
         </button>
       </div>
 
-      {loading ? <p className="page-desc">불러오는 중...</p> : null}
+      {loading ? (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <div className="loading-text">활동 로그를 불러오는 중입니다...</div>
+        </div>
+      ) : null}
       {!loading && error ? <p className="page-desc">{error}</p> : null}
 
       {!loading && !error ? (

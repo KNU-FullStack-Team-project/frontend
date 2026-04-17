@@ -11,6 +11,7 @@ import AccountSettingsPage from "../../pages/AccountSettingsPage";
 import AuthPage from "../../pages/AuthPage";
 import AdminPage from "../../pages/AdminPage";
 import UserActivityPage from "../../pages/UserActivityPage";
+import ReportListPage from "../../pages/ReportListPage";
 import RankingPage from "../../pages/RankingPage";
 import CommunityPage from "../../pages/CommunityPage";
 import StockCommunityPage from "../../pages/StockCommunityPage";
@@ -52,6 +53,10 @@ const pageTexts = {
     title: "유저 활동 로그",
     description: "기존 데이터 기준으로 유저 활동을 확인합니다.",
   },
+  reportList: {
+    title: "신고 관리",
+    description: "신고된 게시글과 댓글을 확인하고 처리합니다.",
+  },
   community: {
     title: "커뮤니티",
     description: "게시판과 종목별 커뮤니티를 탐색해보세요.",
@@ -76,6 +81,14 @@ const pageTexts = {
     title: "게시글 작성",
     description: "새 게시글을 작성해보세요.",
   },
+  accountSettings: {
+    title: "계정 설정",
+    description: "내 계정 정보와 프로필을 관리합니다.",
+  },
+  admin: {
+    title: "관리자 페이지",
+    description: "서비스 운영과 사용자/신고 내역을 관리합니다.",
+  },
 };
 
 const AppController = () => {
@@ -97,6 +110,22 @@ const AppController = () => {
   const inactivityTimerRef = useRef(null);
   const autoLogoutTimeoutRef = useRef(null);
 
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("accessToken");
+    setCurrentUser(null);
+    setIsLoggedIn(false);
+    setCurrentPage("home");
+    setSelectedCompetitionId(null);
+    setSelectedMyPageUser(null);
+    setSelectedActivityUser(null);
+    setSelectedCommunitySymbol(null);
+    setSelectedCommunityPostId(null);
+    setSelectedCommunityBoardType(null);
+    setLoginCaptchaRequired(false);
+    setLoginErrorMessage("");
+  }, []);
+
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
 
@@ -106,7 +135,7 @@ const AppController = () => {
         handleLogout();
       }, 30 * 60 * 1000);
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, handleLogout]);
 
   useEffect(() => {
     const activityEvents = [
@@ -161,7 +190,7 @@ const AppController = () => {
       localStorage.removeItem("currentUser");
       localStorage.removeItem("accessToken");
     }
-  }, []);
+  }, [handleLogout]);
 
   const checkTokenExpiration = (token) => {
     try {
@@ -208,19 +237,26 @@ const AppController = () => {
   }, []);
 
   const handleHeartbeat = useCallback(async () => {
-    if (!isLoggedIn || !currentUser) return;
+    if (!isLoggedIn) return;
 
     resetInactivityTimer();
 
     try {
-      const currentToken =
-        localStorage.getItem("accessToken") || currentUser?.token;
+      const savedUserStr = localStorage.getItem("currentUser");
+      if (!savedUserStr) return;
+
+      const savedUser = JSON.parse(savedUserStr);
+      const currentToken = localStorage.getItem("accessToken") || savedUser?.token;
+
+      if (!currentToken || !savedUser?.email) return;
+
       const res = await fetch("http://localhost:8081/users/refresh", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${currentToken}`,
         },
+        body: JSON.stringify({ email: savedUser.email }),
       });
 
       if (res.ok) {
@@ -232,7 +268,7 @@ const AppController = () => {
     } catch (e) {
       console.error("Heartbeat backend sync failed:", e);
     }
-  }, [isLoggedIn, currentUser, resetInactivityTimer, handleUpdateCurrentUser]);
+  }, [isLoggedIn, resetInactivityTimer, handleUpdateCurrentUser]);
 
   const handleLogin = async (form) => {
     try {
@@ -363,22 +399,6 @@ const AppController = () => {
     } catch (error) {
       alert("회원가입 오류");
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    localStorage.removeItem("accessToken");
-    setCurrentUser(null);
-    setIsLoggedIn(false);
-    setCurrentPage("home");
-    setSelectedCompetitionId(null);
-    setSelectedMyPageUser(null);
-    setSelectedActivityUser(null);
-    setSelectedCommunitySymbol(null);
-    setSelectedCommunityPostId(null);
-    setSelectedCommunityBoardType(null);
-    setLoginCaptchaRequired(false);
-    setLoginErrorMessage("");
   };
 
   const handleViewRanking = (competitionId, status) => {
@@ -712,16 +732,26 @@ const AppController = () => {
           />
         );
 
+      case "reportList":
+        return (
+          <ReportListPage
+            currentUser={currentUser}
+            onBack={() => setCurrentPage("admin")}
+          />
+        );
+
       case "mypage":
         return (
           <MyPage
             currentUser={currentUser}
             selectedUser={selectedMyPageUser}
+            viewedUser={selectedMyPageUser}
             onOpenUserActivity={(user) => {
               setSelectedActivityUser(user);
               setCurrentPage("userActivity");
             }}
             onOpenAccountSettings={() => setCurrentPage("accountSettings")}
+            onMoveAccountSettings={() => setCurrentPage("accountSettings")}
           />
         );
 
@@ -730,18 +760,41 @@ const AppController = () => {
           <AccountSettingsPage
             currentUser={currentUser}
             onBack={() => setCurrentPage("mypage")}
+            onBackToMyPage={() => setCurrentPage("mypage")}
             onUpdateCurrentUser={handleUpdateCurrentUser}
+            onLogout={handleLogout}
           />
         );
 
       case "admin":
-        return <AdminPage currentUser={currentUser} />;
+        return (
+          <AdminPage
+            currentUser={currentUser}
+            onOpenReportList={() => {
+              setCurrentPage("reportList");
+            }}
+            onOpenUserMyPage={(user) => {
+              setSelectedMyPageUser(user);
+              setCurrentPage("mypage");
+            }}
+            onOpenUserActivity={(user) => {
+              setSelectedActivityUser(user);
+              setCurrentPage("userActivity");
+            }}
+          />
+        );
 
       case "userActivity":
         return (
           <UserActivityPage
+            currentUser={currentUser}
             selectedUser={selectedActivityUser}
-            onBack={() => setCurrentPage("mypage")}
+            targetUser={selectedActivityUser}
+            onBack={() =>
+              currentUser?.role === "admin"
+                ? setCurrentPage("admin")
+                : setCurrentPage("mypage")
+            }
           />
         );
 
@@ -763,15 +816,17 @@ const AppController = () => {
         onLogout={handleLogout}
       />
 
-      <main className="app-main">
-        {currentPage !== "auth" && (
-          <div className="page-hero">
-            <h1>{pageTexts[currentPage]?.title || ""}</h1>
-            <p>{pageTexts[currentPage]?.description || ""}</p>
-          </div>
-        )}
+      <main className="app-main main-content">
+        <div className="container">
+          {currentPage !== "auth" && (
+            <div className="page-hero">
+              <h1>{pageTexts[currentPage]?.title || ""}</h1>
+              <p>{pageTexts[currentPage]?.description || ""}</p>
+            </div>
+          )}
 
-        {renderPage()}
+          {renderPage()}
+        </div>
       </main>
     </div>
   );

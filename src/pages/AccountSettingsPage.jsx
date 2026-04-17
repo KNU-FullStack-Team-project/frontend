@@ -340,9 +340,6 @@ const AccountSettingsPage = ({
         <div className="section-header">
           <div>
             <h3>회원정보수정</h3>
-            <p className="page-desc">
-              프로필 사진, 비밀번호 변경, 회원탈퇴 등 회원정보를 관리합니다.
-            </p>
           </div>
 
           <AppButton type="button" variant="outline" onClick={onBackToMyPage}>
@@ -355,7 +352,6 @@ const AccountSettingsPage = ({
         <div className="section-header">
           <div>
             <h3>프로필 사진</h3>
-            <p className="page-desc">PNG/JPG/JPEG 파일을 업로드 해주세요</p>
           </div>
         </div>
 
@@ -394,9 +390,6 @@ const AccountSettingsPage = ({
         <div className="section-header">
           <div>
             <h3>닉네임 변경</h3>
-            <p className="page-desc">
-              현재 닉네임을 새로운 닉네임으로 변경할 수 있습니다.
-            </p>
           </div>
         </div>
 
@@ -428,9 +421,6 @@ const AccountSettingsPage = ({
         <div className="section-header">
           <div>
             <h3>비밀번호 변경</h3>
-            <p className="page-desc">
-              현재 비밀번호를 입력한 뒤 새로운 비밀번호로 바꿀 수 있습니다.
-            </p>
           </div>
         </div>
 
@@ -488,10 +478,6 @@ const AccountSettingsPage = ({
         <div className="section-header">
           <div>
             <h3>회원탈퇴</h3>
-            <p className="page-desc">
-              회원탈퇴를 진행하면 계정 상태가 QUIT으로 변경되고, 다시 로그인할
-              수 없습니다.
-            </p>
           </div>
         </div>
 

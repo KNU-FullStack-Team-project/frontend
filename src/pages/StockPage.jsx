@@ -11,92 +11,51 @@ const StockRow = ({
   handleStockClick,
   getTradingAmountLabel,
 }) => {
-  const [localStock, setLocalStock] = useState(stock);
-  const rowRef = useRef(null);
-
-  useEffect(() => {
-    setLocalStock(stock);
-  }, [stock]);
-
-  useEffect(() => {
-    if (localStock.currentPrice !== "0") return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          fetch(`http://localhost:8081/api/stocks/${localStock.symbol}`)
-            .then((res) => {
-              if (!res.ok) throw new Error("Failed");
-              return res.json();
-            })
-            .then((data) => {
-              if (data && data.currentPrice && data.currentPrice !== "0") {
-                setLocalStock(data);
-              }
-            })
-            .catch((err) => console.error("Lazy load failed:", err));
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 },
-    );
-
-    const currentRef = rowRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
-    return () => {
-      if (currentRef) observer.unobserve(currentRef);
-    };
-  }, [localStock.currentPrice, localStock.symbol]);
-
   return (
     <div
-      ref={rowRef}
       className="stock-list-item clickable"
-      onClick={() => handleStockClick(localStock)}
+      onClick={() => handleStockClick(stock)}
     >
       <button
         className={`favorite-btn ${
-          favorites.has(localStock.symbol) ? "active" : ""
+          favorites.has(stock.symbol) ? "active" : ""
         }`}
-        onClick={(e) => toggleFavorite(e, localStock.symbol)}
+        onClick={(e) => toggleFavorite(e, stock.symbol)}
       >
-        {favorites.has(localStock.symbol) ? "❤️" : "🤍"}
+        {favorites.has(stock.symbol) ? "❤️" : "🤍"}
       </button>
 
-      <div className="stock-index">{index + 1}</div>
 
       <div className="stock-name-section">
-        <span className="stock-name-text">{localStock.name}</span>
+        <span className="stock-name-text">{stock.name}</span>
       </div>
 
       <div className="stock-price-section">
-        {localStock.currentPrice === "0" ? (
-          <span style={{ color: "#9ca3af", fontSize: "12px" }}>조회 중...</span>
+        {stock.currentPrice === "0" || !stock.currentPrice ? (
+          <span style={{ color: "#9ca3af", fontSize: "12px", fontWeight: "500" }}>시세 확인 중...</span>
         ) : (
-          `${parseInt(localStock.currentPrice).toLocaleString()}원`
+          `${parseInt(stock.currentPrice).toLocaleString()}원`
         )}
       </div>
 
       <div className="stock-rate-section">
         <span
           className={`rate-text ${
-            localStock.currentPrice === "0"
+            stock.currentPrice === "0"
               ? ""
-              : parseFloat(localStock.changeRate) >= 0
+              : parseFloat(stock.changeRate) >= 0
                 ? "up"
                 : "down"
           }`}
         >
-          {localStock.currentPrice === "0"
+          {stock.currentPrice === "0"
             ? ""
-            : `${parseFloat(localStock.changeRate) >= 0 ? "+" : ""}${localStock.changeRate}%`}
+            : `${parseFloat(stock.changeRate) >= 0 ? "+" : ""}${stock.changeRate}%`}
         </span>
       </div>
 
       <div className="stock-volume-section">
-        {getTradingAmountLabel(localStock.currentPrice, localStock.volume)}
+        {getTradingAmountLabel(stock.currentPrice, stock.volume)}
       </div>
     </div>
   );
@@ -237,22 +196,29 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
     }
   }, [searchKeyword]);
 
+  const prevUserEmailRef = useRef(null);
+
   useEffect(() => {
-    setPage(1);
-    fetchStocks(1, true);
+    // 사용자가 실제로 바뀌었을 때만 리스트와 즐겨찾기를 다시 불러옵니다.
+    // 토큰 갱신 등의 사소한 currentUser 변경으로 인한 무한 루프를 방지합니다.
+    if (prevUserEmailRef.current !== user?.email) {
+      setPage(1);
+      fetchStocks(1, true);
 
-    const userId = user?.userId || user?.id;
-    const token = localStorage.getItem("accessToken") || user?.token;
+      const userId = user?.userId || user?.id;
+      const token = localStorage.getItem("accessToken") || user?.token;
 
-    if (userId && token) {
-      fetchFavorites();
-    } else {
-      const savedFavs = localStorage.getItem("favoriteStocks");
-      if (savedFavs) {
-        setFavorites(new Set(JSON.parse(savedFavs)));
+      if (userId && token) {
+        fetchFavorites();
+      } else {
+        const savedFavs = localStorage.getItem("favoriteStocks");
+        if (savedFavs) {
+          setFavorites(new Set(JSON.parse(savedFavs)));
+        }
       }
+      prevUserEmailRef.current = user?.email;
     }
-  }, [user, fetchStocks, fetchFavorites]);
+  }, [user?.email, fetchStocks, fetchFavorites]);
 
   useEffect(() => {
     if (activeTab === "favorites") {
@@ -264,15 +230,13 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
   useEffect(() => {
     let interval;
     if (isModalOpen && user && onActivity) {
-      // 모달이 열리자마자 한 번 호출하여 타이머 리셋
-      onActivity();
-
+      // 30초마다 활동 타이머 리셋
       interval = setInterval(() => {
         onActivity();
-      }, 30000); // 30초마다 활동 타이머 리셋
+      }, 30000);
     }
     return () => clearInterval(interval);
-  }, [isModalOpen, user, onActivity]);
+  }, [isModalOpen, user?.email, onActivity]);
 
   useEffect(() => {
     if (activeTab !== "all") return;
@@ -297,6 +261,26 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
       if (currentTarget) observer.unobserve(currentTarget);
     };
   }, [hasMore, loading, page, fetchStocks, activeTab]);
+
+  // 시세 미수집 종목(0원)이 있을 경우 자동으로 정보를 다시 불러오는 로직 (지능형 자동 갱신)
+  useEffect(() => {
+    if (activeTab !== "all" || loading || stocks.length === 0) return;
+
+    const hasIncompleteData = stocks.some(
+      (s) => s.currentPrice === "0" || !s.currentPrice || s.currentPrice === "null"
+    );
+
+    if (hasIncompleteData) {
+      const timer = setTimeout(() => {
+        // 현재 페이지의 정보를 다시 요청하여 캐시된 시세를 가져옵니다.
+        // 백엔드에서는 이미 리스트 요청 시 우선순위 큐에 등록했으므로, 
+        // 몇 초 뒤에 다시 요청하면 정보가 채워져 있을 확률이 높습니다.
+        fetchStocks(page, true);
+      }, 3500); // 3.5초 대기 후 재시도
+
+      return () => clearTimeout(timer);
+    }
+  }, [stocks, loading, page, fetchStocks, activeTab]);
 
   const toggleFavorite = async (e, symbol) => {
     e.stopPropagation();
@@ -366,25 +350,43 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
   };
 
   const getTradingAmountLabel = (price, volume) => {
-    if (!price || !volume) return "0원";
-    const amount = parseInt(price) * parseInt(volume);
+    if (!price || !volume || isNaN(parseInt(price)) || isNaN(parseInt(volume)) || price === "0") return "-";
+    
+    try {
+      // 큰 숫자를 다루기 위해 BigInt 사용 (정밀도 유지)
+      const amount = BigInt(parseInt(price)) * BigInt(parseInt(volume));
 
-    if (amount >= 100000000) {
-      return (amount / 100000000).toFixed(1) + "억원";
-    } else if (amount >= 10000) {
-      return (amount / 10000).toLocaleString() + "만원";
+      if (amount >= 100000000n) {
+        return (Number(amount) / 100000000).toFixed(1) + "억원";
+      } else if (amount >= 10000n) {
+        return (Number(amount) / 10000).toLocaleString() + "만원";
+      }
+      return Number(amount).toLocaleString() + "원";
+    } catch (e) {
+      return "0원";
     }
-    return amount.toLocaleString() + "원";
   };
 
   if (loading && page === 1 && stocks.length === 0) {
     return (
-      <div className="loading-spinner">주식 정보를 업데이트하는 중...</div>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">주식 정보를 업데이트하는 중입니다...</div>
+      </div>
     );
   }
 
   return (
-    <div className="content-card">
+    <div style={styles.page}>
+      <div style={styles.hero}>
+        <div style={styles.heroBadge}>STOCK</div>
+        <h1 style={styles.heroTitle}>주식 시장</h1>
+        <p style={styles.heroText}>
+          종목 정보를 확인하고, 나만의 거래 전략을 세워보세요.
+        </p>
+      </div>
+
+      <div className="content-card">
       <div className="section-header">
         <h3>실시간 주식 정보</h3>
         <button
@@ -454,10 +456,6 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
         </form>
       </div>
 
-      <p className="page-desc">
-        현재 시장의 실시간 시세를 확인하세요. 종목을 클릭하면 상세 차트와 함께
-        매수/매도를 진행할 수 있습니다.
-      </p>
 
       <div className="stock-tabs">
         <button
@@ -492,7 +490,6 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
       <div className="stock-list-container">
         <div className="stock-list-header">
           <div style={{ textAlign: "center" }}>관심</div>
-          <div style={{ textAlign: "center" }}>순번</div>
           <div style={{ paddingLeft: "15px" }}>종목명</div>
           <div style={{ textAlign: "right" }}>현재가</div>
           <div style={{ textAlign: "right" }}>등락률</div>
@@ -523,7 +520,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
                 {searchResults !== null
                   ? "검색 결과가 없습니다."
                   : activeTab === "favorites"
-                    ? "관심종목이 없습니다. 별표를 눌러 추가해보세요!"
+                    ? "아직 관심 종목이 없습니다. 하트(❤️)를 눌러 나만의 목록을 만들어보세요!"
                     : "종목 정보를 가져올 수 없습니다."}
               </div>
             );
@@ -580,7 +577,53 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
         />
       </Modal>
     </div>
+  </div>
   );
+};
+
+const styles = {
+  page: {
+    maxWidth: "1440px",
+    margin: "0 auto",
+    padding: "28px 20px 56px",
+  },
+  hero: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    textAlign: "center",
+    gap: "16px",
+    padding: "40px 30px",
+    borderRadius: "24px",
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
+    marginBottom: "16px",
+  },
+  heroBadge: {
+    display: "inline-block",
+    padding: "6px 12px",
+    borderRadius: "999px",
+    background: "#eef2ff",
+    color: "#4c6ef5",
+    fontSize: "12px",
+    fontWeight: "800",
+    letterSpacing: "0.06em",
+    marginBottom: "4px",
+  },
+  heroTitle: {
+    margin: 0,
+    fontSize: "32px",
+    fontWeight: "800",
+    color: "#111827",
+  },
+  heroText: {
+    margin: 0,
+    fontSize: "15px",
+    lineHeight: "1.7",
+    color: "#6b7280",
+    maxWidth: "600px",
+  },
 };
 
 export default StockPage;

@@ -1,13 +1,21 @@
 import React, { useEffect, useState } from "react";
+import AppButton from "../common/AppButton";
 
 const ROLE_OPTIONS = ["USER", "ADMIN"];
 const STATUS_OPTIONS = ["ACTIVE", "SUSPENDED"];
 
-const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
+const AdminPage = ({
+  onOpenUserMyPage,
+  onOpenUserActivity,
+  onOpenReportList,
+  currentUser,
+}) => {
   const [users, setUsers] = useState([]);
   const [editedUsers, setEditedUsers] = useState({});
+  const [loading, setLoading] = useState(true);
   const [savingUserId, setSavingUserId] = useState(null);
   const [error, setError] = useState("");
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -32,8 +40,8 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
             return acc;
           }, {}),
         );
-      } catch {
-        setError("사용자 정보를 불러오지 못했습니다.");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -95,15 +103,71 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
     }
   };
 
+  const filteredUsers = users.filter((user) => {
+    const keyword = searchKeyword.trim().toLowerCase();
+
+    if (!keyword) {
+      return true;
+    }
+
+    return (
+      String(user.id).includes(keyword) ||
+      (user.email || "").toLowerCase().includes(keyword) ||
+      (user.nickname || "").toLowerCase().includes(keyword)
+    );
+  });
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">회원 정보를 불러오는 중입니다...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="content-card">
       <h3>관리자 페이지</h3>
-      <p className="page-desc">회원 계정 정보와 활동을 확인합니다.</p>
 
       {error ? <p className="page-desc">{error}</p> : null}
 
       {!error ? (
         <div className="admin-table-wrap">
+          <div className="admin-toolbar">
+            <div className="admin-toolbar-actions">
+              <button
+                type="button"
+                className="admin-toolbar-button"
+                onClick={() => setSearchKeyword("")}
+              >
+                전체보기
+              </button>
+              <button
+                type="button"
+                className="admin-toolbar-button admin-toolbar-button-disabled"
+                disabled
+              >
+                문의내역
+              </button>
+              <button
+                type="button"
+                className="admin-toolbar-button"
+                onClick={() => onOpenReportList && onOpenReportList()}
+              >
+                신고목록
+              </button>
+            </div>
+            <div className="admin-search-wrap">
+              <input
+                type="text"
+                className="admin-search-input"
+                placeholder="유저 검색"
+                value={searchKeyword}
+                onChange={(event) => setSearchKeyword(event.target.value)}
+              />
+            </div>
+          </div>
           <table className="stock-table admin-table">
             <thead>
               <tr>
@@ -118,12 +182,12 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
               </tr>
             </thead>
             <tbody>
-              {users.length === 0 ? (
+              {filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan="8">조회된 회원이 없습니다.</td>
                 </tr>
               ) : (
-                users.map((user) => {
+                filteredUsers.map((user) => {
                   const isQuitUser = user.status === "QUIT";
                   const editedUser = editedUsers[user.id] || {
                     role: user.role || "USER",
@@ -139,19 +203,18 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
                       <td>{user.id}</td>
                       <td>{user.email}</td>
                       <td>
-                        <button
-                          type="button"
-                          className="admin-user-link"
+                        <AppButton
+                          variant="secondary"
+                          size="sm"
                           onClick={() =>
                             onOpenUserMyPage && onOpenUserMyPage(user)
                           }
                         >
                           {user.nickname}
-                        </button>
+                        </AppButton>
                       </td>
                       <td>
                         <select
-                          className="admin-inline-select"
                           value={editedUser.role}
                           disabled={isQuitUser}
                           onChange={(event) =>
@@ -161,6 +224,16 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
                               event.target.value,
                             )
                           }
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '8px',
+                            border: '1px solid #d1d5db',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            outline: 'none',
+                            cursor: 'pointer',
+                            background: '#f9fafb'
+                          }}
                         >
                           {ROLE_OPTIONS.map((role) => (
                             <option key={role} value={role}>
@@ -171,7 +244,6 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
                       </td>
                       <td>
                         <select
-                          className="admin-inline-select"
                           value={isQuitUser ? "QUIT" : editedUser.status}
                           disabled={isQuitUser}
                           onChange={(event) =>
@@ -181,6 +253,16 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
                               event.target.value,
                             )
                           }
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '8px',
+                            border: '1px solid #d1d5db',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            outline: 'none',
+                            cursor: 'pointer',
+                            background: '#f9fafb'
+                          }}
                         >
                           {isQuitUser ? (
                             <option value="QUIT">QUIT</option>
@@ -195,27 +277,25 @@ const AdminPage = ({ onOpenUserMyPage, onOpenUserActivity, currentUser }) => {
                       </td>
                       <td>{user.accountCount ?? 0}</td>
                       <td>
-                        <button
-                          type="button"
-                          className="admin-apply-button"
+                        <AppButton
+                          size="sm"
                           onClick={() =>
                             onOpenUserActivity && onOpenUserActivity(user)
                           }
                         >
                           로그
-                        </button>
+                        </AppButton>
                       </td>
                       <td>
-                        <button
-                          type="button"
-                          className="admin-apply-button"
+                        <AppButton
+                          size="sm"
                           onClick={() => handleApplyUser(user.id)}
                           disabled={
                             isQuitUser || !isChanged || savingUserId === user.id
                           }
                         >
                           {savingUserId === user.id ? "저장 중" : "적용"}
-                        </button>
+                        </AppButton>
                       </td>
                     </tr>
                   );

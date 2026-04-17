@@ -3,6 +3,7 @@ import React from "react";
 const AppButton = ({
   children,
   variant = "primary",
+  size = "md",
   type = "button",
   onClick,
   fullWidth = false,
@@ -13,7 +14,7 @@ const AppButton = ({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`app-button ${variant} ${fullWidth ? "full-width" : ""} ${
+      className={`app-button ${variant} ${size} ${fullWidth ? "full-width" : ""} ${
         disabled ? "disabled" : ""
       }`}
     >

@@ -288,21 +288,10 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
 
   if (competitionLoading) {
     return (
-      <section style={styles.page}>
-        <div style={styles.hero}>
-          <div>
-            <div style={styles.heroBadge}>RANKING</div>
-            <h1 style={styles.heroTitle}>대회 랭킹</h1>
-            <p style={styles.heroText}>
-              대회별 수익률 랭킹을 확인하는 중입니다.
-            </p>
-          </div>
-        </div>
-
-        <div style={styles.emptyCard}>
-          <p style={styles.emptyText}>대회 목록을 불러오는 중입니다...</p>
-        </div>
-      </section>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">대회 목록을 불러오는 중입니다...</div>
+      </div>
     );
   }
 
@@ -313,7 +302,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
           <div style={styles.heroBadge}>RANKING</div>
           <h1 style={styles.heroTitle}>대회 랭킹</h1>
           <p style={styles.heroText}>
-            대회별 참가자들의 수익률 순위를 확인해보세요.
+            실시간 수익률 랭킹을 확인하고, 상위 랭커들의 투자 전략을 배워보세요.
           </p>
         </div>
         <div style={styles.heroContentRight}>
@@ -327,13 +316,6 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
         </div>
       </div>
 
-      <div style={styles.guideBox}>
-        <div style={styles.guideTitle}>안내</div>
-        <div style={styles.guideText}>
-          헤더 메뉴로 들어오면 기본 대회가 자동 선택되고, 아래 필터에서 다른
-          대회를 선택해 랭킹을 확인할 수 있습니다.
-        </div>
-      </div>
 
       <div style={styles.filterPanel}>
         <div style={styles.filterRow}>
@@ -584,7 +566,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
 
 const styles = {
   page: {
-    maxWidth: "1180px",
+    maxWidth: "1440px",
     margin: "0 auto",
     padding: "28px 20px 56px",
   },
