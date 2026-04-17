@@ -703,36 +703,42 @@ input {
 }
 
 .landing-hero {
-  background: linear-gradient(135deg, #eef6ff 0%, #ffffff 55%, #edfdf4 100%);
-  border: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #4874d4, #c6d2e7);
+  border: none;
   border-radius: 28px;
-  padding: 56px;
+  padding: 80px 30px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .landing-badge {
   display: inline-block;
-  width: fit-content;
-  padding: 10px 18px;
-  background: #dbeafe;
-  color: #2563eb;
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
   border-radius: 999px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 24px;
+  backdrop-filter: blur(4px);
 }
 
 .landing-title {
   margin: 0 0 18px;
   font-size: 52px;
   font-weight: 800;
-  color: #0f172a;
+  color: white;
 }
 
 .landing-description {
   margin: 0 0 28px;
   font-size: 20px;
-  color: #475569;
+  color: rgba(255, 255, 255, 0.9);
   line-height: 1.6;
+  max-width: 800px;
 }
 
 .landing-actions {

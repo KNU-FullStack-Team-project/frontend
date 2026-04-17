@@ -1,31 +1,65 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 
 const CommunityPage = ({ onSelectStockCommunity }) => {
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const observerTarget = useRef(null);
+
+  const fetchStocks = useCallback(async (pageNum = 1) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/stocks?page=${pageNum}&size=30`);
+      if (!response.ok) {
+        throw new Error("종목 목록을 불러오지 못했습니다.");
+      }
+
+      const data = await response.json();
+      
+      if (pageNum === 1) {
+        setStocks(Array.isArray(data.content) ? data.content : []);
+      } else {
+        setStocks((prev) => [...prev, ...(data.content || [])]);
+      }
+
+      setHasMore(data.content && data.content.length > 0 && data.currentPage < data.totalPages);
+    } catch (error) {
+      console.error("커뮤니티 종목 목록 조회 오류:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchStocks = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("/api/stocks?page=1&size=60");
-        if (!response.ok) {
-          throw new Error("종목 목록을 불러오지 못했습니다.");
+    fetchStocks(1);
+  }, [fetchStocks]);
+
+  useEffect(() => {
+    // 검색 중일 때는 무한 스크롤을 방지합니다.
+    if (searchKeyword.trim() || !hasMore || loading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          const nextPage = page + 1;
+          setPage(nextPage);
+          fetchStocks(nextPage);
         }
+      },
+      { threshold: 0.1 }
+    );
 
-        const data = await response.json();
-        setStocks(Array.isArray(data.content) ? data.content : []);
-      } catch (error) {
-        console.error("커뮤니티 종목 목록 조회 오류:", error);
-        setStocks([]);
-      } finally {
-        setLoading(false);
-      }
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) observer.unobserve(currentTarget);
     };
-
-    fetchStocks();
-  }, []);
+  }, [hasMore, loading, page, fetchStocks, searchKeyword]);
 
   const filteredStocks = useMemo(() => {
     const keyword = searchKeyword.trim().toLowerCase();
@@ -50,13 +84,21 @@ const CommunityPage = ({ onSelectStockCommunity }) => {
       </div>
 
       <div style={styles.searchWrap}>
-        <input
-          type="text"
-          value={searchKeyword}
-          onChange={(e) => setSearchKeyword(e.target.value)}
-          placeholder="종목명 또는 종목코드를 검색하세요."
-          style={styles.searchInput}
-        />
+        <form
+          onSubmit={(e) => e.preventDefault()}
+          style={styles.searchForm}
+        >
+          <input
+            type="text"
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            placeholder="종목명 또는 종목코드를 검색하세요."
+            style={styles.searchInput}
+          />
+          <button type="submit" style={styles.searchButton}>
+            검색
+          </button>
+        </form>
       </div>
 
       {filteredStocks.length === 0 ? (
@@ -99,6 +141,20 @@ const CommunityPage = ({ onSelectStockCommunity }) => {
               <div style={styles.enterText}>커뮤니티 입장</div>
             </button>
           ))}
+          
+          {/* 무한 스크롤 감지 및 로딩 표시 영역 */}
+          {!searchKeyword.trim() && hasMore && (
+            <div
+              ref={observerTarget}
+              style={styles.observerTarget}
+            >
+              {loading && (
+                <div style={styles.loader}>
+                  종목을 더 불러오는 중...
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </section>
@@ -112,46 +168,53 @@ const styles = {
     padding: "28px 20px 56px",
   },
   hero: {
+    background: "linear-gradient(135deg, #4874d4, #c6d2e7)",
+    border: "none",
+    borderRadius: "24px",
+    padding: "50px 30px",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.1)",
+    marginBottom: "20px",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     textAlign: "center",
-    gap: "16px",
-    padding: "40px 30px",
-    borderRadius: "24px",
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
-    marginBottom: "18px",
+    position: "relative",
+    color: "white",
   },
   heroBadge: {
     display: "inline-block",
-    padding: "6px 12px",
+    padding: "6px 14px",
     borderRadius: "999px",
-    background: "#eef2ff",
-    color: "#4c6ef5",
+    background: "rgba(255, 255, 255, 0.2)",
+    color: "#fff",
     fontSize: "12px",
     fontWeight: "800",
-    letterSpacing: "0.06em",
     marginBottom: "12px",
+    backdropFilter: "blur(4px)",
   },
   heroTitle: {
     margin: "0 0 10px",
-    fontSize: "32px",
+    fontSize: "36px",
     fontWeight: "800",
-    color: "#111827",
+    color: "#fff",
   },
   heroText: {
     margin: 0,
     fontSize: "15px",
-    lineHeight: "1.7",
-    color: "#6b7280",
+    color: "rgba(255, 255, 255, 0.9)",
+    lineHeight: "1.6",
+    maxWidth: "800px",
   },
   searchWrap: {
     marginBottom: "18px",
   },
-  searchInput: {
+  searchForm: {
+    display: "flex",
+    gap: "10px",
     width: "100%",
+  },
+  searchInput: {
+    flex: 1,
     height: "48px",
     borderRadius: "14px",
     border: "1px solid #d1d5db",
@@ -159,6 +222,17 @@ const styles = {
     fontSize: "14px",
     outline: "none",
     background: "#fff",
+  },
+  searchButton: {
+    padding: "0 28px",
+    borderRadius: "14px",
+    border: "none",
+    background: "#111827",
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: "14px",
+    cursor: "pointer",
+    transition: "background 0.2s",
   },
   grid: {
     display: "grid",
@@ -229,6 +303,22 @@ const styles = {
     fontSize: "14px",
     color: "#6b7280",
     lineHeight: "1.6",
+  },
+  observerTarget: {
+    gridColumn: "1 / -1",
+    height: "100px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loader: {
+    padding: "20px",
+    background: "#f8fafc",
+    borderRadius: "12px",
+    color: "#64748b",
+    fontSize: "14px",
+    fontWeight: "700",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
   },
 };
 
