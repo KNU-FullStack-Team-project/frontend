@@ -430,15 +430,6 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
       <div className="content-card">
         <div className="section-header">
           <h3>실시간 주식 정보</h3>
-          <button
-            className="refresh-btn"
-            onClick={() => {
-              setPage(1);
-              fetchStocks(1, true);
-            }}
-          >
-            새로고침
-          </button>
         </div>
 
         <div className="search-container" style={{ marginBottom: "20px" }}>
@@ -498,43 +489,56 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
         </div>
 
 
-        <div className="stock-tabs">
-          <button
-            className={`stock-tab ${activeTab === "all" && searchResults === null ? "active" : ""
-              }`}
-            onClick={() => {
-              setActiveTab("all");
-              setSearchResults(null);
-              setSearchKeyword("");
-            }}
-          >
-            전체보기
-          </button>
-          <button
-            className={`stock-tab ${activeTab === "favorites" ? "active" : ""}`}
-            onClick={() => {
-              setActiveTab("favorites");
-              setSearchResults(null);
-              setSearchKeyword("");
-            }}
-          >
-            관심종목
-          </button>
-          <button
-            className={`stock-tab ${activeTab === "holdings" ? "active" : ""}`}
-            onClick={() => {
-              setActiveTab("holdings");
-              setSearchResults(null);
-              setSearchKeyword("");
-            }}
-          >
-            보유 주식
-          </button>
-          {searchResults !== null && (
-            <button className="stock-tab active" style={{ cursor: "default" }}>
-              검색 결과 ({searchResults.length})
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <div className="stock-tabs" style={{ marginBottom: 0 }}>
+            <button
+              className={`stock-tab ${activeTab === "all" && searchResults === null ? "active" : ""
+                }`}
+              onClick={() => {
+                setActiveTab("all");
+                setSearchResults(null);
+                setSearchKeyword("");
+              }}
+            >
+              전체보기
             </button>
-          )}
+            <button
+              className={`stock-tab ${activeTab === "favorites" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("favorites");
+                setSearchResults(null);
+                setSearchKeyword("");
+              }}
+            >
+              관심종목
+            </button>
+            <button
+              className={`stock-tab ${activeTab === "holdings" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("holdings");
+                setSearchResults(null);
+                setSearchKeyword("");
+              }}
+            >
+              보유 주식
+            </button>
+            {searchResults !== null && (
+              <button className="stock-tab active" style={{ cursor: "default" }}>
+                검색 결과 ({searchResults.length})
+              </button>
+            )}
+          </div>
+          
+          <button
+            className="refresh-btn"
+            onClick={() => {
+              setPage(1);
+              fetchStocks(1, true);
+            }}
+            style={{ margin: 0 }}
+          >
+            새로고침
+          </button>
         </div>
 
         <div className="stock-list-container">
