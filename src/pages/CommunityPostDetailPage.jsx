@@ -601,11 +601,10 @@ const CommunityPostDetailPage = ({
 
   if (loading) {
     return (
-      <section style={styles.page}>
-        <div style={styles.emptyCard}>
-          <p style={styles.emptyText}>게시글을 불러오는 중입니다...</p>
-        </div>
-      </section>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">게시글을 불러오는 중입니다...</div>
+      </div>
     );
   }
 

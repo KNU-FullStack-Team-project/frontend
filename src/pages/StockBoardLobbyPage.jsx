@@ -267,7 +267,10 @@ const StockBoardLobbyPage = ({
             </div>
 
             {loading ? (
-              <div style={styles.loadingText}>종목 목록을 불러오는 중입니다...</div>
+              <div className="loading-container" style={{ padding: "40px 0" }}>
+                <div className="loading-spinner"></div>
+                <div className="loading-text">종목 목록을 불러오는 중입니다...</div>
+              </div>
             ) : filteredStocks.length === 0 ? (
               <div style={styles.emptyText}>검색 결과가 없습니다.</div>
             ) : (
@@ -428,9 +431,9 @@ const styles = {
   sideMenuButtonNotice: {
     width: "100%",
     textAlign: "left",
-    border: "1px solid #fed7aa",
-    background: "#fff7ed",
-    color: "#c2410c",
+    border: "1px solid #bfdbfe",
+    background: "#eff6ff",
+    color: "#1e40af",
     borderRadius: "12px",
     padding: "12px 14px",
     fontSize: "14px",

@@ -306,11 +306,10 @@ const FreeBoardPage = ({
 
   if (loading) {
     return (
-      <section style={styles.page}>
-        <div style={styles.emptyCard}>
-          <p style={styles.emptyText}>자유게시판을 불러오는 중입니다...</p>
-        </div>
-      </section>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">자유게시판을 불러오는 중입니다...</div>
+      </div>
     );
   }
 
@@ -330,17 +329,17 @@ const FreeBoardPage = ({
             <div style={styles.sidebarTitle}>게시판</div>
             <button
               type="button"
-              style={styles.sideMenuButtonNotice}
+              className="side-menu-btn notice"
               onClick={onSelectNoticeBoard}
             >
               공지사항
             </button>
-            <button type="button" style={styles.sideMenuButtonActive}>
+            <button type="button" className="side-menu-btn active">
               자유게시판
             </button>
             <button
               type="button"
-              style={styles.sideMenuButton}
+              className="side-menu-btn"
               onClick={onOpenStockBoardLobby}
             >
               종목게시판
@@ -688,9 +687,9 @@ const styles = {
   sideMenuButtonNotice: {
     width: "100%",
     textAlign: "left",
-    border: "1px solid #fed7aa",
-    background: "#fff7ed",
-    color: "#c2410c",
+    border: "1px solid #bfdbfe",
+    background: "#eff6ff",
+    color: "#1e40af",
     borderRadius: "12px",
     padding: "12px 14px",
     fontSize: "14px",
@@ -709,8 +708,8 @@ const styles = {
   },
   fixedNoticeCard: {
     textAlign: "left",
-    border: "1px solid #fed7aa",
-    background: "#fffaf5",
+    border: "1px solid #bfdbfe",
+    background: "#eff6ff",
     borderRadius: "18px",
     padding: "18px",
     cursor: "pointer",
@@ -731,10 +730,10 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     height: "26px",
-    padding: "0 10px",
+    padding: "0 12px",
     borderRadius: "999px",
-    background: "#fff0d9",
-    color: "#d9480f",
+    background: "#1d4ed8",
+    color: "#ffffff",
     fontSize: "12px",
     fontWeight: "800",
   },
@@ -870,9 +869,9 @@ const styles = {
   noticeGuide: {
     marginBottom: "14px",
     fontSize: "13px",
-    color: "#92400e",
-    background: "#fff7ed",
-    border: "1px solid #fed7aa",
+    color: "#1e40af",
+    background: "#eff6ff",
+    border: "1px solid #bfdbfe",
     borderRadius: "10px",
     padding: "10px 12px",
     fontWeight: "700",

@@ -270,11 +270,10 @@ const StockCommunityPage = ({
 
   if (loading) {
     return (
-      <section style={styles.page}>
-        <div style={styles.emptyCard}>
-          <p style={styles.emptyText}>종목 커뮤니티를 불러오는 중입니다...</p>
-        </div>
-      </section>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">종목 커뮤니티를 불러오는 중입니다...</div>
+      </div>
     );
   }
 
@@ -283,6 +282,29 @@ const StockCommunityPage = ({
       <button type="button" onClick={onBack} style={styles.backButton}>
         ← 종목게시판으로 돌아가기
       </button>
+
+      <div style={styles.hero}>
+        <div style={styles.heroBadge}>STOCK COMMUNITY</div>
+        <h1 style={styles.heroTitle}>
+          {stockInfo?.stockName || stockInfo?.name || symbol} 게시판
+        </h1>
+        <p style={styles.heroText}>
+          종목에 대한 의견, 매수/매도 관점, 시장 반응을 자유롭게 공유해보세요.
+        </p>
+
+        <div style={styles.heroStockInfo}>
+          <span style={styles.heroSymbol}>{stockInfo?.stockCode || stockInfo?.symbol || symbol}</span>
+          <span style={styles.heroPrice}>
+            {stockInfo?.currentPrice ? `${Number(stockInfo.currentPrice).toLocaleString("ko-KR")}원` : "-"}
+          </span>
+          <span style={{
+            ...styles.heroChange,
+            color: Number(stockInfo?.changeRate) >= 0 ? "#ffc9c9" : "#a5d8ff"
+          }}>
+            {stockInfo?.changeRate != null ? `${Number(stockInfo.changeRate) >= 0 ? "+" : ""}${stockInfo.changeRate}%` : "-"}
+          </span>
+        </div>
+      </div>
 
       <div style={styles.pageLayout}>
         <aside style={styles.sidebar}>
@@ -327,41 +349,7 @@ const StockCommunityPage = ({
         </aside>
 
         <div style={styles.content}>
-          <div style={styles.heroCard}>
-            <div style={styles.heroTop}>
-              <div>
-                <div style={styles.heroBadge}>STOCK COMMUNITY</div>
-                <h1 style={styles.heroTitle}>
-                  {stockInfo?.stockName || stockInfo?.name || symbol} 게시판
-                </h1>
-                <p style={styles.heroDesc}>
-                  종목에 대한 의견, 매수/매도 관점, 시장 반응을 자유롭게 공유해보세요.
-                </p>
-              </div>
-
-              <div style={styles.heroRight}>
-                <div style={styles.heroSymbol}>
-                  {stockInfo?.stockCode || stockInfo?.symbol || symbol}
-                </div>
-                <div style={styles.heroPrice}>
-                  {stockInfo?.currentPrice
-                    ? `${Number(stockInfo.currentPrice).toLocaleString("ko-KR")}원`
-                    : "-"}
-                </div>
-                <div
-                  style={{
-                    ...styles.heroChange,
-                    color:
-                      Number(stockInfo?.changeRate) >= 0 ? "#e03131" : "#1971c2",
-                  }}
-                >
-                  {stockInfo?.changeRate != null
-                    ? `${Number(stockInfo.changeRate) >= 0 ? "+" : ""}${stockInfo.changeRate}%`
-                    : "-"}
-                </div>
-              </div>
-            </div>
-
+          <div style={styles.tabContainer}>
             <div style={styles.tabRow}>
               <button
                 type="button"
@@ -580,7 +568,7 @@ const StockCommunityPage = ({
 
 const styles = {
   page: {
-    maxWidth: "1320px",
+    maxWidth: "1440px",
     margin: "0 auto",
     padding: "28px 20px 56px",
   },
@@ -661,9 +649,9 @@ const styles = {
   sideMenuButtonNotice: {
     width: "100%",
     textAlign: "left",
-    border: "1px solid #fed7aa",
-    background: "#fff7ed",
-    color: "#c2410c",
+    border: "1px solid #bfdbfe",
+    background: "#eff6ff",
+    color: "#1e40af",
     borderRadius: "12px",
     padding: "12px 14px",
     fontSize: "14px",
@@ -675,62 +663,74 @@ const styles = {
     display: "grid",
     gap: "18px",
   },
-  heroCard: {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
-    borderRadius: "20px",
-    padding: "24px 28px",
-    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
-  },
-  heroTop: {
+  hero: {
+    background: "linear-gradient(135deg, #4874d4, #c6d2e7)",
+    border: "none",
+    borderRadius: "24px",
+    padding: "50px 30px",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.1)",
+    marginBottom: "20px",
     display: "flex",
-    justifyContent: "space-between",
-    gap: "20px",
-    alignItems: "flex-start",
-    marginBottom: "16px",
-    flexWrap: "wrap",
+    flexDirection: "column",
+    alignItems: "center",
+    textAlign: "center",
+    position: "relative",
+    color: "white",
   },
   heroBadge: {
     display: "inline-block",
-    padding: "6px 12px",
+    padding: "6px 14px",
     borderRadius: "999px",
-    background: "#eef2ff",
-    color: "#4c6ef5",
+    background: "rgba(255, 255, 255, 0.2)",
+    color: "#fff",
     fontSize: "12px",
     fontWeight: "800",
-    marginBottom: "10px",
+    marginBottom: "12px",
+    backdropFilter: "blur(4px)",
   },
   heroTitle: {
-    margin: "0 0 8px",
-    fontSize: "30px",
+    margin: "0 0 10px",
+    fontSize: "36px",
     fontWeight: "800",
-    color: "#111827",
+    color: "#fff",
   },
-  heroDesc: {
-    margin: 0,
-    fontSize: "14px",
-    color: "#6b7280",
-    lineHeight: "1.7",
+  heroText: {
+    margin: "0 0 16px",
+    fontSize: "15px",
+    color: "rgba(255, 255, 255, 0.9)",
+    lineHeight: "1.6",
+    maxWidth: "800px",
   },
-  heroRight: {
-    textAlign: "right",
-    minWidth: "180px",
+  heroStockInfo: {
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "center",
+    gap: "12px",
+    background: "rgba(0, 0, 0, 0.15)",
+    padding: "10px 24px",
+    borderRadius: "16px",
+    backdropFilter: "blur(4px)"
   },
   heroSymbol: {
-    fontSize: "13px",
-    color: "#6b7280",
+    fontSize: "14px",
+    color: "rgba(255, 255, 255, 0.8)",
     fontWeight: "700",
-    marginBottom: "8px",
   },
   heroPrice: {
     fontSize: "24px",
     fontWeight: "800",
-    color: "#111827",
-    marginBottom: "6px",
+    color: "#fff",
   },
   heroChange: {
-    fontSize: "15px",
+    fontSize: "16px",
     fontWeight: "800",
+  },
+  tabContainer: {
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "18px",
+    padding: "16px 18px",
+    boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)",
   },
   tabRow: {
     display: "flex",
@@ -872,9 +872,9 @@ const styles = {
   noticeGuide: {
     marginBottom: "14px",
     fontSize: "13px",
-    color: "#92400e",
-    background: "#fff7ed",
-    border: "1px solid #fed7aa",
+    color: "#1e40af",
+    background: "#eff6ff",
+    border: "1px solid #bfdbfe",
     borderRadius: "10px",
     padding: "10px 12px",
     fontWeight: "700",
