@@ -876,6 +876,206 @@ input {
   border-radius: 12px;
 }
 
+.user-activity-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.activity-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.activity-summary-card {
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  border: 1px solid #dbeafe;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.activity-summary-card strong {
+  font-size: 28px;
+  line-height: 1;
+  color: #0f172a;
+}
+
+.activity-summary-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.activity-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.activity-filter-chip {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.activity-filter-chip.is-active {
+  background: #0f172a;
+  color: #fff;
+  border-color: #0f172a;
+}
+
+.activity-empty-state {
+  padding: 40px 20px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 20px;
+  text-align: center;
+  color: #64748b;
+  font-weight: 600;
+  background: #f8fafc;
+}
+
+.activity-timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.activity-timeline-item {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 14px;
+}
+
+.activity-timeline-item:not(:last-child) .activity-timeline-rail::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 10px;
+  width: 2px;
+  height: calc(100% + 14px);
+  background: #dbe4f0;
+}
+
+.activity-timeline-rail {
+  position: relative;
+}
+
+.activity-timeline-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-top: 8px;
+  border-radius: 50%;
+  background: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.activity-timeline-body {
+  padding: 0 0 18px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.activity-log-button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+.activity-log-button:hover {
+  background: #f8fafc;
+}
+
+.activity-log-button.is-open {
+  background: #f8fafc;
+}
+
+.activity-timeline-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.activity-main-line {
+  font-size: 16px;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.activity-detail {
+  margin: 0;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.activity-link-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.activity-time {
+  font-size: 13px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.activity-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.activity-badge.tone-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.activity-badge.tone-muted {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.activity-badge.tone-info {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.activity-badge.tone-danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.activity-badge.tone-warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.activity-badge.tone-neutral {
+  background: #e5e7eb;
+  color: #374151;
+}
+
 /* =========================
    대회 카드
 ========================= */
@@ -1136,6 +1336,10 @@ input {
   .stock-grid {
     grid-template-columns: 1fr;
   }
+
+  .activity-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 700px) {
@@ -1180,6 +1384,15 @@ input {
   .terms-modal-footer {
     padding: 16px 20px;
     flex-direction: column;
+  }
+
+  .activity-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .activity-timeline-top {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 
