@@ -14,7 +14,7 @@ const NoticeBoardPage = ({ onBack, onSelectPost }) => {
     try {
       setLoading(true);
 
-      const response = await fetch("http://localhost:8081/api/community/notices");
+      const response = await fetch("/api/community/notices");
 
       if (!response.ok) {
         throw new Error("공지사항 목록을 불러오지 못했습니다.");

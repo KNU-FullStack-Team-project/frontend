@@ -29,7 +29,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
     }
 
     fetch(
-      `http://localhost:8081/api/competitions/my?userId=${currentUser.userId}`,
+      `/api/competitions/my?userId=${currentUser.userId}`,
       {
         headers: {
           Authorization: `Bearer ${currentUser?.token}`,
@@ -55,7 +55,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
     setCompetitionLoading(true);
     setCompetitionError("");
 
-    fetch("http://localhost:8081/api/competitions", {
+    fetch("/api/competitions", {
       headers: {
         Authorization: `Bearer ${currentUser?.token}`,
       },
@@ -116,7 +116,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
     setRankingLoading(true);
     setRankingError("");
 
-    fetch(`http://localhost:8081/api/competitions/${selectedId}/ranking`, {
+    fetch(`/api/competitions/${selectedId}/ranking`, {
       headers: {
         Authorization: `Bearer ${currentUser?.token}`,
       },
@@ -211,8 +211,8 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
         keyword.length === 0
           ? true
           : `${contest.title ?? ""} ${contest.description ?? ""}`
-              .toLowerCase()
-              .includes(keyword);
+            .toLowerCase()
+            .includes(keyword);
 
       return matchesStatus && matchesKeyword && matchesJoined;
     });
@@ -263,7 +263,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
         <div style={styles.profileCircle}>
           {user?.profileImageUrl ? (
             <img
-              src={`http://localhost:8081${user.profileImageUrl}`}
+              src={`${user.profileImageUrl}`}
               alt={user.nickname}
               style={styles.profileImage}
             />
@@ -274,7 +274,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
           )}
         </div>
         <div style={styles.topNickname}>{user?.nickname || "-"}</div>
-        <div 
+        <div
           className={user?.returnRate > 0 ? "up" : user?.returnRate < 0 ? "down" : ""}
           style={styles.topReturnRate}
         >
@@ -282,7 +282,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
             ? `${user.returnRate > 0 ? "+" : ""}${Number(user.returnRate).toFixed(2)}%`
             : "-"}
         </div>
-        <div 
+        <div
           className={user?.profitAmount > 0 ? "up" : user?.profitAmount < 0 ? "down" : ""}
           style={styles.topProfit}
         >
@@ -314,7 +314,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
         <div style={styles.heroContentRight}>
           {isLoggedIn && currentUser?.profileImageUrl && (
             <img
-              src={`http://localhost:8081${currentUser.profileImageUrl}`}
+              src={`${currentUser.profileImageUrl}`}
               alt="내 프로필"
               style={styles.userProfileImage}
             />
@@ -547,7 +547,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
                         <span style={styles.nameCell}>
                           {user?.nickname ?? "-"}
                         </span>
-                        <span 
+                        <span
                           className={user?.returnRate > 0 ? "up" : user?.returnRate < 0 ? "down" : ""}
                           style={styles.rateCell}
                         >
@@ -555,7 +555,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
                             ? `${user.returnRate > 0 ? "+" : ""}${Number(user.returnRate).toFixed(2)}%`
                             : "-"}
                         </span>
-                        <span 
+                        <span
                           className={user?.profitAmount > 0 ? "up" : user?.profitAmount < 0 ? "down" : ""}
                           style={styles.profitCell}
                         >

@@ -23,7 +23,7 @@ const ContestPage = ({
   const fetchCompetitions = () => {
     setLoading(true);
 
-    fetch("http://localhost:8081/api/competitions", {
+    fetch("/api/competitions", {
       headers: {
         Authorization: `Bearer ${currentUser?.token}`,
       },
@@ -56,7 +56,7 @@ const ContestPage = ({
     }
 
     fetch(
-      `http://localhost:8081/api/competitions/my?userId=${currentUser.userId}`,
+      `/api/competitions/my?userId=${currentUser.userId}`,
       {
         headers: {
           Authorization: `Bearer ${currentUser?.token}`,
@@ -148,8 +148,8 @@ const ContestPage = ({
         keyword.length === 0
           ? true
           : `${contest.title ?? ""} ${contest.description ?? ""}`
-              .toLowerCase()
-              .includes(keyword);
+            .toLowerCase()
+            .includes(keyword);
 
       return matchesJoined && matchesStatus && matchesKeyword;
     });
@@ -432,32 +432,32 @@ const ContestPage = ({
                   </button>
 
                   <button
-  type="button"
-  onClick={(e) => {
-    e.stopPropagation();
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
 
-    if (contest.status === "SCHEDULED") {
-      alert("예정된 대회는 랭킹을 조회할 수 없습니다.");
-      return;
-    }
+                      if (contest.status === "SCHEDULED") {
+                        alert("예정된 대회는 랭킹을 조회할 수 없습니다.");
+                        return;
+                      }
 
-    if (onViewRanking) {
-      onViewRanking(contest.competitionId);
-    }
-  }}
-  style={{
-    ...styles.rankingButton,
-    ...(contest.status === "SCHEDULED"
-      ? {
-          backgroundColor: "#ccc",
-          cursor: "not-allowed",
-        }
-      : {}),
-  }}
-  disabled={contest.status === "SCHEDULED"}
->
-  랭킹보기
-</button>
+                      if (onViewRanking) {
+                        onViewRanking(contest.competitionId);
+                      }
+                    }}
+                    style={{
+                      ...styles.rankingButton,
+                      ...(contest.status === "SCHEDULED"
+                        ? {
+                          backgroundColor: "#ccc",
+                          cursor: "not-allowed",
+                        }
+                        : {}),
+                    }}
+                    disabled={contest.status === "SCHEDULED"}
+                  >
+                    랭킹보기
+                  </button>
                 </div>
 
                 {isAdmin && (

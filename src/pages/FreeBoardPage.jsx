@@ -29,7 +29,7 @@ const FreeBoardPage = ({
     [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const fetchFreePosts = async () => {
-    const response = await fetch("http://localhost:8081/api/community/boards/free/posts");
+    const response = await fetch("/api/community/boards/free/posts");
     if (!response.ok) {
       throw new Error("자유게시판 목록을 불러오지 못했습니다.");
     }
@@ -38,7 +38,7 @@ const FreeBoardPage = ({
   };
 
   const fetchNotices = async () => {
-    const response = await fetch("http://localhost:8081/api/community/notices");
+    const response = await fetch("/api/community/notices");
     if (!response.ok) {
       throw new Error("공지사항 목록을 불러오지 못했습니다.");
     }
@@ -58,7 +58,7 @@ const FreeBoardPage = ({
       setLoadingCommentedPosts(true);
 
       const response = await fetch(
-        "http://localhost:8081/api/community/boards/free/posts/commented-by-me",
+        "/api/community/boards/free/posts/commented-by-me",
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }

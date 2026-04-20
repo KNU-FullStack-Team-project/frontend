@@ -71,7 +71,7 @@ const FindPasswordForm = () => {
 
     try {
       const res = await fetch(
-        "http://localhost:8081/email/send/password-reset",
+        "/email/send/password-reset",
         {
           method: "POST",
           headers: {
@@ -114,7 +114,7 @@ const FindPasswordForm = () => {
     }
 
     try {
-      const res = await fetch("http://localhost:8081/email/verify", {
+      const res = await fetch("/email/verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -169,7 +169,7 @@ const FindPasswordForm = () => {
     }
 
     try {
-      const res = await fetch("http://localhost:8081/users/reset-password", {
+      const res = await fetch("/users/reset-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

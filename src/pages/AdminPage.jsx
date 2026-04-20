@@ -20,7 +20,7 @@ const AdminPage = ({
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const response = await fetch("http://localhost:8081/api/admin/users", {
+        const response = await fetch("/api/admin/users", {
           headers: {
             Authorization: `Bearer ${currentUser?.token}`,
           },
@@ -68,7 +68,7 @@ const AdminPage = ({
 
     try {
       const response = await fetch(
-        `http://localhost:8081/api/admin/users/${userId}`,
+        `/api/admin/users/${userId}`,
         {
           method: "PATCH",
           headers: {

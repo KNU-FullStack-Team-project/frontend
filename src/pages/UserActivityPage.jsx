@@ -77,7 +77,7 @@ const UserActivityPage = ({ currentUser, targetUser, onBack, onOpenPost }) => {
 
       try {
         const response = await fetch(
-          `http://localhost:8081/api/admin/users/${targetUser.id}/activities`,
+          `/api/admin/users/${targetUser.id}/activities`,
           {
             headers: {
               Authorization: `Bearer ${currentUser?.token}`,
@@ -171,9 +171,8 @@ const UserActivityPage = ({ currentUser, targetUser, onBack, onOpenPost }) => {
               <button
                 key={filter.key}
                 type="button"
-                className={`activity-filter-chip ${
-                  activeFilter === filter.key ? "is-active" : ""
-                }`}
+                className={`activity-filter-chip ${activeFilter === filter.key ? "is-active" : ""
+                  }`}
                 onClick={() => setActiveFilter(filter.key)}
               >
                 {filter.label}

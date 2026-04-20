@@ -9,7 +9,7 @@ const useInquiryCount = (user) => {
     if (!token) return;
 
     try {
-      const res = await fetch("http://localhost:8081/api/inquiries/unread-count", {
+      const res = await fetch("/api/inquiries/unread-count", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

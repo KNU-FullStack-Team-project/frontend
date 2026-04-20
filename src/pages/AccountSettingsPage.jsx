@@ -62,7 +62,7 @@ const AccountSettingsPage = ({
       try {
         const params = new URLSearchParams({ email: currentUser.email });
         const response = await fetch(
-          `http://localhost:8081/users/profile?${params.toString()}`,
+          `/api/users/profile?${params.toString()}`,
           { headers: { Authorization: `Bearer ${currentUser.token}` } },
         );
 
@@ -106,7 +106,7 @@ const AccountSettingsPage = ({
           email: currentUser.email,
         });
         const response = await fetch(
-          `http://localhost:8081/users/check-nickname?${params.toString()}`,
+          `/api/users/check-nickname?${params.toString()}`,
           { headers: { Authorization: `Bearer ${currentUser.token}` } },
         );
 
@@ -161,7 +161,7 @@ const AccountSettingsPage = ({
 
     try {
       const response = await fetch(
-        "http://localhost:8081/users/change-nickname",
+        "/api/users/change-nickname",
         {
           method: "POST",
           headers: {
@@ -222,7 +222,7 @@ const AccountSettingsPage = ({
     try {
       const params = new URLSearchParams({ email: currentUser.email });
       const response = await fetch(
-        `http://localhost:8081/users/profile-image?${params.toString()}`,
+        `/api/users/profile-image?${params.toString()}`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${currentUser.token}` },
@@ -258,7 +258,7 @@ const AccountSettingsPage = ({
 
     try {
       const response = await fetch(
-        "http://localhost:8081/users/change-password",
+        "/api/users/change-password",
         {
           method: "POST",
           headers: {
@@ -308,7 +308,7 @@ const AccountSettingsPage = ({
     setIsWithdrawSaving(true);
 
     try {
-      const response = await fetch("http://localhost:8081/users/withdraw", {
+      const response = await fetch("/api/users/withdraw", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -359,7 +359,7 @@ const AccountSettingsPage = ({
           <div className="profile-image-preview">
             {profileImageUrl ? (
               <img
-                src={`http://localhost:8081${profileImageUrl}`}
+                src={`${profileImageUrl}`}
                 alt="프로필 사진"
               />
             ) : (

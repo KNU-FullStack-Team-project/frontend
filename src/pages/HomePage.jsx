@@ -21,7 +21,7 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
           }
 
           const response = await fetch(
-            `http://localhost:8081/api/accounts/my/dashboard?email=${currentUser.email}`,
+            `/api/accounts/my/dashboard?email=${currentUser.email}`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,

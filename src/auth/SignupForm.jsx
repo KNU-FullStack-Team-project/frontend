@@ -135,7 +135,7 @@ const SignupForm = ({ onSignup }) => {
 
       const params = new URLSearchParams({ email: email.trim() });
       const res = await fetch(
-        `http://localhost:8081/users/check-email?${params.toString()}`,
+        `/users/check-email?${params.toString()}`,
       );
       const data = await res.text();
       const available = res.ok && data.includes("사용 가능");
@@ -168,7 +168,7 @@ const SignupForm = ({ onSignup }) => {
     try {
       setIsSendingCode(true);
 
-      const res = await fetch("http://localhost:8081/email/send/signup", {
+      const res = await fetch("/email/send/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -204,7 +204,7 @@ const SignupForm = ({ onSignup }) => {
     try {
       setIsVerifyingCode(true);
 
-      const res = await fetch("http://localhost:8081/email/verify", {
+      const res = await fetch("/email/verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -233,7 +233,7 @@ const SignupForm = ({ onSignup }) => {
   };
 
   const submitDirectly = async () => {
-    const res = await fetch("http://localhost:8081/users/signup", {
+    const res = await fetch("/users/signup", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -343,9 +343,8 @@ const SignupForm = ({ onSignup }) => {
 
       {message && (
         <p
-          className={`signup-status ${
-            isMessageSuccess ? "signup-status--success" : "signup-status--error"
-          }`}
+          className={`signup-status ${isMessageSuccess ? "signup-status--success" : "signup-status--error"
+            }`}
         >
           {message}
         </p>

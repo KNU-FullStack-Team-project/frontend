@@ -53,7 +53,7 @@ const CommunityPage = ({
         setLoadingFreePosts(true);
 
         const response = await fetch(
-          "http://localhost:8081/api/community/boards/free/posts"
+          "/api/community/boards/free/posts"
         );
 
         if (!response.ok) {
@@ -85,7 +85,7 @@ const CommunityPage = ({
         setLoadingSelectedStockPosts(true);
 
         const response = await fetch(
-          `http://localhost:8081/api/community/stocks/${selectedStockSymbol}/posts`
+          `/api/community/stocks/${selectedStockSymbol}/posts`
         );
 
         if (!response.ok) {

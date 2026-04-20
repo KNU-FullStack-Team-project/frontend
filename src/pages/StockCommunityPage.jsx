@@ -34,8 +34,8 @@ const StockCommunityPage = ({
       setLoading(true);
 
       const [stockResponse, postResponse] = await Promise.all([
-        fetch(`http://localhost:8081/api/stocks/${symbol}`),
-        fetch(`http://localhost:8081/api/community/stocks/${symbol}/posts`),
+        fetch(`/api/stocks/${symbol}`),
+        fetch(`/api/community/stocks/${symbol}/posts`),
       ]);
 
       if (!stockResponse.ok) {
@@ -75,7 +75,7 @@ const StockCommunityPage = ({
       setLoadingCommentedPosts(true);
 
       const response = await fetch(
-        `http://localhost:8081/api/community/stocks/${symbol}/posts/commented-by-me`,
+        `/api/community/stocks/${symbol}/posts/commented-by-me`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }

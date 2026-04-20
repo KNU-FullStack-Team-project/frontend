@@ -34,8 +34,8 @@ const CommunityPostWritePage = ({
     : "자유롭게 글을 작성하고 다른 사용자와 의견을 나눠보세요.";
 
   const submitUrl = isStockBoard
-    ? `http://localhost:8081/api/community/stocks/${symbol}/posts`
-    : "http://localhost:8081/api/community/boards/free/posts";
+    ? `/api/community/stocks/${symbol}/posts`
+    : "/api/community/boards/free/posts";
 
   useEffect(() => {
     if (!isStockBoard) {
@@ -49,7 +49,7 @@ const CommunityPostWritePage = ({
 
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:8081/api/stocks/${symbol}`);
+        const response = await fetch(`/api/stocks/${symbol}`);
 
         if (!response.ok) throw new Error("종목 정보를 불러오지 못했습니다.");
 
@@ -88,7 +88,7 @@ const CommunityPostWritePage = ({
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch("http://localhost:8081/api/community/uploads/images", {
+    const response = await fetch("/api/community/uploads/images", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -124,7 +124,7 @@ const CommunityPostWritePage = ({
         const formData = new FormData();
         formData.append("file", file);
 
-        const response = await fetch("http://localhost:8081/api/community/uploads/files", {
+        const response = await fetch("/api/community/uploads/files", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,

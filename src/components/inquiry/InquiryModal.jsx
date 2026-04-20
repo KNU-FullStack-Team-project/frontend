@@ -19,7 +19,7 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
   const [inquiries, setInquiries] = useState([]);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -32,7 +32,7 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
   const markAsRead = async (inquiryId) => {
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await fetch(`http://localhost:8081/api/inquiries/${inquiryId}/read`, {
+      const response = await fetch(`/api/inquiries/${inquiryId}/read`, {
         method: "POST",
         headers: {
           "Authorization": token ? `Bearer ${token}` : ""
@@ -52,10 +52,10 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
     try {
       const token = localStorage.getItem("accessToken");
       // 관리자인 경우 전체 목록, 일반 사용자인 경우 본인 목록 호출
-      const url = isAdmin 
-        ? "http://localhost:8081/api/inquiries/all" 
-        : "http://localhost:8081/api/inquiries/my";
-        
+      const url = isAdmin
+        ? "/api/inquiries/all"
+        : "/api/inquiries/my";
+
       const response = await fetch(url, {
         headers: {
           "Authorization": token ? `Bearer ${token}` : ""
@@ -90,7 +90,7 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await fetch("http://localhost:8081/api/inquiries", {
+      const response = await fetch("/api/inquiries", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -126,7 +126,7 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
     setIsReplying(true);
     try {
       const token = localStorage.getItem("accessToken");
-      const response = await fetch(`http://localhost:8081/api/inquiries/${selectedInquiry.inquiryId}/reply`, {
+      const response = await fetch(`/api/inquiries/${selectedInquiry.inquiryId}/reply`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -156,12 +156,12 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
     setSelectedInquiry(item);
     setReplyContent(item.answer || ""); // 기존 답변이 있으면 세팅
     setViewMode("detail");
-    
+
     // 일반 사용자이고 아직 읽지 않은 답변이 있는 경우 읽음 처리
     if (!isAdmin && !item.isReadByUser) {
       markAsRead(item.inquiryId);
       // 로컬 상태에서도 즉시 반영 (다시 목록으로 왔을 때 점이 사라지게 함)
-      setInquiries(prev => prev.map(inv => 
+      setInquiries(prev => prev.map(inv =>
         inv.inquiryId === item.inquiryId ? { ...inv, isReadByUser: true } : inv
       ));
     }
@@ -169,18 +169,18 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
 
   const renderDetailView = () => {
     if (!selectedInquiry) return null;
-    
+
     return (
       <div className="inquiry-detail-container">
         <div className="inquiry-form-header">
-           <button 
-             type="button" 
-             className="back-to-list" 
-             onClick={() => setViewMode("list")}
-           >
-             ← 목록으로
-           </button>
-           <h3>문의 상세 내용</h3>
+          <button
+            type="button"
+            className="back-to-list"
+            onClick={() => setViewMode("list")}
+          >
+            ← 목록으로
+          </button>
+          <h3>문의 상세 내용</h3>
         </div>
 
         <div className="detail-category-line">
@@ -211,9 +211,9 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
               <div className="detail-value-answer">
                 {selectedInquiry.answer}
                 {selectedInquiry.answeredAt && (
-                   <span className="answer-date">
-                     ({new Date(selectedInquiry.answeredAt).toLocaleString("ko-KR")})
-                   </span>
+                  <span className="answer-date">
+                    ({new Date(selectedInquiry.answeredAt).toLocaleString("ko-KR")})
+                  </span>
                 )}
               </div>
             ) : isAdmin && (
@@ -226,9 +226,9 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
                   rows={5}
                 />
                 <div className="reply-actions">
-                  <AppButton 
-                    variant="primary" 
-                    fullWidth 
+                  <AppButton
+                    variant="primary"
+                    fullWidth
                     onClick={handleReplySubmit}
                     disabled={isReplying}
                   >
@@ -256,9 +256,9 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
           <div className="inquiry-list-header">
             <p className="inquiry-list-count">전체 <strong>{inquiries.length}</strong>건</p>
             {!isAdmin && (
-              <AppButton 
-                variant="primary" 
-                size="small" 
+              <AppButton
+                variant="primary"
+                size="small"
                 onClick={() => setViewMode("write")}
               >
                 + 새 문의하기
@@ -283,9 +283,9 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
                 </div>
                 <div className="inquiry-items">
                   {inquiries.map((item) => (
-                    <div 
-                      key={item.inquiryId} 
-                      className={`inquiry-row ${!isAdmin && !item.isReadByUser ? 'is-unread' : ''}`} 
+                    <div
+                      key={item.inquiryId}
+                      className={`inquiry-row ${!isAdmin && !item.isReadByUser ? 'is-unread' : ''}`}
                       onClick={() => handleRowClick(item)}
                       style={{ cursor: "pointer" }}
                     >
@@ -303,7 +303,7 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
               </div>
             )}
           </div>
-          
+
           <div className="inquiry-footer">
             <AppButton variant="secondary" fullWidth onClick={onClose}>
               닫기
@@ -320,21 +320,21 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
     return (
       <form className="inquiry-form" onSubmit={handleSubmit}>
         <div className="inquiry-form-header">
-           <button 
-             type="button" 
-             className="back-to-list" 
-             onClick={() => setViewMode("list")}
-           >
-             ← 목록으로
-           </button>
-           <h3>1:1 문의 작성</h3>
+          <button
+            type="button"
+            className="back-to-list"
+            onClick={() => setViewMode("list")}
+          >
+            ← 목록으로
+          </button>
+          <h3>1:1 문의 작성</h3>
         </div>
 
         <div className="form-group">
           <label htmlFor="category">문의 카테고리</label>
-          <select 
-            id="category" 
-            value={category} 
+          <select
+            id="category"
+            value={category}
             onChange={(e) => setCategory(e.target.value)}
             disabled={isSubmitting}
           >
@@ -374,16 +374,16 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
         </div>
 
         <div className="modal-actions">
-          <AppButton 
-            type="button" 
-            variant="secondary" 
+          <AppButton
+            type="button"
+            variant="secondary"
             onClick={() => setViewMode("list")}
             disabled={isSubmitting}
           >
             취소
           </AppButton>
-          <AppButton 
-            type="submit" 
+          <AppButton
+            type="submit"
             variant="primary"
             disabled={isSubmitting}
           >
