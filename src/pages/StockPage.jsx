@@ -17,9 +17,8 @@ const StockRow = ({
       onClick={() => handleStockClick(stock)}
     >
       <button
-        className={`favorite-btn ${
-          favorites.has(stock.symbol) ? "active" : ""
-        }`}
+        className={`favorite-btn ${favorites.has(stock.symbol) ? "active" : ""
+          }`}
         onClick={(e) => toggleFavorite(e, stock.symbol)}
       >
         {favorites.has(stock.symbol) ? "❤️" : "🤍"}
@@ -40,13 +39,12 @@ const StockRow = ({
 
       <div className="stock-rate-section">
         <span
-          className={`rate-text ${
-            stock.currentPrice === "0"
+          className={`rate-text ${stock.currentPrice === "0"
               ? ""
               : parseFloat(stock.changeRate) >= 0
                 ? "up"
                 : "down"
-          }`}
+            }`}
         >
           {stock.currentPrice === "0"
             ? ""
@@ -68,10 +66,12 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [favorites, setFavorites] = useState(new Set());
   const [favoriteStocksData, setFavoriteStocksData] = useState([]);
+  const [heldStocksData, setHeldStocksData] = useState([]);
   const [activeTab, setActiveTab] = useState("all");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isFavoritesLoading, setIsFavoritesLoading] = useState(false);
+  const [isHoldingsLoading, setIsHoldingsLoading] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -92,15 +92,24 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
 
       const data = await response.json();
 
-      if (isReset) {
+      if (isReset && pageNum === 1) {
         setStocks(data.content);
       } else {
         setStocks((prev) => {
-          const existingSymbols = new Set(prev.map((s) => s.symbol));
-          const newStocks = data.content.filter(
+          // 1. 기존 목록의 내용을 새로 받아온 데이터로 업데이트 (Partial Update)
+          const newItemsMap = new Map(data.content.map((item) => [item.symbol, item]));
+          const updatedStocks = prev.map((oldItem) => {
+            const newItem = newItemsMap.get(oldItem.symbol);
+            return newItem ? { ...oldItem, ...newItem } : oldItem;
+          });
+
+          // 2. 만약 기존 목록에 없던 새 종목이 있다면 추가 (Pagination)
+          const existingSymbols = new Set(updatedStocks.map((s) => s.symbol));
+          const appendStocks = data.content.filter(
             (s) => !existingSymbols.has(s.symbol),
           );
-          return [...prev, ...newStocks];
+
+          return [...updatedStocks, ...appendStocks];
         });
       }
 
@@ -165,6 +174,34 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
     }
   }, [user]);
 
+  const fetchHeldStocks = useCallback(async () => {
+    const accountId = user?.accountId;
+    const token = localStorage.getItem("accessToken") || user?.token;
+
+    if (!accountId || !token) return;
+
+    try {
+      setIsHoldingsLoading(true);
+      const response = await fetch(
+        `http://localhost:8081/api/orders/holdings?accountId=${accountId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setHeldStocksData(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch held stocks:", err);
+    } finally {
+      setIsHoldingsLoading(false);
+    }
+  }, [user]);
+
   const handleSearch = async (e) => {
     if (e) e.preventDefault();
     if (!searchKeyword.trim()) {
@@ -226,6 +263,12 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
     }
   }, [activeTab, fetchFavoriteDetails]);
 
+  useEffect(() => {
+    if (activeTab === "holdings") {
+      fetchHeldStocks();
+    }
+  }, [activeTab, fetchHeldStocks]);
+
   // 주식 상세(그래프) 모달이 열려있을 때 자동 로그아웃 방지 (하트비트)
   useEffect(() => {
     let interval;
@@ -272,10 +315,8 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
 
     if (hasIncompleteData) {
       const timer = setTimeout(() => {
-        // 현재 페이지의 정보를 다시 요청하여 캐시된 시세를 가져옵니다.
-        // 백엔드에서는 이미 리스트 요청 시 우선순위 큐에 등록했으므로, 
-        // 몇 초 뒤에 다시 요청하면 정보가 채워져 있을 확률이 높습니다.
-        fetchStocks(page, true);
+        // [수정] isReset을 false로 넘겨 기존 목록을 유지하면서 데이터만 보정합니다.
+        fetchStocks(page, false);
       }, 3500); // 3.5초 대기 후 재시도
 
       return () => clearTimeout(timer);
@@ -351,7 +392,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
 
   const getTradingAmountLabel = (price, volume) => {
     if (!price || !volume || isNaN(parseInt(price)) || isNaN(parseInt(volume)) || price === "0") return "-";
-    
+
     try {
       // 큰 숫자를 다루기 위해 BigInt 사용 (정밀도 유지)
       const amount = BigInt(parseInt(price)) * BigInt(parseInt(volume));
@@ -387,197 +428,218 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
       </div>
 
       <div className="content-card">
-      <div className="section-header">
-        <h3>실시간 주식 정보</h3>
-        <button
-          className="refresh-btn"
-          onClick={() => {
-            setPage(1);
-            fetchStocks(1, true);
-          }}
-        >
-          새로고침
-        </button>
-      </div>
+        <div className="section-header">
+          <h3>실시간 주식 정보</h3>
+        </div>
 
-      <div className="search-container" style={{ marginBottom: "20px" }}>
-        <form
-          onSubmit={handleSearch}
-          style={{ display: "flex", gap: "10px", width: "100%" }}
-        >
-          <input
-            type="text"
-            className="search-input"
-            placeholder="종목명 또는 종목코드를 입력하세요"
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            style={{
-              flex: 1,
-              padding: "12px 16px",
-              borderRadius: "12px",
-              border: "1px solid #e5e7eb",
-              fontSize: "14px",
-              outline: "none",
-            }}
-          />
-          <button
-            type="submit"
-            className="search-btn"
-            style={{
-              padding: "0 24px",
-              borderRadius: "12px",
-              border: "none",
-              background: "#111827",
-              color: "#fff",
-              fontWeight: "600",
-              cursor: "pointer",
-            }}
+        <div className="search-container" style={{ marginBottom: "20px" }}>
+          <form
+            onSubmit={handleSearch}
+            style={{ display: "flex", gap: "10px", width: "100%" }}
           >
-            검색
-          </button>
-          {searchResults !== null && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchKeyword("");
-                setSearchResults(null);
-              }}
+            <input
+              type="text"
+              className="search-input"
+              placeholder="종목명 또는 종목코드를 입력하세요"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
               style={{
-                padding: "0 16px",
+                flex: 1,
+                padding: "12px 16px",
                 borderRadius: "12px",
                 border: "1px solid #e5e7eb",
-                background: "#fff",
+                fontSize: "14px",
+                outline: "none",
+              }}
+            />
+            <button
+              type="submit"
+              className="search-btn"
+              style={{
+                padding: "0 24px",
+                borderRadius: "12px",
+                border: "none",
+                background: "#111827",
+                color: "#fff",
+                fontWeight: "600",
                 cursor: "pointer",
               }}
             >
-              초기화
+              검색
             </button>
-          )}
-        </form>
-      </div>
-
-
-      <div className="stock-tabs">
-        <button
-          className={`stock-tab ${
-            activeTab === "all" && searchResults === null ? "active" : ""
-          }`}
-          onClick={() => {
-            setActiveTab("all");
-            setSearchResults(null);
-            setSearchKeyword("");
-          }}
-        >
-          전체보기
-        </button>
-        <button
-          className={`stock-tab ${activeTab === "favorites" ? "active" : ""}`}
-          onClick={() => {
-            setActiveTab("favorites");
-            setSearchResults(null);
-            setSearchKeyword("");
-          }}
-        >
-          관심종목
-        </button>
-        {searchResults !== null && (
-          <button className="stock-tab active" style={{ cursor: "default" }}>
-            검색 결과 ({searchResults.length})
-          </button>
-        )}
-      </div>
-
-      <div className="stock-list-container">
-        <div className="stock-list-header">
-          <div style={{ textAlign: "center" }}>관심</div>
-          <div style={{ paddingLeft: "15px" }}>종목명</div>
-          <div style={{ textAlign: "right" }}>현재가</div>
-          <div style={{ textAlign: "right" }}>등락률</div>
-          <div style={{ textAlign: "right", paddingRight: "10px" }}>
-            거래대금
-          </div>
+            {searchResults !== null && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchKeyword("");
+                  setSearchResults(null);
+                }}
+                style={{
+                  padding: "0 16px",
+                  borderRadius: "12px",
+                  border: "1px solid #e5e7eb",
+                  background: "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                초기화
+              </button>
+            )}
+          </form>
         </div>
 
-        {(() => {
-          if (isSearching) {
-            return <div className="no-data">검색 중...</div>;
-          }
 
-          if (activeTab === "favorites" && isFavoritesLoading) {
-            return <div className="no-data">관심종목을 불러오는 중...</div>;
-          }
-
-          const displayedStocks =
-            searchResults !== null
-              ? searchResults
-              : activeTab === "all"
-                ? stocks
-                : favoriteStocksData;
-
-          if (displayedStocks.length === 0) {
-            return (
-              <div className="no-data">
-                {searchResults !== null
-                  ? "검색 결과가 없습니다."
-                  : activeTab === "favorites"
-                    ? "아직 관심 종목이 없습니다. 하트(❤️)를 눌러 나만의 목록을 만들어보세요!"
-                    : "종목 정보를 가져올 수 없습니다."}
-              </div>
-            );
-          }
-
-          return displayedStocks.map((stock, index) => (
-            <StockRow
-              key={stock.symbol}
-              stock={stock}
-              index={index}
-              favorites={favorites}
-              toggleFavorite={toggleFavorite}
-              handleStockClick={handleStockClick}
-              getTradingAmountLabel={getTradingAmountLabel}
-            />
-          ));
-        })()}
-
-        {loading && page > 1 && (
-          <div className="loading-more">
-            <span className="dot"></span>
-            <span className="dot"></span>
-            <span className="dot"></span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <div className="stock-tabs" style={{ marginBottom: 0 }}>
+            <button
+              className={`stock-tab ${activeTab === "all" && searchResults === null ? "active" : ""
+                }`}
+              onClick={() => {
+                setActiveTab("all");
+                setSearchResults(null);
+                setSearchKeyword("");
+              }}
+            >
+              전체보기
+            </button>
+            <button
+              className={`stock-tab ${activeTab === "favorites" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("favorites");
+                setSearchResults(null);
+                setSearchKeyword("");
+              }}
+            >
+              관심종목
+            </button>
+            <button
+              className={`stock-tab ${activeTab === "holdings" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("holdings");
+                setSearchResults(null);
+                setSearchKeyword("");
+              }}
+            >
+              보유 주식
+            </button>
+            {searchResults !== null && (
+              <button className="stock-tab active" style={{ cursor: "default" }}>
+                검색 결과 ({searchResults.length})
+              </button>
+            )}
           </div>
-        )}
+          
+          <button
+            className="refresh-btn"
+            onClick={() => {
+              setPage(1);
+              fetchStocks(1, true);
+            }}
+            style={{ margin: 0 }}
+          >
+            새로고침
+          </button>
+        </div>
 
-        {activeTab === "all" &&
-          searchResults === null &&
-          !loading &&
-          hasMore && (
-            <div
-              ref={observerTarget}
-              style={{ height: "40px", width: "100%" }}
-            ></div>
+        <div className="stock-list-container">
+          <div className="stock-list-header">
+            <div style={{ textAlign: "center" }}>관심</div>
+            <div style={{ paddingLeft: "15px" }}>종목명</div>
+            <div style={{ textAlign: "right" }}>현재가</div>
+            <div style={{ textAlign: "right" }}>등락률</div>
+            <div style={{ textAlign: "right", paddingRight: "10px" }}>
+              거래대금
+            </div>
+          </div>
+
+          {(() => {
+            if (isSearching) {
+              return <div className="no-data">검색 중...</div>;
+            }
+
+            if (activeTab === "favorites" && isFavoritesLoading) {
+              return <div className="no-data">관심종목을 불러오는 중...</div>;
+            }
+
+            if (activeTab === "holdings" && isHoldingsLoading) {
+              return <div className="no-data">보유 주식을 불러오는 중...</div>;
+            }
+
+            const displayedStocks =
+              searchResults !== null
+                ? searchResults
+                : activeTab === "all"
+                  ? stocks
+                  : activeTab === "favorites"
+                    ? favoriteStocksData
+                    : heldStocksData;
+
+            if (displayedStocks.length === 0) {
+              return (
+                <div className="no-data">
+                  {searchResults !== null
+                    ? "검색 결과가 없습니다."
+                    : activeTab === "favorites"
+                      ? "아직 관심 종목이 없습니다. 하트(❤️)를 눌러 나만의 목록을 만들어보세요!"
+                      : activeTab === "holdings"
+                        ? "현재 보유 중인 주식이 없습니다."
+                        : "종목 정보를 가져올 수 없습니다."}
+                </div>
+              );
+            }
+
+            return displayedStocks.map((stock, index) => (
+              <StockRow
+                key={stock.symbol}
+                stock={stock}
+                index={index}
+                favorites={favorites}
+                toggleFavorite={toggleFavorite}
+                handleStockClick={handleStockClick}
+                getTradingAmountLabel={getTradingAmountLabel}
+              />
+            ));
+          })()}
+
+          {loading && page > 1 && (
+            <div className="loading-more">
+              <span className="dot"></span>
+              <span className="dot"></span>
+              <span className="dot"></span>
+            </div>
           )}
 
-        {activeTab === "all" &&
-          searchResults === null &&
-          !hasMore &&
-          stocks.length > 0 && (
-            <div className="end-of-list">모든 종목을 불러왔습니다.</div>
-          )}
+          {activeTab === "all" &&
+            searchResults === null &&
+            !loading &&
+            hasMore && (
+              <div
+                ref={observerTarget}
+                style={{ height: "40px", width: "100%" }}
+              ></div>
+            )}
+
+          {activeTab === "all" &&
+            searchResults === null &&
+            !hasMore &&
+            stocks.length > 0 && (
+              <div className="end-of-list">모든 종목을 불러왔습니다.</div>
+            )}
+        </div>
+
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title={selectedStock?.name}
+        >
+          <StockDetail
+            stock={selectedStock}
+            user={user}
+            onOpenCommunity={onOpenCommunity}
+          />
+        </Modal>
       </div>
-
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={selectedStock?.name}
-      >
-        <StockDetail
-          stock={selectedStock}
-          user={user}
-          onOpenCommunity={onOpenCommunity}
-        />
-      </Modal>
     </div>
-  </div>
   );
 };
 
@@ -588,41 +650,42 @@ const styles = {
     padding: "28px 20px 56px",
   },
   hero: {
+    background: "linear-gradient(135deg, #4874d4, #c6d2e7)",
+    border: "none",
+    borderRadius: "24px",
+    padding: "50px 30px",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.1)",
+    marginBottom: "20px",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     textAlign: "center",
-    gap: "16px",
-    padding: "40px 30px",
-    borderRadius: "24px",
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
-    marginBottom: "16px",
+    position: "relative",
+    color: "white",
   },
   heroBadge: {
     display: "inline-block",
-    padding: "6px 12px",
+    padding: "6px 14px",
     borderRadius: "999px",
-    background: "#eef2ff",
-    color: "#4c6ef5",
+    background: "rgba(255, 255, 255, 0.2)",
+    color: "#fff",
     fontSize: "12px",
     fontWeight: "800",
-    letterSpacing: "0.06em",
-    marginBottom: "4px",
+    marginBottom: "12px",
+    backdropFilter: "blur(4px)",
   },
   heroTitle: {
-    margin: 0,
-    fontSize: "32px",
+    margin: "0 0 10px",
+    fontSize: "36px",
     fontWeight: "800",
-    color: "#111827",
+    color: "#fff",
   },
   heroText: {
     margin: 0,
     fontSize: "15px",
-    lineHeight: "1.7",
-    color: "#6b7280",
-    maxWidth: "600px",
+    color: "rgba(255, 255, 255, 0.9)",
+    lineHeight: "1.6",
+    maxWidth: "800px",
   },
 };
 

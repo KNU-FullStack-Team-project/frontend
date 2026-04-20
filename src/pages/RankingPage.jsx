@@ -274,12 +274,18 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
           )}
         </div>
         <div style={styles.topNickname}>{user?.nickname || "-"}</div>
-        <div style={styles.topReturnRate}>
+        <div 
+          className={user?.returnRate > 0 ? "up" : user?.returnRate < 0 ? "down" : ""}
+          style={styles.topReturnRate}
+        >
           {user?.returnRate != null
-            ? `${Number(user.returnRate).toFixed(2)}%`
+            ? `${user.returnRate > 0 ? "+" : ""}${Number(user.returnRate).toFixed(2)}%`
             : "-"}
         </div>
-        <div style={styles.topProfit}>
+        <div 
+          className={user?.profitAmount > 0 ? "up" : user?.profitAmount < 0 ? "down" : ""}
+          style={styles.topProfit}
+        >
           {user?.profitAmount != null ? formatMoney(user.profitAmount) : "-"}
         </div>
       </div>
@@ -541,13 +547,19 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
                         <span style={styles.nameCell}>
                           {user?.nickname ?? "-"}
                         </span>
-                        <span style={styles.rateCell}>
+                        <span 
+                          className={user?.returnRate > 0 ? "up" : user?.returnRate < 0 ? "down" : ""}
+                          style={styles.rateCell}
+                        >
                           {user?.returnRate != null
-                            ? `${Number(user.returnRate).toFixed(2)}%`
+                            ? `${user.returnRate > 0 ? "+" : ""}${Number(user.returnRate).toFixed(2)}%`
                             : "-"}
                         </span>
-                        <span style={styles.profitCell}>
-                          {user?.profitAmount != null
+                        <span 
+                          className={user?.profitAmount > 0 ? "up" : user?.profitAmount < 0 ? "down" : ""}
+                          style={styles.profitCell}
+                        >
+                          {user?.returnRate != null
                             ? formatMoney(user.profitAmount)
                             : "-"}
                         </span>
@@ -571,39 +583,42 @@ const styles = {
     padding: "28px 20px 56px",
   },
   hero: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    gap: "16px",
-    padding: "28px 30px",
+    background: "linear-gradient(135deg, #4874d4, #c6d2e7)",
+    border: "none",
     borderRadius: "24px",
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
-    marginBottom: "16px",
+    padding: "50px 30px",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.1)",
+    marginBottom: "20px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    textAlign: "center",
+    position: "relative",
+    color: "white",
   },
   heroBadge: {
     display: "inline-block",
-    padding: "6px 12px",
+    padding: "6px 14px",
     borderRadius: "999px",
-    background: "#eef2ff",
-    color: "#4c6ef5",
+    background: "rgba(255, 255, 255, 0.2)",
+    color: "#fff",
     fontSize: "12px",
     fontWeight: "800",
-    letterSpacing: "0.06em",
     marginBottom: "12px",
+    backdropFilter: "blur(4px)",
   },
   heroTitle: {
     margin: "0 0 10px",
-    fontSize: "32px",
+    fontSize: "36px",
     fontWeight: "800",
-    color: "#111827",
+    color: "#fff",
   },
-  heroText: {
+  heroDesc: {
     margin: 0,
     fontSize: "15px",
-    lineHeight: "1.7",
-    color: "#6b7280",
+    color: "rgba(255, 255, 255, 0.9)",
+    lineHeight: "1.6",
+    maxWidth: "800px",
   },
   heroContentLeft: {
     flex: 1,
@@ -906,7 +921,6 @@ const styles = {
   topReturnRate: {
     fontSize: "28px",
     fontWeight: "900",
-    color: "#e03131",
     marginBottom: "8px",
   },
   topProfit: {
@@ -953,7 +967,6 @@ const styles = {
   },
   rateCell: {
     fontWeight: "800",
-    color: "#e03131",
   },
   profitCell: {
     fontWeight: "700",

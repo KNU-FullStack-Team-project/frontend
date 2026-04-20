@@ -96,11 +96,11 @@ const ContestCreatePage = ({ currentUser, onBack, onSuccess }) => {
 
       <div
         style={{
-          background: "linear-gradient(135deg, #111 0%, #2b2b2b 100%)",
+          background: "linear-gradient(135deg, #3ab5f0 0%, #3186d1 100%)",
           color: "#fff",
           borderRadius: "24px",
           padding: "32px",
-          boxShadow: "0 18px 40px rgba(0,0,0,0.15)",
+          boxShadow: "0 18px 40px rgba(58, 181, 240, 0.15)",
           marginBottom: "24px",
         }}
       >
@@ -155,7 +155,7 @@ const ContestCreatePage = ({ currentUser, onBack, onSuccess }) => {
             onChange={handleChange}
             placeholder="대회 설명을 입력하세요"
             rows={5}
-            style={{ ...inputStyle, resize: "vertical" }}
+            style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
           />
         </FormRow>
 

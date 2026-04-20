@@ -1,7 +1,41 @@
 import React, { useState, useEffect, useCallback } from "react";
 import AppButton from "../../common/AppButton";
+import "./OrderHistory.css";
 
-const OrderHistory = ({ accountId, currentUser }) => {
+const TEXT = {
+  loginTokenMissing: "로그인 토큰이 없습니다.",
+  loadFailed: "주문 내역을 불러올 수 없습니다.",
+  cancelConfirm: "정말 주문을 취소하시겠습니까?",
+  canceled: "주문이 취소되었습니다.",
+  cancelFailed: "취소 실패: ",
+  completed: "체결",
+  pending: "미체결",
+  canceledStatus: "취소",
+  loading: "주문 내역을 불러오는 중입니다...",
+  orderHistory: "주문 내역",
+  orderDescSuffix: "계좌의 주문 기록입니다.",
+  recentOrders: "최근 주문 기록입니다.",
+  countSuffix: "건",
+  refresh: "새로고침",
+  orderedAt: "주문 일시",
+  stockName: "종목명",
+  stockCode: "종목코드",
+  side: "구분",
+  quantity: "수량",
+  price: "가격",
+  status: "상태",
+  action: "작업",
+  noOrders: "주문 내역이 없습니다.",
+  noStockInfo: "종목 정보 없음",
+  buy: "매수",
+  sell: "매도",
+  shares: "주",
+  won: "원",
+  marketPrice: "시장가",
+  cancel: "취소",
+};
+
+const OrderHistory = ({ accountId, accountName, currentUser }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -10,11 +44,10 @@ const OrderHistory = ({ accountId, currentUser }) => {
     try {
       setLoading(true);
 
-      const token =
-        localStorage.getItem("accessToken") || currentUser?.token;
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
 
       if (!token) {
-        throw new Error("로그인 토큰이 없습니다.");
+        throw new Error(TEXT.loginTokenMissing);
       }
 
       const response = await fetch(
@@ -32,7 +65,7 @@ const OrderHistory = ({ accountId, currentUser }) => {
       setOrders(data);
       setError(null);
     } catch (err) {
-      setError("주문 내역을 불러올 수 없습니다.");
+      setError(TEXT.loadFailed);
       console.error(err);
     } finally {
       setLoading(false);
@@ -46,14 +79,13 @@ const OrderHistory = ({ accountId, currentUser }) => {
   }, [accountId, fetchOrders]);
 
   const handleCancel = async (orderId) => {
-    if (!window.confirm("정말 주문을 취소하시겠습니까?")) return;
+    if (!window.confirm(TEXT.cancelConfirm)) return;
 
     try {
-      const token =
-        localStorage.getItem("accessToken") || currentUser?.token;
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
 
       if (!token) {
-        throw new Error("로그인 토큰이 없습니다.");
+        throw new Error(TEXT.loginTokenMissing);
       }
 
       const response = await fetch(
@@ -71,10 +103,10 @@ const OrderHistory = ({ accountId, currentUser }) => {
         throw new Error(errorMsg || "Cancel failed");
       }
 
-      alert("주문이 취소되었습니다.");
+      alert(TEXT.canceled);
       fetchOrders();
     } catch (err) {
-      alert("취소 실패: " + err.message);
+      alert(TEXT.cancelFailed + err.message);
     }
   };
 
@@ -95,12 +127,12 @@ const OrderHistory = ({ accountId, currentUser }) => {
   const getStatusText = (status) => {
     switch (status) {
       case "COMPLETED":
-        return "체결";
+        return TEXT.completed;
       case "PENDING":
       case "QUEUED":
-        return "미체결";
+        return TEXT.pending;
       case "CANCELED":
-        return "취소";
+        return TEXT.canceledStatus;
       default:
         return status;
     }
@@ -110,7 +142,7 @@ const OrderHistory = ({ accountId, currentUser }) => {
     return (
       <div className="loading-container">
         <div className="loading-spinner"></div>
-        <div className="loading-text">주문 내역을 불러오는 중입니다...</div>
+        <div className="loading-text">{TEXT.loading}</div>
       </div>
     );
   }
@@ -118,40 +150,46 @@ const OrderHistory = ({ accountId, currentUser }) => {
   if (error) return <div className="error-message">{error}</div>;
 
   return (
-    <div className="content-card large" style={{ marginTop: "20px" }}>
-      <div className="section-header">
-        <h4>주문 내역</h4>
-        <AppButton variant="secondary" onClick={fetchOrders} size="small">
-          새로고침
-        </AppButton>
+    <section className="content-card mypage-order-card">
+      <div className="mypage-card-header">
+        <div>
+          <p className="mypage-eyebrow">Orders</p>
+          <h2 className="mypage-title">{TEXT.orderHistory}</h2>
+          <p className="mypage-subtext">
+            {accountName
+              ? `${accountName} ${TEXT.orderDescSuffix}`
+              : TEXT.recentOrders}
+          </p>
+        </div>
+        <div className="mypage-order-actions">
+          <span className="mypage-table-count">
+            {`${orders.length}${TEXT.countSuffix}`}
+          </span>
+          <AppButton variant="secondary" onClick={fetchOrders} size="sm">
+            {TEXT.refresh}
+          </AppButton>
+        </div>
       </div>
 
-      <div className="table-responsive">
-        <table className="stock-table">
+      <div className="mypage-table-wrap">
+        <table className="stock-table mypage-table">
           <thead>
             <tr>
-              <th>주문 일시</th>
-              <th>종목명</th>
-              <th>종목코드</th>
-              <th>구분</th>
-              <th>수량</th>
-              <th>가격</th>
-              <th>상태</th>
-              <th>작업</th>
+              <th>{TEXT.orderedAt}</th>
+              <th>{TEXT.stockName}</th>
+              <th>{TEXT.stockCode}</th>
+              <th>{TEXT.side}</th>
+              <th>{TEXT.quantity}</th>
+              <th>{TEXT.price}</th>
+              <th>{TEXT.status}</th>
+              <th>{TEXT.action}</th>
             </tr>
           </thead>
           <tbody>
             {!Array.isArray(orders) || orders.length === 0 ? (
               <tr>
-                <td
-                  colSpan="8"
-                  style={{
-                    textAlign: "center",
-                    padding: "40px",
-                    color: "#888",
-                  }}
-                >
-                  주문 내역이 없습니다.
+                <td colSpan="8" className="mypage-empty-cell">
+                  {TEXT.noOrders}
                 </td>
               </tr>
             ) : (
@@ -162,16 +200,16 @@ const OrderHistory = ({ accountId, currentUser }) => {
                       ? new Date(order.orderedAt).toLocaleString()
                       : "-"}
                   </td>
-                  <td>{order?.stock?.stockName ?? "알 수 없음"}</td>
+                  <td>{order?.stock?.stockName ?? TEXT.noStockInfo}</td>
                   <td>{order?.stock?.stockCode ?? "-"}</td>
                   <td className={order?.orderSide === "BUY" ? "up" : "down"}>
-                    {order?.orderSide === "BUY" ? "매수" : "매도"}
+                    {order?.orderSide === "BUY" ? TEXT.buy : TEXT.sell}
                   </td>
-                  <td>{order?.quantity?.toLocaleString() ?? 0}주</td>
+                  <td>{`${order?.quantity?.toLocaleString() ?? 0}${TEXT.shares}`}</td>
                   <td>
                     {order?.price
-                      ? order.price.toLocaleString() + "원"
-                      : "시장가"}
+                      ? `${order.price.toLocaleString()}${TEXT.won}`
+                      : TEXT.marketPrice}
                   </td>
                   <td>
                     <span
@@ -185,13 +223,13 @@ const OrderHistory = ({ accountId, currentUser }) => {
                   <td>
                     {(order?.orderStatus === "PENDING" ||
                       order?.orderStatus === "QUEUED") && (
-                      <button
-                        className="btn-cancel"
-                        onClick={() => handleCancel(order.id)}
-                      >
-                        취소
-                      </button>
-                    )}
+                        <button
+                          className="btn-cancel"
+                          onClick={() => handleCancel(order.id)}
+                        >
+                          {TEXT.cancel}
+                        </button>
+                      )}
                   </td>
                 </tr>
               ))
@@ -199,7 +237,7 @@ const OrderHistory = ({ accountId, currentUser }) => {
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   );
 };
 

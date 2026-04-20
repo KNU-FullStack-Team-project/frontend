@@ -24,9 +24,14 @@ const CommunityPostWritePage = ({
 
   const isAdmin = currentUser?.role === "admin";
   const isStockBoard = boardType === "stock";
+
   const pageTitle = isStockBoard
-    ? `${stockInfo?.name || symbol} 게시글 작성`
+    ? `${stockInfo?.name || stockInfo?.stockName || symbol} 게시글 작성`
     : "자유게시판 글쓰기";
+
+  const pageDesc = isStockBoard
+    ? "분석, 의견, 매매 전략을 자유롭게 공유하세요."
+    : "자유롭게 글을 작성하고 다른 사용자와 의견을 나눠보세요.";
 
   const submitUrl = isStockBoard
     ? `http://localhost:8081/api/community/stocks/${symbol}/posts`
@@ -46,7 +51,7 @@ const CommunityPostWritePage = ({
         setLoading(true);
         const response = await fetch(`http://localhost:8081/api/stocks/${symbol}`);
 
-        if (!response.ok) throw new Error();
+        if (!response.ok) throw new Error("종목 정보를 불러오지 못했습니다.");
 
         const data = await response.json();
         setStockInfo(data);
@@ -145,7 +150,9 @@ const CommunityPostWritePage = ({
   };
 
   const handleRemoveAttachedFile = (attachmentId) => {
-    setAttachedFiles((prev) => prev.filter((file) => file.attachmentId !== attachmentId));
+    setAttachedFiles((prev) =>
+      prev.filter((file) => file.attachmentId !== attachmentId)
+    );
   };
 
   const handleSubmit = async () => {
@@ -186,7 +193,7 @@ const CommunityPostWritePage = ({
       const text = await response.text();
 
       if (!response.ok) {
-        alert(text);
+        alert(text || "게시글 작성에 실패했습니다.");
         return;
       }
 
@@ -194,7 +201,7 @@ const CommunityPostWritePage = ({
       onSuccess?.();
     } catch (e) {
       console.error(e);
-      alert("에러 발생");
+      alert("게시글 작성 중 오류가 발생했습니다.");
     } finally {
       setSubmitting(false);
     }
@@ -211,26 +218,20 @@ const CommunityPostWritePage = ({
       </button>
 
       <div style={styles.headerCard}>
-        <div>
-          <div style={styles.badge}>WRITE</div>
-          <h1 style={styles.title}>{pageTitle}</h1>
-          <p style={styles.desc}>
-            {isStockBoard
-              ? "분석, 의견, 매매 전략을 자유롭게 공유하세요."
-              : "자유롭게 글을 작성하고 다른 사용자와 의견을 나눠보세요."}
-          </p>
+        <div style={styles.badge}>WRITE</div>
+        <h1 style={styles.title}>{pageTitle}</h1>
+        <p style={styles.desc}>{pageDesc}</p>
 
-          <div style={styles.tip}>
-            글꼴, 색상, 크기, 정렬, 이미지, 파일 첨부를 사용할 수 있습니다.
-          </div>
+        <div style={styles.tip}>
+          글꼴, 색상, 크기, 정렬, 이미지, 파일 첨부를 사용할 수 있습니다.
         </div>
 
         {isStockBoard && (
           <div style={styles.stockBox}>
-            <div>{stockInfo?.symbol || symbol}</div>
+            <div>{stockInfo?.symbol || stockInfo?.stockCode || symbol}</div>
             <div style={{ fontSize: 24, fontWeight: 800 }}>
               {stockInfo?.currentPrice
-                ? `${stockInfo.currentPrice.toLocaleString()}원`
+                ? `${Number(stockInfo.currentPrice).toLocaleString()}원`
                 : "-"}
             </div>
           </div>
@@ -335,37 +336,52 @@ const styles = {
   },
   headerCard: {
     background: "linear-gradient(135deg, #4874d4, #c6d2e7)",
-    color: "white",
-    padding: 30,
-    borderRadius: 20,
+    border: "none",
+    borderRadius: "24px",
+    padding: "50px 30px",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.1)",
+    marginBottom: "20px",
     display: "flex",
-    justifyContent: "space-between",
-    marginBottom: 20,
-    gap: 16,
+    flexDirection: "column",
+    alignItems: "center",
+    textAlign: "center",
+    position: "relative",
+    color: "white",
   },
   badge: {
-    fontSize: 12,
-    background: "#4f46e5",
-    padding: "4px 10px",
-    borderRadius: 20,
     display: "inline-block",
-    marginBottom: 10,
+    padding: "6px 14px",
+    borderRadius: "999px",
+    background: "rgba(255, 255, 255, 0.2)",
+    color: "#fff",
+    fontSize: "12px",
+    fontWeight: "800",
+    marginBottom: "12px",
+    backdropFilter: "blur(4px)",
   },
   title: {
-    fontSize: 28,
-    fontWeight: 800,
-    margin: 0,
+    margin: "0 0 10px",
+    fontSize: "36px",
+    fontWeight: "800",
+    color: "#fff",
   },
   desc: {
-    fontSize: 14,
-    color: "#dbeafe",
+    margin: 0,
+    fontSize: "15px",
+    color: "rgba(255, 255, 255, 0.9)",
+    lineHeight: "1.6",
+    maxWidth: "800px",
   },
   tip: {
-    marginTop: 10,
+    marginTop: 8,
     fontSize: 13,
     color: "#fef3c7",
+    opacity: 0.9,
   },
   stockBox: {
+    position: "absolute",
+    top: 25,
+    right: 30,
     textAlign: "right",
   },
   formCard: {

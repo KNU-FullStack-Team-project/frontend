@@ -46,44 +46,46 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
 
   if (!isLoggedIn) {
     return (
-      <div className="landing-page">
-        <section className="landing-hero">
-          <div className="landing-badge">Mock Invest</div>
-          <h1 className="landing-title">가볍게 시작하는 모의투자</h1>
-          <p className="landing-description">
-            실제 돈 없이 투자 감각을 익히고, 다양한 전략을 연습해보세요.
-          </p>
-          <div className="landing-actions">
-            <AppButton variant="primary" onClick={onOpenLogin}>
-              로그인하고 시작하기
-            </AppButton>
-          </div>
-        </section>
+      <div style={styles.page}>
+        <div className="landing-page">
+          <section className="landing-hero">
+            <div className="landing-badge">Mock Invest</div>
+            <h1 className="landing-title">가볍게 시작하는 모의투자</h1>
+            <p className="landing-description">
+              실제 돈 없이 투자 감각을 익히고, 다양한 전략을 연습해보세요.
+            </p>
+            <div className="landing-actions">
+              <AppButton variant="primary" onClick={onOpenLogin}>
+                로그인하고 시작하기
+              </AppButton>
+            </div>
+          </section>
 
-        <section className="landing-section" style={{ textAlign: "center" }}>
-          <SectionTitle title="서비스 소개" />
-          <div
-            className="stock-grid"
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "20px",
-            }}
-          >
-            <div className="mini-stock-card" style={{ textAlign: "center" }}>
-              <h4>모의 매매</h4>
-              <p>실전처럼 사고 팔며 투자 흐름을 익혀보세요.</p>
+          <section className="landing-section" style={{ textAlign: "center" }}>
+            <SectionTitle value="서비스 소개" />
+            <div
+              className="stock-grid"
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: "20px",
+              }}
+            >
+              <div className="mini-stock-card" style={{ textAlign: "center" }}>
+                <h4>모의 매매</h4>
+                <p>실전처럼 사고 팔며 투자 흐름을 익혀보세요.</p>
+              </div>
+              <div className="mini-stock-card" style={{ textAlign: "center" }}>
+                <h4>대회 참여</h4>
+                <p>다른 사용자와 수익률을 비교하며 경쟁해보세요.</p>
+              </div>
+              <div className="mini-stock-card" style={{ textAlign: "center" }}>
+                <h4>포트폴리오 확인</h4>
+                <p>내 투자 결과를 한눈에 정리해서 볼 수 있습니다.</p>
+              </div>
             </div>
-            <div className="mini-stock-card" style={{ textAlign: "center" }}>
-              <h4>대회 참여</h4>
-              <p>다른 사용자와 수익률을 비교하며 경쟁해보세요.</p>
-            </div>
-            <div className="mini-stock-card" style={{ textAlign: "center" }}>
-              <h4>포트폴리오 확인</h4>
-              <p>내 투자 결과를 한눈에 정리해서 볼 수 있습니다.</p>
-            </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
     );
   }
@@ -109,25 +111,48 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
       </div>
 
       <div className="dashboard-grid">
-        <InfoCard title="총 자산" value={accountData?.totalAsset || "₩0"} />
-        <InfoCard title="보유 현금" value={accountData?.cashBalance || "₩0"} />
-        <InfoCard
-          title="평가 손익"
-          value={accountData?.totalProfitAmount || "₩0"}
-          valueClassName={
-            accountData?.totalProfitAmount?.startsWith("+") ? "up" : "down"
-          }
-        />
-        <InfoCard
-          title="수익률"
-          value={accountData?.totalReturnRate || "0%"}
-          valueClassName={
-            accountData?.totalReturnRate?.startsWith("+") ? "up" : "down"
-          }
-        />
+        <article className="mypage-stat-card">
+          <span className="mypage-stat-label">총 자산</span>
+          <span className="mypage-stat-value">
+            {accountData?.totalAsset || "₩0"}
+          </span>
+        </article>
+        <article className="mypage-stat-card">
+          <span className="mypage-stat-label">보유 현금</span>
+          <span className="mypage-stat-value">
+            {accountData?.cashBalance || "₩0"}
+          </span>
+        </article>
+        <article className="mypage-stat-card">
+          <span className="mypage-stat-label">평가 손익</span>
+          <span
+            className={`mypage-stat-value ${Number(accountData?.totalProfitAmount?.replace(/[^0-9.-]/g, "")) > 0
+              ? "up"
+              : Number(accountData?.totalProfitAmount?.replace(/[^0-9.-]/g, "")) < 0
+                ? "down"
+                : ""
+              }`}
+          >
+            {accountData?.totalProfitAmount || "₩0"}
+          </span>
+        </article>
+
+        <article className="mypage-stat-card">
+          <span className="mypage-stat-label">수익률</span>
+          <span
+            className={`mypage-stat-value ${parseFloat(accountData?.totalReturnRate) > 0
+              ? "up"
+              : parseFloat(accountData?.totalReturnRate) < 0
+                ? "down"
+                : ""
+              }`}
+          >
+            {accountData?.totalReturnRate || "0%"}
+          </span>
+        </article>
 
         <div className="content-card large">
-          <SectionTitle title="관심 종목" />
+          <SectionTitle value="관심 종목" />
           <table className="stock-table">
             <thead>
               <tr>
@@ -139,7 +164,7 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
             </thead>
             <tbody>
               {accountData?.favoriteStocks &&
-              accountData.favoriteStocks.length > 0 ? (
+                accountData.favoriteStocks.length > 0 ? (
                 accountData.favoriteStocks.map((s, i) => (
                   <tr key={i}>
                     <td>{s.name}</td>
@@ -168,7 +193,7 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
         </div>
 
         <div className="content-card large">
-          <SectionTitle title="보유 종목" />
+          <SectionTitle value="보유 종목" />
           <table className="stock-table">
             <thead>
               <tr>
@@ -213,41 +238,42 @@ const styles = {
     padding: "28px 20px 56px",
   },
   hero: {
+    background: "linear-gradient(135deg, #4874d4, #c6d2e7)",
+    border: "none",
+    borderRadius: "24px",
+    padding: "50px 30px",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.1)",
+    marginBottom: "20px",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     textAlign: "center",
-    gap: "16px",
-    padding: "40px 30px",
-    borderRadius: "24px",
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
-    marginBottom: "16px",
+    position: "relative",
+    color: "white",
   },
   heroBadge: {
     display: "inline-block",
-    padding: "6px 12px",
+    padding: "6px 14px",
     borderRadius: "999px",
-    background: "#eef2ff",
-    color: "#4c6ef5",
+    background: "rgba(255, 255, 255, 0.2)",
+    color: "#fff",
     fontSize: "12px",
     fontWeight: "800",
-    letterSpacing: "0.06em",
-    marginBottom: "4px",
+    marginBottom: "12px",
+    backdropFilter: "blur(4px)",
   },
   heroTitle: {
-    margin: 0,
-    fontSize: "32px",
+    margin: "0 0 10px",
+    fontSize: "36px",
     fontWeight: "800",
-    color: "#111827",
+    color: "#fff",
   },
   heroText: {
     margin: 0,
     fontSize: "15px",
-    lineHeight: "1.7",
-    color: "#6b7280",
-    maxWidth: "600px",
+    color: "rgba(255, 255, 255, 0.9)",
+    lineHeight: "1.6",
+    maxWidth: "800px",
   },
 };
 

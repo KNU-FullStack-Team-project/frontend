@@ -26,7 +26,7 @@ const NotificationDropdown = ({
             >
               <div className="notification-header-row">
                 <span className="notification-type">
-                  {n.type === "ORDER_COMPLETED" ? "체결" : "목표가"}
+                  {n.type === "ORDER_COMPLETED" ? "체결" : n.type === "INQUIRY" ? "문의" : "목표가"}
                 </span>
                 <span className="notification-time">
                   {new Date(n.createdAt).toLocaleString("ko-KR", {

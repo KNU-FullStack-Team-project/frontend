@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import AppButton from "../common/AppButton";
 import useNotifications from "../hooks/useNotifications";
+import useInquiryCount from "../hooks/useInquiryCount";
 import NotificationDropdown from "../components/notification/NotificationDropdown";
 import InquiryModal from "../components/inquiry/InquiryModal";
 
@@ -28,6 +29,15 @@ const TopNav = ({
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(
     currentUser?.id || currentUser?.userId
   );
+
+  const { unreadInquiryCount, refreshInquiryCount } = useInquiryCount(currentUser);
+
+  // 알림이 올 때마다 문의 카운트도 새로고침 (실시간성 확보)
+  React.useEffect(() => {
+    if (unreadCount > 0) {
+      refreshInquiryCount();
+    }
+  }, [unreadCount, refreshInquiryCount]);
 
   return (
     <header className="top-nav">
@@ -69,10 +79,27 @@ const TopNav = ({
                   fontSize: '20px', 
                   color: '#fff',
                   display: 'flex',
-                  alignItems: 'center'
+                  alignItems: 'center',
+                  position: 'relative'
                 }}
               >
                 ✉️
+                {unreadInquiryCount > 0 && (
+                  <span className="unread-badge" style={{
+                    position: 'absolute',
+                    top: '-5px',
+                    right: '-5px',
+                    background: '#ff3b30',
+                    color: '#fff',
+                    fontSize: '10px',
+                    borderRadius: '50%',
+                    padding: '2px 5px',
+                    minWidth: '15px',
+                    textAlign: 'center'
+                  }}>
+                    {unreadInquiryCount > 99 ? '99+' : unreadInquiryCount}
+                  </span>
+                )}
               </button>
 
               <div className="notification-wrapper" style={{ position: 'relative' }}>
@@ -121,6 +148,8 @@ const TopNav = ({
               <InquiryModal 
                 isOpen={isInquiryOpen} 
                 onClose={() => setIsInquiryOpen(false)} 
+                isAdmin={isAdmin}
+                refreshInquiryCount={refreshInquiryCount}
               />
 
               {isAdmin ? (
