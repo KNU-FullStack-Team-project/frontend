@@ -109,6 +109,17 @@ const AppController = () => {
   const autoLogoutTimeoutRef = useRef(null);
 
   const handleLogout = useCallback(() => {
+    const token = localStorage.getItem("accessToken");
+
+    if (token) {
+      fetch("http://localhost:8081/users/logout", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }).catch(() => {});
+    }
+
     localStorage.removeItem("currentUser");
     localStorage.removeItem("accessToken");
     setCurrentUser(null);
@@ -780,6 +791,11 @@ const AppController = () => {
             currentUser={currentUser}
             targetUser={selectedActivityUser}
             onBack={() => setCurrentPage("admin")}
+            onOpenPost={(postId) => {
+              setSelectedCommunityPostId(postId);
+              setSelectedCommunityBoardType("free");
+              setCurrentPage("communityPostDetail");
+            }}
           />
         );
 
