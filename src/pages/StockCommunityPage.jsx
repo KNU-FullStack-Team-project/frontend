@@ -290,6 +290,13 @@ const StockCommunityPage = ({
             <div style={styles.sidebarTitle}>게시판</div>
             <button
               type="button"
+              style={styles.sideMenuButtonNotice}
+              onClick={onSelectNoticeBoard}
+            >
+              공지사항
+            </button>
+            <button
+              type="button"
               style={styles.sideMenuButton}
               onClick={onMoveFreeBoard}
             >
@@ -301,13 +308,6 @@ const StockCommunityPage = ({
               onClick={onBack}
             >
               종목게시판
-            </button>
-            <button
-              type="button"
-              style={styles.sideMenuButtonNotice}
-              onClick={onSelectNoticeBoard}
-            >
-              공지사항
             </button>
           </div>
 

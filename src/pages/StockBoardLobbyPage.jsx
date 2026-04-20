@@ -11,11 +11,12 @@ const StockBoardLobbyPage = ({
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  const fetchStocksPage = async (pageNumber, append = false) => {
+  const fetchStocksPageRaw = async (pageNumber) => {
     const response = await fetch(
       `/api/stocks?page=${pageNumber}&size=${PAGE_SIZE}`
     );
@@ -27,9 +28,6 @@ const StockBoardLobbyPage = ({
     const data = await response.json();
     const stockList = Array.isArray(data.content) ? data.content : [];
 
-    setStocks((prev) => (append ? [...prev, ...stockList] : stockList));
-    setPage(pageNumber);
-
     const totalPages =
       typeof data.totalPages === "number" ? data.totalPages : null;
     const isLast =
@@ -39,6 +37,17 @@ const StockBoardLobbyPage = ({
         ? pageNumber >= totalPages
         : stockList.length < PAGE_SIZE;
 
+    return {
+      stockList,
+      isLast,
+    };
+  };
+
+  const fetchStocksPage = async (pageNumber, append = false) => {
+    const { stockList, isLast } = await fetchStocksPageRaw(pageNumber);
+
+    setStocks((prev) => (append ? [...prev, ...stockList] : stockList));
+    setPage(pageNumber);
     setHasMore(!isLast);
   };
 
@@ -67,6 +76,36 @@ const StockBoardLobbyPage = ({
       alert("추가 종목을 불러오지 못했습니다.");
     } finally {
       setLoadingMore(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    if (refreshing || loading) return;
+
+    try {
+      setRefreshing(true);
+
+      const loadedPageCount = Math.max(1, page);
+      let mergedStocks = [];
+      let nextHasMore = true;
+
+      for (let i = 1; i <= loadedPageCount; i += 1) {
+        const { stockList, isLast } = await fetchStocksPageRaw(i);
+        mergedStocks = [...mergedStocks, ...stockList];
+
+        if (i === loadedPageCount) {
+          nextHasMore = !isLast;
+        }
+      }
+
+      setStocks(mergedStocks);
+      setPage(loadedPageCount);
+      setHasMore(nextHasMore);
+    } catch (error) {
+      console.error(error);
+      alert("새로고침에 실패했습니다.");
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -114,6 +153,13 @@ const StockBoardLobbyPage = ({
             <div style={styles.sidebarTitle}>게시판</div>
             <button
               type="button"
+              style={styles.sideMenuButtonNotice}
+              onClick={onSelectNoticeBoard}
+            >
+              공지사항
+            </button>
+            <button
+              type="button"
               style={styles.sideMenuButton}
               onClick={onMoveFreeBoard}
             >
@@ -121,13 +167,6 @@ const StockBoardLobbyPage = ({
             </button>
             <button type="button" style={styles.sideMenuButtonActive}>
               종목게시판
-            </button>
-            <button
-              type="button"
-              style={styles.sideMenuButtonNotice}
-              onClick={onSelectNoticeBoard}
-            >
-              공지사항
             </button>
           </div>
 
@@ -225,12 +264,22 @@ const StockBoardLobbyPage = ({
                 </p>
               </div>
 
-              <input
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                placeholder="종목명 또는 종목코드 검색"
-                style={styles.searchInput}
-              />
+              <div style={styles.headerActions}>
+                <input
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  placeholder="종목명 또는 종목코드 검색"
+                  style={styles.searchInput}
+                />
+                <button
+                  type="button"
+                  style={styles.refreshButton}
+                  onClick={handleRefresh}
+                  disabled={refreshing || loading}
+                >
+                  {refreshing ? "새로고침 중..." : "새로고침"}
+                </button>
+              </div>
             </div>
 
             {loading ? (
@@ -543,6 +592,12 @@ const styles = {
     fontSize: "14px",
     color: "#6b7280",
   },
+  headerActions: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+    alignItems: "center",
+  },
   searchInput: {
     width: "320px",
     maxWidth: "100%",
@@ -553,6 +608,17 @@ const styles = {
     fontSize: "14px",
     outline: "none",
     background: "#fff",
+  },
+  refreshButton: {
+    height: "42px",
+    padding: "0 16px",
+    borderRadius: "10px",
+    border: "1px solid #d1d5db",
+    background: "#fff",
+    color: "#111827",
+    fontSize: "14px",
+    fontWeight: "800",
+    cursor: "pointer",
   },
   stockGrid: {
     display: "grid",
