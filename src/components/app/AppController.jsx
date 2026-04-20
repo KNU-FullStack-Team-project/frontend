@@ -25,61 +25,6 @@ import TopNav from "../../layout/TopNav";
 
 import "../../auth.css";
 
-const pageTexts = {
-  home: {
-    title: "모의투자 플랫폼",
-    description: "안전하게 연습하고, 실전 감각까지 익혀보세요.",
-  },
-  stock: {
-    title: "주식",
-    description: "종목 정보와 시장 흐름을 확인해보세요.",
-  },
-  contest: {
-    title: "대회",
-    description: "대회와 참가자 정보를 확인해보세요.",
-  },
-  mypage: {
-    title: "마이페이지",
-    description: "내 자산과 투자 기록을 관리해보세요.",
-  },
-  auth: {
-    title: "모의투자 시작하기",
-    description: "가상 자산으로 안전하게 투자 연습을 시작해보세요.",
-  },
-  ranking: {
-    title: "대회 랭킹",
-    description: "현재 진행 중인 대회의 순위를 확인하세요.",
-  },
-  userActivity: {
-    title: "유저 활동 로그",
-    description: "기존 데이터 기준으로 유저 활동을 확인합니다.",
-  },
-  freeBoard: {
-    title: "커뮤니티",
-    description: "자유게시판에서 글을 보고, 종목게시판으로 이동할 수 있습니다.",
-  },
-  stockBoardLobby: {
-    title: "종목게시판",
-    description: "원하는 종목을 선택해 해당 게시판으로 이동하세요.",
-  },
-  stockCommunity: {
-    title: "종목 커뮤니티",
-    description: "선택한 종목 게시판의 글 목록을 확인하세요.",
-  },
-  noticeBoard: {
-    title: "공지사항",
-    description: "운영 공지 및 안내사항을 확인해보세요.",
-  },
-  communityPostDetail: {
-    title: "게시글 상세",
-    description: "게시글 내용과 댓글을 확인해보세요.",
-  },
-  communityPostWrite: {
-    title: "게시글 작성",
-    description: "새 게시글을 작성해보세요.",
-  },
-};
-
 const COMMUNITY_NAV_PAGES = [
   "freeBoard",
   "stockBoardLobby",
@@ -592,8 +537,6 @@ const AppController = () => {
   if (currentPage === "auth") {
     return (
       <AuthPage
-        title={pageTexts.auth.title}
-        description={pageTexts.auth.description}
         onLogin={handleLogin}
         onSignup={handleSignup}
         initialMode={authMode}
@@ -812,16 +755,6 @@ const AppController = () => {
       />
       <main className="main-content">
         <div className="container">
-          {currentPage !== "home" && (
-            <header className="page-header">
-              <h2 className="page-title">
-                {pageTexts[currentPage]?.title || "페이지"}
-              </h2>
-              <p className="page-description">
-                {pageTexts[currentPage]?.description || ""}
-              </p>
-            </header>
-          )}
           {renderPage()}
         </div>
       </main>
