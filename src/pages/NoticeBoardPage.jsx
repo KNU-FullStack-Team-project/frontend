@@ -14,7 +14,7 @@ const NoticeBoardPage = ({ onBack, onSelectPost }) => {
     try {
       setLoading(true);
 
-      const response = await fetch("http://localhost:8081/api/community/notices");
+      const response = await fetch("/api/community/notices");
 
       if (!response.ok) {
         throw new Error("공지사항 목록을 불러오지 못했습니다.");
@@ -114,11 +114,10 @@ const NoticeBoardPage = ({ onBack, onSelectPost }) => {
 
   if (loading) {
     return (
-      <section style={styles.page}>
-        <div style={styles.emptyCard}>
-          <p style={styles.emptyText}>공지사항을 불러오는 중입니다...</p>
-        </div>
-      </section>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">공지사항을 불러오는 중입니다...</div>
+      </div>
     );
   }
 
@@ -264,34 +263,42 @@ const styles = {
     color: "#555",
   },
   heroCard: {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
-    borderRadius: "20px",
-    padding: "28px 30px",
-    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
-    marginBottom: "18px",
+    background: "linear-gradient(135deg, #4874d4, #c6d2e7)",
+    border: "none",
+    borderRadius: "24px",
+    padding: "50px 30px",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.1)",
+    marginBottom: "20px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    textAlign: "center",
+    position: "relative",
+    color: "white",
   },
   heroBadge: {
     display: "inline-block",
-    padding: "6px 12px",
+    padding: "6px 14px",
     borderRadius: "999px",
-    background: "#fff7ed",
-    color: "#d9480f",
+    background: "rgba(255, 255, 255, 0.2)",
+    color: "#fff",
     fontSize: "12px",
     fontWeight: "800",
     marginBottom: "12px",
+    backdropFilter: "blur(4px)",
   },
   heroTitle: {
-    margin: "0 0 8px",
-    fontSize: "30px",
+    margin: "0 0 10px",
+    fontSize: "36px",
     fontWeight: "800",
-    color: "#111827",
+    color: "#fff",
   },
   heroDesc: {
     margin: 0,
-    fontSize: "14px",
-    color: "#6b7280",
+    fontSize: "15px",
+    color: "rgba(255, 255, 255, 0.9)",
     lineHeight: "1.6",
+    maxWidth: "800px",
   },
   toolbarCard: {
     background: "#fff",
@@ -373,9 +380,9 @@ const styles = {
   noticeGuide: {
     marginBottom: "14px",
     fontSize: "13px",
-    color: "#92400e",
-    background: "#fff7ed",
-    border: "1px solid #fed7aa",
+    color: "#1e40af",
+    background: "#eff6ff",
+    border: "1px solid #bfdbfe",
     borderRadius: "10px",
     padding: "10px 12px",
     fontWeight: "700",
@@ -404,8 +411,8 @@ const styles = {
   },
   noticeRow: {
     cursor: "pointer",
-    background: "#fffaf5",
-    borderBottom: "1px solid #f1f5f9",
+    background: "#eff6ff",
+    borderBottom: "1px solid #dbeafe",
   },
   td: {
     padding: "14px 12px",
@@ -426,10 +433,10 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     height: "24px",
-    padding: "0 10px",
+    padding: "0 12px",
     borderRadius: "999px",
-    background: "#fff0d9",
-    color: "#d9480f",
+    background: "#1d4ed8",
+    color: "#ffffff",
     fontSize: "12px",
     fontWeight: "800",
     flexShrink: 0,

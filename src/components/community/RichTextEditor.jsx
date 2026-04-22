@@ -105,7 +105,7 @@ const RichTextEditor = ({
       document.execCommand(
         "insertHTML",
         false,
-        `<p><img src="http://localhost:8081${uploaded.fileUrl}" alt="${uploaded.originalName || "image"}" style="max-width:100%; border-radius:12px; margin:12px 0;" /></p>`
+        `<p><img src="${uploaded.fileUrl}" alt="${uploaded.originalName || "image"}" style="max-width:100%; border-radius:12px; margin:12px 0;" /></p>`
       );
       emitChange();
     } catch (error) {

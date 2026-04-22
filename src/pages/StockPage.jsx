@@ -40,10 +40,10 @@ const StockRow = ({
       <div className="stock-rate-section">
         <span
           className={`rate-text ${stock.currentPrice === "0"
-              ? ""
-              : parseFloat(stock.changeRate) >= 0
-                ? "up"
-                : "down"
+            ? ""
+            : parseFloat(stock.changeRate) >= 0
+              ? "up"
+              : "down"
             }`}
         >
           {stock.currentPrice === "0"
@@ -86,7 +86,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
     try {
       setLoading(true);
       const response = await fetch(
-        `http://localhost:8081/api/stocks?page=${pageNum}&size=20`,
+        `/api/stocks?page=${pageNum}&size=20`,
       );
       if (!response.ok) throw new Error("Stock list fetch failed");
 
@@ -129,7 +129,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
 
     try {
       const response = await fetch(
-        `http://localhost:8081/api/favorites?userId=${userId}`,
+        `/api/favorites?userId=${userId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -155,7 +155,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
     try {
       setIsFavoritesLoading(true);
       const response = await fetch(
-        `http://localhost:8081/api/favorites/details?userId=${userId}`,
+        `/api/favorites/details?userId=${userId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -183,7 +183,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
     try {
       setIsHoldingsLoading(true);
       const response = await fetch(
-        `http://localhost:8081/api/orders/holdings?accountId=${accountId}`,
+        `/api/orders/holdings?accountId=${accountId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -212,7 +212,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
     try {
       setIsSearching(true);
       const response = await fetch(
-        `http://localhost:8081/api/stocks/search?keyword=${encodeURIComponent(
+        `/api/stocks/search?keyword=${encodeURIComponent(
           searchKeyword,
         )}`,
       );
@@ -359,7 +359,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
     try {
       const method = isFavorite ? "DELETE" : "POST";
       const response = await fetch(
-        `http://localhost:8081/api/favorites/${symbol}?userId=${userId}`,
+        `/api/favorites/${symbol}?userId=${userId}`,
         {
           method,
           headers: {
@@ -528,7 +528,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
               </button>
             )}
           </div>
-          
+
           <button
             className="refresh-btn"
             onClick={() => {

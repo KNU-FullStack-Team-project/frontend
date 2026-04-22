@@ -43,7 +43,7 @@ const ContestCreatePage = ({ currentUser, onBack, onSuccess }) => {
       };
 
       const res = await fetch(
-        `http://localhost:8081/api/admin/competitions?adminUserId=${currentUser.userId}`,
+        `/api/admin/competitions?adminUserId=${currentUser.userId}`,
         {
           method: "POST",
           headers: {

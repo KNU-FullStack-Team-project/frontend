@@ -74,7 +74,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
       }
 
       const response = await fetch(
-        `http://localhost:8081/api/accounts/my/dashboard?email=${targetEmail}&accountId=${accountId}`,
+        `/api/accounts/my/dashboard?email=${targetEmail}&accountId=${accountId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -112,10 +112,10 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
       };
 
       const [profileResponse, accountsResponse] = await Promise.all([
-        fetch(`http://localhost:8081/users/profile?${params.toString()}`, {
+        fetch(`/api/users/profile?${params.toString()}`, {
           headers: commonHeaders,
         }),
-        fetch(`http://localhost:8081/api/accounts/my?${params.toString()}`, {
+        fetch(`/api/accounts/my?${params.toString()}`, {
           headers: commonHeaders,
         }),
       ]);
@@ -152,7 +152,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
       const userId = profileData?.id || currentUser?.userId;
       if (userId) {
         const compResponse = await fetch(
-          `http://localhost:8081/api/competitions/my?userId=${userId}`,
+          `/api/competitions/my?userId=${userId}`,
           {
             headers: commonHeaders,
           }
@@ -197,7 +197,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
       }
 
       const response = await fetch(
-        `http://localhost:8081/api/accounts/${accountId}/reset-cash`,
+        `/api/accounts/${accountId}/reset-cash`,
         {
           method: "POST",
           headers: {
@@ -220,7 +220,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   };
 
   const profileImageUrl = profile?.profileImageUrl
-    ? `http://localhost:8081${profile.profileImageUrl}`
+    ? `${profile.profileImageUrl}`
     : "";
   const createdAtText = profile?.createdAt?.includes("T")
     ? profile.createdAt.split("T")[0]

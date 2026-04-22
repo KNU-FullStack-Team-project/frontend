@@ -10,7 +10,7 @@ const useNotifications = (userId) => {
     const token = localStorage.getItem("accessToken");
     try {
       const res = await fetch(
-        `http://localhost:8081/api/notifications/${userId}`,
+        `/api/notifications/${userId}`,
         {
           headers: {
             Authorization: token ? `Bearer ${token}` : "",
@@ -30,7 +30,7 @@ const useNotifications = (userId) => {
     const token = localStorage.getItem("accessToken");
     try {
       const res = await fetch(
-        `http://localhost:8081/api/notifications/unread-count/${userId}`,
+        `/api/notifications/unread-count/${userId}`,
         {
           headers: {
             Authorization: token ? `Bearer ${token}` : "",
@@ -56,7 +56,7 @@ const useNotifications = (userId) => {
     const token = localStorage.getItem("accessToken");
     if (!token) return;
 
-    const sseUrl = `http://localhost:8081/api/notifications/subscribe/${userId}`;
+    const sseUrl = `/api/notifications/subscribe/${userId}`;
 
     const eventSource = new EventSourcePolyfill(sseUrl, {
       headers: {
@@ -84,7 +84,7 @@ const useNotifications = (userId) => {
     const token = localStorage.getItem("accessToken");
     try {
       await fetch(
-        `http://localhost:8081/api/notifications/${notificationId}/read`,
+        `/api/notifications/${notificationId}/read`,
         {
           method: "POST",
           headers: {
@@ -106,7 +106,7 @@ const useNotifications = (userId) => {
     const token = localStorage.getItem("accessToken");
     try {
       await fetch(
-        `http://localhost:8081/api/notifications/read-all/${userId}`,
+        `/api/notifications/read-all/${userId}`,
         {
           method: "POST",
           headers: {

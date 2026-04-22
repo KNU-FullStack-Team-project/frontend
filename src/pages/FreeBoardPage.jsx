@@ -42,7 +42,7 @@ const FreeBoardPage = ({
     [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const fetchFreePosts = async () => {
-    const response = await fetch("http://localhost:8081/api/community/boards/free/posts");
+    const response = await fetch("/api/community/boards/free/posts");
     if (!response.ok) {
       throw new Error("자유게시판 목록을 불러오지 못했습니다.");
     }
@@ -96,7 +96,7 @@ const FreeBoardPage = ({
       setLoadingCommentedPosts(true);
 
       const response = await fetch(
-        "http://localhost:8081/api/community/boards/free/posts/commented-by-me",
+        "/api/community/boards/free/posts/commented-by-me",
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }
@@ -349,19 +349,22 @@ const FreeBoardPage = ({
 
   if (loading) {
     return (
-      <section style={styles.page}>
-        <div style={styles.emptyCard}>
-          <p style={styles.emptyText}>자유게시판을 불러오는 중입니다...</p>
-        </div>
-      </section>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">자유게시판을 불러오는 중입니다...</div>
+      </div>
     );
   }
 
   return (
     <section style={styles.page}>
-      <button type="button" onClick={onBack} style={styles.backButton}>
-        ← 홈으로 돌아가기
-      </button>
+      <div style={styles.hero}>
+        <div style={styles.heroBadge}>COMMUNITY</div>
+        <h1 style={styles.heroTitle}>자유게시판</h1>
+        <p style={styles.heroText}>
+          커뮤니티에 들어오면 바로 자유게시판 글을 보고, 종목게시판 버튼을 눌러 원하는 종목 게시판으로 이동할 수 있습니다.
+        </p>
+      </div>
 
       <div style={styles.pageLayout}>
         <aside style={styles.sidebar}>
@@ -369,17 +372,17 @@ const FreeBoardPage = ({
             <div style={styles.sidebarTitle}>게시판</div>
             <button
               type="button"
-              style={styles.sideMenuButtonNotice}
+              className="side-menu-btn notice"
               onClick={onSelectNoticeBoard}
             >
               공지사항
             </button>
-            <button type="button" style={styles.sideMenuButtonActive}>
+            <button type="button" className="side-menu-btn active">
               자유게시판
             </button>
             <button
               type="button"
-              style={styles.sideMenuButton}
+              className="side-menu-btn"
               onClick={onOpenStockBoardLobby}
             >
               종목게시판
@@ -647,17 +650,47 @@ const FreeBoardPage = ({
 
 const styles = {
   page: {
-    maxWidth: "1320px",
+    maxWidth: "1440px",
     margin: "0 auto",
     padding: "28px 20px 56px",
   },
-  backButton: {
-    marginBottom: "16px",
-    cursor: "pointer",
+  hero: {
+    background: "linear-gradient(135deg, #4874d4, #c6d2e7)",
     border: "none",
-    background: "transparent",
-    fontSize: "14px",
-    color: "#555",
+    borderRadius: "24px",
+    padding: "50px 30px",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.1)",
+    marginBottom: "20px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    textAlign: "center",
+    position: "relative",
+    color: "white",
+  },
+  heroBadge: {
+    display: "inline-block",
+    padding: "6px 14px",
+    borderRadius: "999px",
+    background: "rgba(255, 255, 255, 0.2)",
+    color: "#fff",
+    fontSize: "12px",
+    fontWeight: "800",
+    marginBottom: "12px",
+    backdropFilter: "blur(4px)",
+  },
+  heroTitle: {
+    margin: "0 0 10px",
+    fontSize: "36px",
+    fontWeight: "800",
+    color: "#fff",
+  },
+  heroText: {
+    margin: 0,
+    fontSize: "15px",
+    color: "rgba(255, 255, 255, 0.9)",
+    lineHeight: "1.6",
+    maxWidth: "800px",
   },
   pageLayout: {
     display: "grid",
@@ -728,9 +761,9 @@ const styles = {
   sideMenuButtonNotice: {
     width: "100%",
     textAlign: "left",
-    border: "1px solid #fed7aa",
-    background: "#fff7ed",
-    color: "#c2410c",
+    border: "1px solid #bfdbfe",
+    background: "#eff6ff",
+    color: "#1e40af",
     borderRadius: "12px",
     padding: "12px 14px",
     fontSize: "14px",
@@ -805,8 +838,8 @@ const styles = {
     height: "28px",
     padding: "0 12px",
     borderRadius: "999px",
-    background: "#fff0d9",
-    color: "#d9480f",
+    background: "#1d4ed8",
+    color: "#ffffff",
     fontSize: "12px",
     fontWeight: "900",
     letterSpacing: "0.02em",
@@ -990,9 +1023,9 @@ const styles = {
   noticeGuide: {
     marginBottom: "14px",
     fontSize: "13px",
-    color: "#92400e",
-    background: "#fff7ed",
-    border: "1px solid #fed7aa",
+    color: "#1e40af",
+    background: "#eff6ff",
+    border: "1px solid #bfdbfe",
     borderRadius: "10px",
     padding: "10px 12px",
     fontWeight: "700",

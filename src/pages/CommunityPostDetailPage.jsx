@@ -48,7 +48,7 @@ const CommunityPostDetailPage = ({
       const token = localStorage.getItem("accessToken") || currentUser?.token;
 
       const response = await fetch(
-        `http://localhost:8081/api/community/posts/${postId}`,
+        `/api/community/posts/${postId}`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }
@@ -72,7 +72,7 @@ const CommunityPostDetailPage = ({
     if (!postId) return;
 
     try {
-      await fetch(`http://localhost:8081/api/community/posts/${postId}/view`, {
+      await fetch(`/api/community/posts/${postId}/view`, {
         method: "POST",
       });
     } catch (error) {
@@ -234,7 +234,7 @@ const CommunityPostDetailPage = ({
       }
 
       const response = await fetch(
-        `http://localhost:8081/api/community/posts/${postId}/like`,
+        `/api/community/posts/${postId}/like`,
         {
           method: "POST",
           headers: {
@@ -285,8 +285,8 @@ const CommunityPostDetailPage = ({
 
       const url =
         reportTarget.type === "post"
-          ? `http://localhost:8081/api/community/posts/${reportTarget.targetId}/report`
-          : `http://localhost:8081/api/community/comments/${reportTarget.targetId}/report`;
+          ? `/api/community/posts/${reportTarget.targetId}/report`
+          : `/api/community/comments/${reportTarget.targetId}/report`;
 
       const response = await fetch(url, {
         method: "POST",
@@ -341,7 +341,7 @@ const CommunityPostDetailPage = ({
       }
 
       const response = await fetch(
-        `http://localhost:8081/api/community/posts/${postId}/comments`,
+        `/api/community/posts/${postId}/comments`,
         {
           method: "POST",
           headers: {
@@ -403,7 +403,7 @@ const CommunityPostDetailPage = ({
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch("http://localhost:8081/api/community/uploads/images", {
+    const response = await fetch("/api/community/uploads/images", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -435,7 +435,7 @@ const CommunityPostDetailPage = ({
         const formData = new FormData();
         formData.append("file", file);
 
-        const response = await fetch("http://localhost:8081/api/community/uploads/files", {
+        const response = await fetch("/api/community/uploads/files", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -484,7 +484,7 @@ const CommunityPostDetailPage = ({
       }
 
       const response = await fetch(
-        `http://localhost:8081/api/community/posts/${postId}`,
+        `/api/community/posts/${postId}`,
         {
           method: "PUT",
           headers: {
@@ -528,7 +528,7 @@ const CommunityPostDetailPage = ({
       }
 
       const response = await fetch(
-        `http://localhost:8081/api/community/posts/${postId}`,
+        `/api/community/posts/${postId}`,
         {
           method: "DELETE",
           headers: {
@@ -564,7 +564,7 @@ const CommunityPostDetailPage = ({
       }
 
       const response = await fetch(
-        `http://localhost:8081/api/community/comments/${commentId}`,
+        `/api/community/comments/${commentId}`,
         {
           method: "DELETE",
           headers: {
@@ -601,11 +601,10 @@ const CommunityPostDetailPage = ({
 
   if (loading) {
     return (
-      <section style={styles.page}>
-        <div style={styles.emptyCard}>
-          <p style={styles.emptyText}>게시글을 불러오는 중입니다...</p>
-        </div>
-      </section>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">게시글을 불러오는 중입니다...</div>
+      </div>
     );
   }
 
@@ -768,8 +767,8 @@ const CommunityPostDetailPage = ({
                     {isMyPost
                       ? "내 글은 추천 불가"
                       : postDetail.likedByCurrentUser
-                      ? "추천 완료"
-                      : "👍 추천하기"}
+                        ? "추천 완료"
+                        : "👍 추천하기"}
                   </button>
 
                   {canReportPost && (
@@ -815,7 +814,7 @@ const CommunityPostDetailPage = ({
                     {postDetail.attachments.map((file) => (
                       <a
                         key={file.attachmentId}
-                        href={`http://localhost:8081${file.fileUrl}`}
+                        href={`${file.fileUrl}`}
                         target="_blank"
                         rel="noreferrer"
                         style={styles.downloadLink}

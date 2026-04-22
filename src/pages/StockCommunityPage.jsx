@@ -39,8 +39,8 @@ const StockCommunityPage = ({
       setLoading(true);
 
       const [stockResponse, postResponse] = await Promise.all([
-        fetch(`http://localhost:8081/api/stocks/${symbol}`),
-        fetch(`http://localhost:8081/api/community/stocks/${symbol}/posts`),
+        fetch(`/api/stocks/${symbol}`),
+        fetch(`/api/community/stocks/${symbol}/posts`),
       ]);
 
       if (!stockResponse.ok) {
@@ -82,7 +82,7 @@ const StockCommunityPage = ({
       setLoadingCommentedPosts(true);
 
       const response = await fetch(
-        `http://localhost:8081/api/community/stocks/${symbol}/posts/commented-by-me`,
+        `/api/community/stocks/${symbol}/posts/commented-by-me`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }
@@ -317,11 +317,10 @@ const StockCommunityPage = ({
 
   if (loading) {
     return (
-      <section style={styles.page}>
-        <div style={styles.emptyCard}>
-          <p style={styles.emptyText}>종목 커뮤니티를 불러오는 중입니다...</p>
-        </div>
-      </section>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div className="loading-text">종목 커뮤니티를 불러오는 중입니다...</div>
+      </div>
     );
   }
 
@@ -330,6 +329,37 @@ const StockCommunityPage = ({
       <button type="button" onClick={onBack} style={styles.backButton}>
         ← 종목게시판으로 돌아가기
       </button>
+
+      <div style={styles.hero}>
+        <div style={styles.heroBadge}>STOCK COMMUNITY</div>
+        <h1 style={styles.heroTitle}>
+          {stockInfo?.stockName || stockInfo?.name || symbol} 게시판
+        </h1>
+        <p style={styles.heroText}>
+          종목에 대한 의견, 매수/매도 관점, 시장 반응을 자유롭게 공유해보세요.
+        </p>
+
+        <div style={styles.heroStockInfo}>
+          <span style={styles.heroSymbol}>
+            {stockInfo?.stockCode || stockInfo?.symbol || symbol}
+          </span>
+          <span style={styles.heroPrice}>
+            {stockInfo?.currentPrice
+              ? `${Number(stockInfo.currentPrice).toLocaleString("ko-KR")}원`
+              : "-"}
+          </span>
+          <span
+            style={{
+              ...styles.heroChange,
+              color: Number(stockInfo?.changeRate) >= 0 ? "#ffc9c9" : "#a5d8ff",
+            }}
+          >
+            {stockInfo?.changeRate != null
+              ? `${Number(stockInfo.changeRate) >= 0 ? "+" : ""}${stockInfo.changeRate}%`
+              : "-"}
+          </span>
+        </div>
+      </div>
 
       <div style={styles.pageLayout}>
         <aside style={styles.sidebar}>
@@ -603,7 +633,7 @@ const StockCommunityPage = ({
 
 const styles = {
   page: {
-    maxWidth: "1320px",
+    maxWidth: "1440px",
     margin: "0 auto",
     padding: "28px 20px 56px",
   },
@@ -614,6 +644,68 @@ const styles = {
     background: "transparent",
     fontSize: "14px",
     color: "#555",
+  },
+  hero: {
+    background: "linear-gradient(135deg, #4874d4, #c6d2e7)",
+    border: "none",
+    borderRadius: "24px",
+    padding: "50px 30px",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.1)",
+    marginBottom: "20px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    textAlign: "center",
+    position: "relative",
+    color: "white",
+  },
+  heroBadge: {
+    display: "inline-block",
+    padding: "6px 14px",
+    borderRadius: "999px",
+    background: "rgba(255, 255, 255, 0.2)",
+    color: "#fff",
+    fontSize: "12px",
+    fontWeight: "800",
+    marginBottom: "12px",
+    backdropFilter: "blur(4px)",
+  },
+  heroTitle: {
+    margin: "0 0 10px",
+    fontSize: "36px",
+    fontWeight: "800",
+    color: "#fff",
+  },
+  heroText: {
+    margin: "0 0 16px",
+    fontSize: "15px",
+    color: "rgba(255, 255, 255, 0.9)",
+    lineHeight: "1.6",
+    maxWidth: "800px",
+  },
+  heroStockInfo: {
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "center",
+    gap: "12px",
+    background: "rgba(0, 0, 0, 0.15)",
+    padding: "10px 24px",
+    borderRadius: "16px",
+    backdropFilter: "blur(4px)",
+  },
+  heroSymbol: {
+    fontSize: "14px",
+    color: "rgba(255, 255, 255, 0.8)",
+    fontWeight: "700",
+  },
+  heroPrice: {
+    fontSize: "24px",
+    fontWeight: "800",
+    color: "#fff",
+  },
+  heroChange: {
+    fontSize: "16px",
+    fontWeight: "800",
   },
   pageLayout: {
     display: "grid",
@@ -684,9 +776,9 @@ const styles = {
   sideMenuButtonNotice: {
     width: "100%",
     textAlign: "left",
-    border: "1px solid #fed7aa",
-    background: "#fff7ed",
-    color: "#c2410c",
+    border: "1px solid #bfdbfe",
+    background: "#eff6ff",
+    color: "#1e40af",
     borderRadius: "12px",
     padding: "12px 14px",
     fontSize: "14px",
@@ -699,111 +791,100 @@ const styles = {
     gap: "18px",
   },
   boardNoticeCard: {
-  background: "linear-gradient(135deg, #fffaf0 0%, #fff7ed 100%)",
-  border: "1px solid #fed7aa",
-  borderRadius: "18px",
-  padding: "18px",
-  boxShadow: "0 10px 24px rgba(217, 119, 6, 0.08)",
-},
-
-boardNoticeCardTop: {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: "12px",
-  marginBottom: "12px",
-  flexWrap: "wrap",
-},
-
-boardNoticeCardLabel: {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  height: "28px",
-  padding: "0 12px",
-  borderRadius: "999px",
-  background: "#fff0d9",
-  color: "#d9480f",
-  fontSize: "12px",
-  fontWeight: "900",
-  letterSpacing: "0.02em",
-},
-
-boardNoticeToggleButton: {
-  border: "none",
-  background: "transparent",
-  color: "#c2410c",
-  fontSize: "13px",
-  fontWeight: "800",
-  cursor: "pointer",
-  padding: 0,
-},
-
-boardNoticeList: {
-  display: "grid",
-  gap: "10px",
-},
-
-boardNoticeItem: {
-  width: "100%",
-  border: "1px solid #fde6b3",
-  background: "#ffffff",
-  borderRadius: "14px",
-  padding: "12px 14px",
-  cursor: "pointer",
-  textAlign: "left",
-  boxShadow: "0 4px 10px rgba(15, 23, 42, 0.03)",
-  position: "relative",
-},
-
-boardNoticeLeft: {
-  display: "flex",
-  gap: "12px",
-  alignItems: "flex-start",
-},
-
-boardNoticeIndex: {
-  minWidth: "26px",
-  height: "26px",
-  borderRadius: "999px",
-  background: "#fff0d9",
-  color: "#d9480f",
-  fontSize: "12px",
-  fontWeight: "900",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flexShrink: 0,
-},
-
-boardNoticeTextWrap: {
-  minWidth: 0,
-  display: "grid",
-  gap: "6px",
-  width: "100%",
-},
-
-boardNoticeTitle: {
-  fontSize: "14px",
-  fontWeight: "900",
-  color: "#111827",
-  lineHeight: "1.5",
-},
-
-boardNoticeMeta: {
-  display: "flex",
-  gap: "10px",
-  flexWrap: "wrap",
-  fontSize: "12px",
-  color: "#92400e",
-},
-
-boardNoticeEmpty: {
-  fontSize: "14px",
-  color: "#9a3412",
-  padding: "10px 0",
-  fontWeight: "700",
-},
+    background: "linear-gradient(135deg, #fffaf0 0%, #fff7ed 100%)",
+    border: "1px solid #fed7aa",
+    borderRadius: "18px",
+    padding: "18px",
+    boxShadow: "0 10px 24px rgba(217, 119, 6, 0.08)",
+  },
+  boardNoticeCardTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "12px",
+    flexWrap: "wrap",
+  },
+  boardNoticeCardLabel: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "28px",
+    padding: "0 12px",
+    borderRadius: "999px",
+    background: "#fff0d9",
+    color: "#d9480f",
+    fontSize: "12px",
+    fontWeight: "900",
+    letterSpacing: "0.02em",
+  },
+  boardNoticeToggleButton: {
+    border: "none",
+    background: "transparent",
+    color: "#c2410c",
+    fontSize: "13px",
+    fontWeight: "800",
+    cursor: "pointer",
+    padding: 0,
+  },
+  boardNoticeList: {
+    display: "grid",
+    gap: "10px",
+  },
+  boardNoticeItem: {
+    width: "100%",
+    border: "1px solid #fde6b3",
+    background: "#ffffff",
+    borderRadius: "14px",
+    padding: "12px 14px",
+    cursor: "pointer",
+    textAlign: "left",
+    boxShadow: "0 4px 10px rgba(15, 23, 42, 0.03)",
+    position: "relative",
+  },
+  boardNoticeLeft: {
+    display: "flex",
+    gap: "12px",
+    alignItems: "flex-start",
+  },
+  boardNoticeIndex: {
+    minWidth: "26px",
+    height: "26px",
+    borderRadius: "999px",
+    background: "#fff0d9",
+    color: "#d9480f",
+    fontSize: "12px",
+    fontWeight: "900",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  boardNoticeTextWrap: {
+    minWidth: 0,
+    display: "grid",
+    gap: "6px",
+    width: "100%",
+  },
+  boardNoticeTitle: {
+    fontSize: "14px",
+    fontWeight: "900",
+    color: "#111827",
+    lineHeight: "1.5",
+  },
+  boardNoticeMeta: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+    fontSize: "12px",
+    color: "#92400e",
+  },
+  boardNoticeEmpty: {
+    fontSize: "14px",
+    color: "#9a3412",
+    padding: "10px 0",
+    fontWeight: "700",
+  },
   toolbarCard: {
     background: "#fff",
     border: "1px solid #e5e7eb",
@@ -917,9 +998,9 @@ boardNoticeEmpty: {
   noticeGuide: {
     marginBottom: "14px",
     fontSize: "13px",
-    color: "#92400e",
-    background: "#fff7ed",
-    border: "1px solid #fed7aa",
+    color: "#1e40af",
+    background: "#eff6ff",
+    border: "1px solid #bfdbfe",
     borderRadius: "10px",
     padding: "10px 12px",
     fontWeight: "700",

@@ -8,7 +8,7 @@ const ReportListPage = ({ currentUser, onBack }) => {
   useEffect(() => {
     const loadReports = async () => {
       try {
-        const response = await fetch("http://localhost:8081/api/admin/reports", {
+        const response = await fetch("/api/admin/reports", {
           headers: {
             Authorization: `Bearer ${currentUser?.token}`,
           },

@@ -57,12 +57,12 @@ const AppController = () => {
     const token = localStorage.getItem("accessToken");
 
     if (token) {
-      fetch("http://localhost:8081/users/logout", {
+      fetch("/api/users/logout", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }).catch(() => {});
+      }).catch(() => { });
     }
 
     localStorage.removeItem("currentUser");
@@ -198,7 +198,7 @@ const AppController = () => {
     try {
       const currentToken =
         localStorage.getItem("accessToken") || currentUser?.token;
-      const res = await fetch("http://localhost:8081/users/refresh", {
+      const res = await fetch("/api/users/refresh", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -224,7 +224,7 @@ const AppController = () => {
         return;
       }
 
-      const res = await fetch("http://localhost:8081/users/login", {
+      const res = await fetch("/api/users/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -301,7 +301,7 @@ const AppController = () => {
 
   const handleSignup = async (form) => {
     try {
-      const res = await fetch("http://localhost:8081/users/signup", {
+      const res = await fetch("/api/users/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -321,7 +321,7 @@ const AppController = () => {
 
           const params = new URLSearchParams({ email: form.email.trim() });
           const imageResponse = await fetch(
-            `http://localhost:8081/users/profile-image?${params.toString()}`,
+            `/api/users/profile-image?${params.toString()}`,
             {
               method: "POST",
               body: profileFormData,
@@ -470,7 +470,7 @@ const AppController = () => {
       const token = localStorage.getItem("accessToken") || currentUser?.token;
 
       const res = await fetch(
-        `http://localhost:8081/api/admin/competitions/${competitionId}`,
+        `/api/admin/competitions/${competitionId}`,
         {
           method: "DELETE",
           headers: {

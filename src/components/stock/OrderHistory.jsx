@@ -51,7 +51,7 @@ const OrderHistory = ({ accountId, accountName, currentUser }) => {
       }
 
       const response = await fetch(
-        `http://localhost:8081/api/orders?accountId=${accountId}`,
+        `/api/orders?accountId=${accountId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -89,7 +89,7 @@ const OrderHistory = ({ accountId, accountName, currentUser }) => {
       }
 
       const response = await fetch(
-        `http://localhost:8081/api/orders/${orderId}/cancel?accountId=${accountId}`,
+        `/api/orders/${orderId}/cancel?accountId=${accountId}`,
         {
           method: "POST",
           headers: {

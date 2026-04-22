@@ -53,7 +53,7 @@ const CommunityPage = ({
         setLoadingFreePosts(true);
 
         const response = await fetch(
-          "http://localhost:8081/api/community/boards/free/posts"
+          "/api/community/boards/free/posts"
         );
 
         if (!response.ok) {
@@ -85,7 +85,7 @@ const CommunityPage = ({
         setLoadingSelectedStockPosts(true);
 
         const response = await fetch(
-          `http://localhost:8081/api/community/stocks/${selectedStockSymbol}/posts`
+          `/api/community/stocks/${selectedStockSymbol}/posts`
         );
 
         if (!response.ok) {
@@ -172,17 +172,6 @@ const CommunityPage = ({
       .slice(0, TREND_STOCK_LIMIT);
   }, [stocks]);
 
-  const communityStats = useMemo(() => {
-    return {
-      totalBoards: 4,
-      totalStocks: stocks.length,
-      freePostCount: freePosts.filter((post) => !post.isNotice).length,
-      popularPostCount: freePosts.filter(
-        (post) => !post.isNotice && (post.likeCount ?? 0) >= 5
-      ).length,
-    };
-  }, [stocks, freePosts]);
-
   const formatDateTime = (value) => {
     if (!value) return "-";
 
@@ -245,52 +234,11 @@ const CommunityPage = ({
   return (
     <section style={styles.page}>
       <div style={styles.hero}>
-        <div style={styles.heroBadge}>COMMUNITY HUB</div>
-
-        <div style={styles.heroGrid}>
-          <div>
-            <h1 style={styles.heroTitle}>커뮤니티</h1>
-            <p style={styles.heroText}>
-              공지, 자유게시판, 종목별 게시판을 한 곳에서 확인해보세요.
-            </p>
-
-            <div style={styles.heroActionRow}>
-              <button
-                type="button"
-                style={styles.primaryAction}
-                onClick={onSelectFreeBoard}
-              >
-                자유게시판 바로가기
-              </button>
-              <button
-                type="button"
-                style={styles.secondaryActionEnabled}
-                onClick={onSelectNoticeBoard}
-              >
-                공지사항 바로가기
-              </button>
-            </div>
-          </div>
-
-          <div style={styles.statsGrid}>
-            <div style={styles.statCard}>
-              <div style={styles.statLabel}>게시판 수</div>
-              <div style={styles.statValue}>{communityStats.totalBoards}</div>
-            </div>
-            <div style={styles.statCard}>
-              <div style={styles.statLabel}>종목 게시판</div>
-              <div style={styles.statValue}>{communityStats.totalStocks}</div>
-            </div>
-            <div style={styles.statCard}>
-              <div style={styles.statLabel}>자유게시판 글</div>
-              <div style={styles.statValue}>{communityStats.freePostCount}</div>
-            </div>
-            <div style={styles.statCard}>
-              <div style={styles.statLabel}>인기글 수</div>
-              <div style={styles.statValue}>{communityStats.popularPostCount}</div>
-            </div>
-          </div>
-        </div>
+        <div style={styles.heroBadge}>COMMUNITY</div>
+        <h1 style={styles.heroTitle}>커뮤니티</h1>
+        <p style={styles.heroText}>
+          공지, 자유게시판, 종목별 게시판을 한 곳에서 확인해보세요.
+        </p>
       </div>
 
       <div style={styles.layout}>
@@ -300,7 +248,7 @@ const CommunityPage = ({
 
             <button
               type="button"
-              style={styles.sideMenuButtonNotice}
+              className="side-menu-btn notice"
               onClick={onSelectNoticeBoard}
             >
               공지사항
@@ -308,15 +256,15 @@ const CommunityPage = ({
 
             <button
               type="button"
-              style={styles.sideMenuButton}
+              className="side-menu-btn active"
               onClick={onSelectFreeBoard}
             >
               자유게시판
             </button>
 
-            <button type="button" style={styles.sideMenuButtonDisabled}>
+            <button type="button" className="side-menu-btn disabled">
               토론게시판
-              <span style={styles.sideMenuSoon}>준비중</span>
+              <span className="side-menu-soon">준비중</span>
             </button>
           </div>
 
@@ -581,99 +529,47 @@ const CommunityPage = ({
 
 const styles = {
   page: {
-    maxWidth: "1320px",
+    maxWidth: "1440px",
     margin: "0 auto",
     padding: "28px 20px 56px",
   },
   hero: {
-    background:
-      "linear-gradient(135deg, #ffffff 0%, #f8fbff 50%, #eef4ff 100%)",
-    border: "1px solid #dbe4ff",
-    borderRadius: "28px",
-    padding: "30px 32px",
-    boxShadow: "0 18px 40px rgba(15, 23, 42, 0.06)",
+    background: "linear-gradient(135deg, #4874d4, #c6d2e7)",
+    border: "none",
+    borderRadius: "24px",
+    padding: "50px 30px",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.1)",
     marginBottom: "20px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    textAlign: "center",
+    position: "relative",
+    color: "white",
   },
   heroBadge: {
     display: "inline-block",
-    padding: "6px 12px",
+    padding: "6px 14px",
     borderRadius: "999px",
-    background: "#e9efff",
-    color: "#3b5bdb",
+    background: "rgba(255, 255, 255, 0.2)",
+    color: "#fff",
     fontSize: "12px",
     fontWeight: "800",
-    letterSpacing: "0.08em",
-    marginBottom: "16px",
-  },
-  heroGrid: {
-    display: "grid",
-    gridTemplateColumns: "1.3fr 1fr",
-    gap: "20px",
-    alignItems: "center",
+    marginBottom: "12px",
+    backdropFilter: "blur(4px)",
   },
   heroTitle: {
     margin: "0 0 10px",
-    fontSize: "38px",
-    fontWeight: "900",
-    color: "#111827",
-    letterSpacing: "-0.02em",
+    fontSize: "36px",
+    fontWeight: "800",
+    color: "#fff",
   },
   heroText: {
     margin: 0,
     fontSize: "15px",
-    lineHeight: "1.8",
-    color: "#667085",
-  },
-  heroActionRow: {
-    display: "flex",
-    gap: "10px",
-    flexWrap: "wrap",
-    marginTop: "18px",
-  },
-  primaryAction: {
-    height: "42px",
-    padding: "0 16px",
-    borderRadius: "12px",
-    border: "none",
-    background: "#3b5bdb",
-    color: "#fff",
-    fontSize: "14px",
-    fontWeight: "800",
-    cursor: "pointer",
-  },
-  secondaryActionEnabled: {
-    height: "42px",
-    padding: "0 16px",
-    borderRadius: "12px",
-    border: "1px solid #fed7aa",
-    background: "#fff7ed",
-    color: "#c2410c",
-    fontSize: "14px",
-    fontWeight: "800",
-    cursor: "pointer",
-  },
-  statsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: "12px",
-  },
-  statCard: {
-    background: "rgba(255,255,255,0.82)",
-    border: "1px solid #e5e7eb",
-    borderRadius: "18px",
-    padding: "18px",
-  },
-  statLabel: {
-    fontSize: "13px",
-    color: "#6b7280",
-    fontWeight: "700",
-    marginBottom: "8px",
-  },
-  statValue: {
-    fontSize: "28px",
-    color: "#111827",
-    fontWeight: "900",
-    letterSpacing: "-0.02em",
+    color: "rgba(255, 255, 255, 0.9)",
+    lineHeight: "1.6",
+    maxWidth: "800px",
   },
   layout: {
     display: "grid",
@@ -714,9 +610,9 @@ const styles = {
   sideMenuButtonNotice: {
     width: "100%",
     textAlign: "left",
-    border: "1px solid #fed7aa",
-    background: "#fff7ed",
-    color: "#c2410c",
+    border: "1px solid #bfdbfe",
+    background: "#eff6ff",
+    color: "#1e40af",
     borderRadius: "14px",
     padding: "13px 14px",
     fontSize: "14px",

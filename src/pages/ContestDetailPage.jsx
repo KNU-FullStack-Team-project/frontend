@@ -19,7 +19,7 @@ const ContestDetailPage = ({
 
     setLoading(true);
 
-    fetch(`http://localhost:8081/api/competitions/${competitionId}`, {
+    fetch(`/api/competitions/${competitionId}`, {
       headers: {
         Authorization: `Bearer ${currentUser?.token}`,
       },
@@ -50,7 +50,7 @@ const ContestDetailPage = ({
     setParticipantLoading(true);
 
     fetch(
-      `http://localhost:8081/api/competitions/${competitionId}/participants`,
+      `/api/competitions/${competitionId}/participants`,
       {
         headers: {
           Authorization: `Bearer ${currentUser?.token}`,
@@ -165,7 +165,7 @@ const ContestDetailPage = ({
 
     try {
       const response = await fetch(
-        `http://localhost:8081/api/competitions/${competitionId}/join?userId=${currentUser.userId}`,
+        `/api/competitions/${competitionId}/join?userId=${currentUser.userId}`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${currentUser.token}` },

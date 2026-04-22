@@ -57,30 +57,30 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   const handleCreateAlert = async () => {
     const token = localStorage.getItem("accessToken") || user?.token;
     if (!user || !token) {
-        alert("로그인이 필요합니다.");
-        return;
+      alert("로그인이 필요합니다.");
+      return;
     }
 
     try {
-        const response = await fetch(`http://localhost:8081/api/price-alerts/${user.id || user.userId}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                stockId: stock.id || stock.stockId || 1, // Ensure various ID field names are handled
-                targetPrice: alertTargetPrice,
-                direction: alertDirection
-            }),
-        });
+      const response = await fetch(`/api/price-alerts/${user.id || user.userId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          stockId: stock.id || stock.stockId || 1, // Ensure various ID field names are handled
+          targetPrice: alertTargetPrice,
+          direction: alertDirection
+        }),
+      });
 
-        if (!response.ok) throw new Error("알림 설정 실패");
+      if (!response.ok) throw new Error("알림 설정 실패");
 
-        alert(`[${stock.name}] ${alertTargetPrice.toLocaleString()}원 ${alertDirection === "ABOVE" ? "이상" : "이하"} 도달 시 알림이 설정되었습니다.`);
-        setIsAlertModalOpen(false);
+      alert(`[${stock.name}] ${alertTargetPrice.toLocaleString()}원 ${alertDirection === "ABOVE" ? "이상" : "이하"} 도달 시 알림이 설정되었습니다.`);
+      setIsAlertModalOpen(false);
     } catch (err) {
-        alert(err.message);
+      alert(err.message);
     }
   };
 
@@ -89,7 +89,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
 
     const fetchHistory = async () => {
       if (!stock?.symbol) return;
-      
+
       const cacheKey = `${stock.symbol}:${period}`;
       const cached = chartCache.get(cacheKey);
       const now = Date.now();
@@ -105,12 +105,12 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
       try {
         setLoading(true);
         const response = await fetch(
-          `http://localhost:8081/api/stocks/${stock.symbol}/history?period=${period}`,
+          `/api/stocks/${stock.symbol}/history?period=${period}`,
           { signal: abortController.signal }
         );
         if (!response.ok) throw new Error("Failed to fetch history");
         const data = await response.json();
-        
+
         // [수정] 데이터가 배열인 경우에만 캐시 및 상태 업데이트
         if (Array.isArray(data)) {
           chartCache.set(cacheKey, { data, timestamp: Date.now() });
@@ -144,7 +144,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
 
     try {
       const response = await fetch(
-        `http://localhost:8081/api/accounts/my?email=${user.email}`,
+        `/api/accounts/my?email=${user.email}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -171,7 +171,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
 
     try {
       const response = await fetch(
-        `http://localhost:8081/api/accounts/my/dashboard?email=${user.email}&accountId=${selectedAccountId}`,
+        `/api/accounts/my/dashboard?email=${user.email}&accountId=${selectedAccountId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -238,7 +238,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
       setIsSubmitting(true);
       const requestId = crypto.randomUUID(); // 고유 요청 ID 생성
 
-      const response = await fetch("http://localhost:8081/api/orders", {
+      const response = await fetch("/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -261,8 +261,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
       }
 
       alert(
-        `${stock.name} ${quantity}주 ${
-          orderSide === "BUY" ? "매수" : "매도"
+        `${stock.name} ${quantity}주 ${orderSide === "BUY" ? "매수" : "매도"
         } 주문이 성공적으로 접수되었습니다.`
       );
       fetchAccountData();
@@ -288,7 +287,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
       orderSide === "BUY"
         ? accountData.rawCashBalance
         : accountData.holdings?.find((h) => h.stockName === stock.name)
-            ?.quantity || 0;
+          ?.quantity || 0;
 
     if (orderSide === "BUY") {
       const maxQty = Math.floor(available / targetPrice);
@@ -318,7 +317,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
           <span className="price-big">
             {cleanNumber(stock.currentPrice).toLocaleString()}원
           </span>
-          <button 
+          <button
             className="alert-setup-btn"
             onClick={() => setIsAlertModalOpen(true)}
             style={{
@@ -339,9 +338,8 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
             🔔
           </button>
           <div
-            className={`price-change ${
-              parseFloat(stock.changeRate || 0) >= 0 ? "up" : "down"
-            }`}
+            className={`price-change ${parseFloat(stock.changeRate || 0) >= 0 ? "up" : "down"
+              }`}
           >
             {parseFloat(stock.changeRate || 0) >= 0 ? "▲" : "▼"}{" "}
             {stock.changeAmount || 0} ({stock.changeRate || 0}%)
@@ -354,60 +352,60 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
 
       {isAlertModalOpen && (
         <div className="alert-modal-overlay" style={{
-            position: 'fixed',
-            top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 2000
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000
         }}>
-            <div className="alert-modal" style={{
-                background: '#fff',
-                padding: '30px',
-                borderRadius: '20px',
-                width: '360px',
-                boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
-            }}>
-                <h3 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>🔔 목표가 알림 설정</h3>
-                <div className="form-group" style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#666' }}>목표 가격</label>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <AppInput 
-                            type="number"
-                            value={alertTargetPrice}
-                            onChange={(e) => setAlertTargetPrice(Number(e.target.value))}
-                            fullWidth
-                        />
-                        <span style={{ alignSelf: 'center' }}>원</span>
-                    </div>
-                </div>
-                <div className="form-group" style={{ marginBottom: '25px' }}>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#666' }}>알림 조건</label>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <button 
-                            style={{ 
-                                flex: 1, padding: '10px', borderRadius: '10px', border: alertDirection === 'ABOVE' ? '2px solid #007aff' : '1px solid #ddd',
-                                background: alertDirection === 'ABOVE' ? '#eef6ff' : '#fff', color: alertDirection === 'ABOVE' ? '#007aff' : '#333',
-                                cursor: 'pointer', fontWeight: 'bold'
-                            }}
-                            onClick={() => setAlertDirection('ABOVE')}
-                        >이상 (▲)</button>
-                        <button 
-                            style={{ 
-                                flex: 1, padding: '10px', borderRadius: '10px', border: alertDirection === 'BELOW' ? '2px solid #ff3b30' : '1px solid #ddd',
-                                background: alertDirection === 'BELOW' ? '#fff1f0' : '#fff', color: alertDirection === 'BELOW' ? '#ff3b30' : '#333',
-                                cursor: 'pointer', fontWeight: 'bold'
-                            }}
-                            onClick={() => setAlertDirection('BELOW')}
-                        >이하 (▼)</button>
-                    </div>
-                </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <AppButton variant="secondary" fullWidth onClick={() => setIsAlertModalOpen(false)}>취소</AppButton>
-                    <AppButton variant="primary" fullWidth onClick={handleCreateAlert}>설정하기</AppButton>
-                </div>
+          <div className="alert-modal" style={{
+            background: '#fff',
+            padding: '30px',
+            borderRadius: '20px',
+            width: '360px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+          }}>
+            <h3 style={{ margin: '0 0 20px 0', fontSize: '20px' }}>🔔 목표가 알림 설정</h3>
+            <div className="form-group" style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#666' }}>목표 가격</label>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <AppInput
+                  type="number"
+                  value={alertTargetPrice}
+                  onChange={(e) => setAlertTargetPrice(Number(e.target.value))}
+                  fullWidth
+                />
+                <span style={{ alignSelf: 'center' }}>원</span>
+              </div>
             </div>
+            <div className="form-group" style={{ marginBottom: '25px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#666' }}>알림 조건</label>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  style={{
+                    flex: 1, padding: '10px', borderRadius: '10px', border: alertDirection === 'ABOVE' ? '2px solid #007aff' : '1px solid #ddd',
+                    background: alertDirection === 'ABOVE' ? '#eef6ff' : '#fff', color: alertDirection === 'ABOVE' ? '#007aff' : '#333',
+                    cursor: 'pointer', fontWeight: 'bold'
+                  }}
+                  onClick={() => setAlertDirection('ABOVE')}
+                >이상 (▲)</button>
+                <button
+                  style={{
+                    flex: 1, padding: '10px', borderRadius: '10px', border: alertDirection === 'BELOW' ? '2px solid #ff3b30' : '1px solid #ddd',
+                    background: alertDirection === 'BELOW' ? '#fff1f0' : '#fff', color: alertDirection === 'BELOW' ? '#ff3b30' : '#333',
+                    cursor: 'pointer', fontWeight: 'bold'
+                  }}
+                  onClick={() => setAlertDirection('BELOW')}
+                >이하 (▼)</button>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <AppButton variant="secondary" fullWidth onClick={() => setIsAlertModalOpen(false)}>취소</AppButton>
+              <AppButton variant="primary" fullWidth onClick={handleCreateAlert}>설정하기</AppButton>
+            </div>
+          </div>
         </div>
       )}
 
@@ -485,9 +483,9 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
                 ))}
               </div>
             </div>
-            <div className="indicator-tabs" style={{ 
-              display: 'flex', 
-              gap: '8px', 
+            <div className="indicator-tabs" style={{
+              display: 'flex',
+              gap: '8px',
               marginBottom: '12px',
               padding: '0 4px'
             }}>
@@ -522,10 +520,10 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
                 차트 데이터를 불러오는 중...
               </div>
             ) : (
-              <CandleChart 
-                data={candles} 
-                indicators={activeIndicators} 
-                height={hasBottomIndicator ? 700 : 500} 
+              <CandleChart
+                data={candles}
+                indicators={activeIndicators}
+                height={hasBottomIndicator ? 700 : 500}
               />
             )}
           </div>
@@ -534,8 +532,8 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
             <div className="trading-form-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h4>주문하기</h4>
               {userAccounts.length > 1 && (
-                <select 
-                  value={selectedAccountId} 
+                <select
+                  value={selectedAccountId}
                   onChange={(e) => setSelectedAccountId(Number(e.target.value))}
                   style={{
                     padding: '4px 8px',
@@ -565,9 +563,8 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
                 매수
               </button>
               <button
-                className={`tab-btn sell ${
-                  orderSide === "SELL" ? "active" : ""
-                }`}
+                className={`tab-btn sell ${orderSide === "SELL" ? "active" : ""
+                  }`}
                 onClick={() => setOrderSide("SELL")}
               >
                 매도
@@ -576,17 +573,15 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
 
             <div className="order-type-tabs">
               <button
-                className={`type-tab ${
-                  orderType === "MARKET" ? "active" : ""
-                }`}
+                className={`type-tab ${orderType === "MARKET" ? "active" : ""
+                  }`}
                 onClick={() => setOrderType("MARKET")}
               >
                 시장가
               </button>
               <button
-                className={`type-tab ${
-                  orderType === "LIMIT" ? "active" : ""
-                }`}
+                className={`type-tab ${orderType === "LIMIT" ? "active" : ""
+                  }`}
                 onClick={() => setOrderType("LIMIT")}
               >
                 지정가
@@ -673,8 +668,8 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
                     {orderSide === "BUY"
                       ? accountData?.cashBalance || "조회 중..."
                       : (accountData?.holdings?.find(
-                          (h) => h.stockName === stock.name
-                        )?.quantity || 0) + "주"}
+                        (h) => h.stockName === stock.name
+                      )?.quantity || 0) + "주"}
                   </span>
                 </div>
                 <div className="summary-row">

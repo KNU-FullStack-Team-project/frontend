@@ -18,7 +18,7 @@ const ContestEditPage = ({ competitionId, currentUser, onBack, onSuccess }) => {
       return;
     }
 
-    fetch(`http://localhost:8081/api/competitions/${competitionId}`, {
+    fetch(`/api/competitions/${competitionId}`, {
       headers: {
         Authorization: `Bearer ${currentUser?.token}`,
       },
@@ -87,7 +87,7 @@ const ContestEditPage = ({ competitionId, currentUser, onBack, onSuccess }) => {
       };
 
       const res = await fetch(
-        `http://localhost:8081/api/admin/competitions/${competitionId}`,
+        `/api/admin/competitions/${competitionId}`,
         {
           method: "PUT",
           headers: {
