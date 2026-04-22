@@ -198,7 +198,6 @@ const StockBoardLobbyPage = ({
         </aside>
 
         <div style={styles.content}>
-
           <div style={styles.summaryGrid}>
             <div style={styles.summaryCard}>
               <div style={styles.summaryHeader}>
@@ -482,7 +481,6 @@ const styles = {
     display: "grid",
     gap: "18px",
   },
-
   summaryGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",

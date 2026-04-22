@@ -18,6 +18,7 @@ const CommunityPostWritePage = ({
     title: "",
     content: "",
     isNotice: false,
+    noticeTarget: "none", // none | global | free | stock
   });
 
   const [attachedFiles, setAttachedFiles] = useState([]);
@@ -33,9 +34,12 @@ const CommunityPostWritePage = ({
     ? "분석, 의견, 매매 전략을 자유롭게 공유하세요."
     : "자유롭게 글을 작성하고 다른 사용자와 의견을 나눠보세요.";
 
-  const submitUrl = isStockBoard
-    ? `/api/community/stocks/${symbol}/posts`
-    : "/api/community/boards/free/posts";
+  const plainContent = useMemo(() => {
+    return (form.content || "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .trim();
+  }, [form.content]);
 
   useEffect(() => {
     if (!isStockBoard) {
@@ -66,13 +70,6 @@ const CommunityPostWritePage = ({
     fetchStockInfo();
   }, [symbol, isStockBoard]);
 
-  const plainContent = useMemo(() => {
-    return (form.content || "")
-      .replace(/<[^>]*>/g, " ")
-      .replace(/&nbsp;/g, " ")
-      .trim();
-  }, [form.content]);
-
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -80,6 +77,60 @@ const CommunityPostWritePage = ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  const handleNoticeTargetChange = (target) => {
+    setForm((prev) => {
+      const nextTarget = prev.noticeTarget === target ? "none" : target;
+      return {
+        ...prev,
+        noticeTarget: nextTarget,
+        isNotice: nextTarget !== "none",
+      };
+    });
+  };
+
+  const getSubmitConfig = () => {
+    if (!isAdmin || form.noticeTarget === "none") {
+      return {
+        submitUrl: isStockBoard
+          ? `http://localhost:8081/api/community/stocks/${symbol}/posts`
+          : "http://localhost:8081/api/community/boards/free/posts",
+        payloadIsNotice: false,
+      };
+    }
+
+    if (form.noticeTarget === "global") {
+      return {
+        submitUrl: "http://localhost:8081/api/community/notices",
+        payloadIsNotice: true,
+      };
+    }
+
+    if (form.noticeTarget === "free") {
+      return {
+        submitUrl: "http://localhost:8081/api/community/boards/free/posts",
+        payloadIsNotice: true,
+      };
+    }
+
+    if (form.noticeTarget === "stock") {
+      if (!symbol) {
+        throw new Error("종목게시판 공지는 종목 게시판에서만 작성할 수 있습니다.");
+      }
+
+      return {
+        submitUrl: `http://localhost:8081/api/community/stocks/${symbol}/posts`,
+        payloadIsNotice: true,
+      };
+    }
+
+    return {
+      submitUrl: isStockBoard
+        ? `http://localhost:8081/api/community/stocks/${symbol}/posts`
+        : "http://localhost:8081/api/community/boards/free/posts",
+      payloadIsNotice: false,
+    };
   };
 
   const uploadImage = async (file) => {
@@ -176,6 +227,8 @@ const CommunityPostWritePage = ({
     try {
       setSubmitting(true);
 
+      const { submitUrl, payloadIsNotice } = getSubmitConfig();
+
       const response = await fetch(submitUrl, {
         method: "POST",
         headers: {
@@ -185,7 +238,7 @@ const CommunityPostWritePage = ({
         body: JSON.stringify({
           title: form.title.trim(),
           content: form.content,
-          isNotice: form.isNotice,
+          isNotice: payloadIsNotice,
           attachmentIds: attachedFiles.map((file) => file.attachmentId),
         }),
       });
@@ -201,7 +254,7 @@ const CommunityPostWritePage = ({
       onSuccess?.();
     } catch (e) {
       console.error(e);
-      alert("게시글 작성 중 오류가 발생했습니다.");
+      alert(e.message || "게시글 작성 중 오류가 발생했습니다.");
     } finally {
       setSubmitting(false);
     }
@@ -249,15 +302,45 @@ const CommunityPostWritePage = ({
 
         {isAdmin && (
           <div style={styles.noticeBox}>
-            <label>
-              <input
-                type="checkbox"
-                name="isNotice"
-                checked={form.isNotice}
-                onChange={handleChange}
-              />
-              공지글 등록
-            </label>
+            <div style={styles.noticeTitle}>관리자 공지 등록</div>
+            <div style={styles.noticeOptionRow}>
+              <label style={styles.noticeOption}>
+                <input
+                  type="checkbox"
+                  checked={form.noticeTarget === "global"}
+                  onChange={() => handleNoticeTargetChange("global")}
+                />
+                전역공지
+              </label>
+
+              <label style={styles.noticeOption}>
+                <input
+                  type="checkbox"
+                  checked={form.noticeTarget === "free"}
+                  onChange={() => handleNoticeTargetChange("free")}
+                />
+                자유게시판공지
+              </label>
+
+              <label
+                style={{
+                  ...styles.noticeOption,
+                  ...(!symbol ? styles.noticeOptionDisabled : {}),
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={form.noticeTarget === "stock"}
+                  onChange={() => handleNoticeTargetChange("stock")}
+                  disabled={!symbol}
+                />
+                종목게시판공지
+              </label>
+            </div>
+
+            <div style={styles.noticeGuide}>
+              한 번에 하나만 선택됩니다. 선택하지 않으면 일반글로 등록됩니다.
+            </div>
           </div>
         )}
 
@@ -403,6 +486,34 @@ const styles = {
     background: "#fff7ed",
     padding: 12,
     borderRadius: 12,
+    border: "1px solid #fed7aa",
+  },
+  noticeTitle: {
+    fontSize: 14,
+    fontWeight: 800,
+    color: "#9a3412",
+    marginBottom: 10,
+  },
+  noticeOptionRow: {
+    display: "flex",
+    gap: 16,
+    flexWrap: "wrap",
+  },
+  noticeOption: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    fontSize: 14,
+    color: "#7c2d12",
+    fontWeight: 700,
+  },
+  noticeOptionDisabled: {
+    opacity: 0.5,
+  },
+  noticeGuide: {
+    marginTop: 10,
+    fontSize: 12,
+    color: "#9a3412",
   },
   attachSection: {
     border: "1px solid #e5e7eb",
