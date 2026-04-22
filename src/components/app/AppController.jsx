@@ -46,9 +46,11 @@ const AppController = () => {
   const [selectedCommunityPostId, setSelectedCommunityPostId] = useState(null);
   const [selectedCommunityBoardType, setSelectedCommunityBoardType] = useState("free");
   const [authMode, setAuthMode] = useState("login");
+  const [socialSignupData, setSocialSignupData] = useState(null);
   const [loginCaptchaRequired, setLoginCaptchaRequired] = useState(false);
   const [loginCaptchaResetKey, setLoginCaptchaResetKey] = useState(0);
   const [loginErrorMessage, setLoginErrorMessage] = useState("");
+  const [authMessage, setAuthMessage] = useState("");
 
   const inactivityTimerRef = useRef(null);
   const autoLogoutTimeoutRef = useRef(null);
@@ -262,6 +264,7 @@ const AppController = () => {
         setLoginCaptchaRequired(false);
         setLoginCaptchaResetKey((prev) => prev + 1);
         setLoginErrorMessage("");
+        setAuthMessage("");
 
         const token = data.token || "";
         const loginUser = {
@@ -271,6 +274,7 @@ const AppController = () => {
           role: data.role === "ADMIN" ? "admin" : "user",
           accountId: data.accountId,
           profileImageUrl: data.profileImageUrl,
+          isSocialLogin: !!data.socialLogin,
           token,
         };
 
@@ -299,6 +303,152 @@ const AppController = () => {
     }
   };
 
+  const handleGoogleLogin = async (credential) => {
+    try {
+      const res = await fetch("/api/users/social/google", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ credential }),
+      });
+
+      const contentType = res.headers.get("content-type") || "";
+      const data = contentType.includes("application/json")
+        ? await res.json()
+        : { message: await res.text() };
+
+      if (!res.ok) {
+        setLoginErrorMessage(data?.message || "Google 로그인에 실패했습니다.");
+        return;
+      }
+
+      if (data?.signupRequired) {
+        setSocialSignupData({
+          credential,
+          email: data.email || "",
+          nickname: data.nickname || "",
+          profileImageUrl: data.profileImageUrl || "",
+          rejoinCandidate: !!data.rejoinCandidate,
+        });
+        setAuthMessage("");
+        setLoginErrorMessage("");
+        setAuthMode("signup");
+        setCurrentPage("auth");
+        return;
+      }
+
+      const loginData = data?.login || data;
+
+      if (loginData?.token) {
+        setLoginCaptchaRequired(false);
+        setLoginCaptchaResetKey((prev) => prev + 1);
+        setLoginErrorMessage("");
+        setAuthMessage("");
+        setSocialSignupData(null);
+
+        const token = loginData.token || "";
+        const loginUser = {
+          userId: loginData.id || loginData.userId,
+          email: loginData.email,
+          nickname: loginData.nickname,
+          role: loginData.role === "ADMIN" ? "admin" : "user",
+          accountId: loginData.accountId,
+          profileImageUrl: loginData.profileImageUrl,
+          isSocialLogin: !!loginData.socialLogin,
+          token,
+        };
+
+        setCurrentUser(loginUser);
+        setIsLoggedIn(true);
+
+        localStorage.setItem("currentUser", JSON.stringify(loginUser));
+        localStorage.setItem("accessToken", token);
+
+        if (token) {
+          setupAutoLogout(token);
+        }
+
+        if (pendingPage) {
+          setCurrentPage(pendingPage);
+          setPendingPage(null);
+        } else {
+          setCurrentPage("home");
+        }
+      } else {
+        setLoginErrorMessage("Google 로그인 응답이 올바르지 않습니다.");
+      }
+    } catch (error) {
+      console.error("Google login failed:", error);
+      setLoginErrorMessage("Google 로그인 처리 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleSocialSignup = async (form) => {
+    try {
+      const res = await fetch("/api/users/social/google/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          credential: form.credential,
+          nickname: form.nickname.trim(),
+          marketingConsent: form.marketingConsent,
+        }),
+      });
+
+      const contentType = res.headers.get("content-type") || "";
+      const data = contentType.includes("application/json")
+        ? await res.json()
+        : { message: await res.text() };
+
+      if (!res.ok) {
+        alert(data?.message || "간편회원가입에 실패했습니다.");
+        return;
+      }
+
+      if (!data?.token) {
+        alert("간편회원가입 응답이 올바르지 않습니다.");
+        return;
+      }
+
+      setSocialSignupData(null);
+      setLoginCaptchaRequired(false);
+      setLoginCaptchaResetKey((prev) => prev + 1);
+      setLoginErrorMessage("");
+      setAuthMessage(data.message || "");
+
+      const token = data.token || "";
+      const loginUser = {
+        userId: data.id || data.userId,
+        email: data.email,
+        nickname: data.nickname,
+        role: data.role === "ADMIN" ? "admin" : "user",
+        accountId: data.accountId,
+        profileImageUrl: data.profileImageUrl,
+        isSocialLogin: !!data.socialLogin,
+        token,
+      };
+
+      setCurrentUser(loginUser);
+      setIsLoggedIn(true);
+      localStorage.setItem("currentUser", JSON.stringify(loginUser));
+      localStorage.setItem("accessToken", token);
+
+      if (token) {
+        setupAutoLogout(token);
+      }
+
+      if (pendingPage) {
+        setCurrentPage(pendingPage);
+        setPendingPage(null);
+      } else {
+        setCurrentPage("home");
+      }
+    } catch (error) {
+      alert("간편회원가입 오류");
+    }
+  };
+
   const handleSignup = async (form) => {
     try {
       const res = await fetch("/api/users/signup", {
@@ -314,7 +464,7 @@ const AppController = () => {
 
       const data = await res.text();
 
-      if (data === "회원가입 완료") {
+      if (data === "회원가입 완료" || data === "재가입 완료") {
         if (form.profileImageFile) {
           const profileFormData = new FormData();
           profileFormData.append("image", form.profileImageFile);
@@ -336,7 +486,13 @@ const AppController = () => {
           }
         }
 
-        alert("회원가입이 완료되었습니다. 로그인해 주세요.");
+        if (data === "재가입 완료") {
+          setAuthMessage("다시 돌아오신 것을 환영합니다.");
+        } else {
+          setAuthMessage("");
+          alert("회원가입이 완료되었습니다. 로그인해 주세요.");
+        }
+        setSocialSignupData(null);
         setAuthMode("login");
         setCurrentPage("auth");
         return "success";
@@ -429,8 +585,20 @@ const AppController = () => {
 
   const handleOpenLogin = () => {
     setAuthMode("login");
+    setSocialSignupData(null);
     setLoginErrorMessage("");
+    setAuthMessage("");
     setCurrentPage("auth");
+  };
+
+  const handleChangeAuthMode = (nextMode) => {
+    setAuthMode(nextMode);
+    if (nextMode !== "signup") {
+      setSocialSignupData(null);
+    }
+    if (nextMode !== "login") {
+      setAuthMessage("");
+    }
   };
 
   const handleSelectCompetition = (competitionId) => {
@@ -549,9 +717,13 @@ const AppController = () => {
     return (
       <AuthPage
         onLogin={handleLogin}
+        onGoogleLogin={handleGoogleLogin}
         onSignup={handleSignup}
+        onSocialSignup={handleSocialSignup}
+        socialSignupData={socialSignupData}
         initialMode={authMode}
-        onChangeMode={setAuthMode}
+        onChangeMode={handleChangeAuthMode}
+        authMessage={authMessage}
         loginCaptchaRequired={loginCaptchaRequired}
         loginCaptchaResetKey={loginCaptchaResetKey}
         loginErrorMessage={loginErrorMessage}

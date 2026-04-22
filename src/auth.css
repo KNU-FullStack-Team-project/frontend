@@ -444,6 +444,21 @@ input {
   margin-top: 24px;
 }
 
+.google-login-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.google-login-slot {
+  min-height: 44px;
+}
+
+.google-login-slot.is-ready {
+  display: flex;
+  justify-content: center;
+}
+
 .divider {
   text-align: center;
   position: relative;
@@ -487,6 +502,11 @@ input {
 
 .google-button:hover {
   background: #f8fafc;
+}
+
+.google-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 .google-button img {

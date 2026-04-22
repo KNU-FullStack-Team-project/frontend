@@ -20,6 +20,9 @@ const AccountSettingsPage = ({
   onUpdateCurrentUser,
 }) => {
   const [profileImageUrl, setProfileImageUrl] = useState("");
+  const [isSocialLogin, setIsSocialLogin] = useState(
+    !!currentUser?.isSocialLogin,
+  );
   const [isProfileUploading, setIsProfileUploading] = useState(false);
   const [nickname, setNickname] = useState(currentUser?.nickname || "");
   const [nicknameMessage, setNicknameMessage] = useState("");
@@ -72,13 +75,18 @@ const AccountSettingsPage = ({
 
         const profileData = await response.json();
         setProfileImageUrl(profileData.profileImageUrl || "");
+        setIsSocialLogin(!!profileData.socialLogin);
+        onUpdateCurrentUser?.({
+          profileImageUrl: profileData.profileImageUrl || "",
+          isSocialLogin: !!profileData.socialLogin,
+        });
       } catch {
         setProfileImageUrl("");
       }
     };
 
     loadProfile();
-  }, [currentUser?.email]);
+  }, [currentUser?.email, currentUser?.token, onUpdateCurrentUser]);
 
   useEffect(() => {
     setNickname(currentUser?.nickname || "");
@@ -417,62 +425,64 @@ const AccountSettingsPage = ({
         </form>
       </div>
 
-      <div className="content-card">
-        <div className="section-header">
-          <div>
-            <h3>비밀번호 변경</h3>
+      {!isSocialLogin && (
+        <div className="content-card">
+          <div className="section-header">
+            <div>
+              <h3>비밀번호 변경</h3>
+            </div>
           </div>
+
+          <form className="password-form" onSubmit={handlePasswordSubmit}>
+            <label className="password-form__field">
+              <span>현재 비밀번호</span>
+              <input
+                type="password"
+                name="currentPassword"
+                value={passwordForm.currentPassword}
+                onChange={handlePasswordFieldChange}
+                placeholder="현재 비밀번호"
+              />
+            </label>
+
+            <label className="password-form__field">
+              <span>새 비밀번호</span>
+              <input
+                type="password"
+                name="newPassword"
+                value={passwordForm.newPassword}
+                onChange={handlePasswordFieldChange}
+                placeholder="8자 이상, 영문/숫자/특수문자 포함"
+              />
+            </label>
+
+            <label className="password-form__field">
+              <span>새 비밀번호 확인</span>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={passwordForm.confirmPassword}
+                onChange={handlePasswordFieldChange}
+                placeholder="새 비밀번호 확인"
+              />
+            </label>
+
+            <p className="password-form__hint">
+              8자 이상, 영문, 숫자, 특수문자를 각각 1개 이상 포함해야 합니다.
+            </p>
+
+            {passwordMessage ? (
+              <p className="password-form__message">{passwordMessage}</p>
+            ) : null}
+
+            <div className="password-form__actions">
+              <AppButton type="submit" disabled={!canChangePassword}>
+                {isPasswordSaving ? "저장 중..." : "비밀번호 변경"}
+              </AppButton>
+            </div>
+          </form>
         </div>
-
-        <form className="password-form" onSubmit={handlePasswordSubmit}>
-          <label className="password-form__field">
-            <span>현재 비밀번호</span>
-            <input
-              type="password"
-              name="currentPassword"
-              value={passwordForm.currentPassword}
-              onChange={handlePasswordFieldChange}
-              placeholder="현재 비밀번호"
-            />
-          </label>
-
-          <label className="password-form__field">
-            <span>새 비밀번호</span>
-            <input
-              type="password"
-              name="newPassword"
-              value={passwordForm.newPassword}
-              onChange={handlePasswordFieldChange}
-              placeholder="8자 이상, 영문/숫자/특수문자 포함"
-            />
-          </label>
-
-          <label className="password-form__field">
-            <span>새 비밀번호 확인</span>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={passwordForm.confirmPassword}
-              onChange={handlePasswordFieldChange}
-              placeholder="새 비밀번호 확인"
-            />
-          </label>
-
-          <p className="password-form__hint">
-            8자 이상, 영문, 숫자, 특수문자를 각각 1개 이상 포함해야 합니다.
-          </p>
-
-          {passwordMessage ? (
-            <p className="password-form__message">{passwordMessage}</p>
-          ) : null}
-
-          <div className="password-form__actions">
-            <AppButton type="submit" disabled={!canChangePassword}>
-              {isPasswordSaving ? "저장 중..." : "비밀번호 변경"}
-            </AppButton>
-          </div>
-        </form>
-      </div>
+      )}
 
       <div className="content-card">
         <div className="section-header">

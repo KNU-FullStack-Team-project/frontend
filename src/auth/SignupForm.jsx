@@ -5,7 +5,12 @@ import TermsSection from "./agreement/TermsSection";
 import TermsModal from "./agreement/TermsModal";
 import { TERMS_CONTENT } from "./agreement/termsData";
 
-const SignupForm = ({ onSignup }) => {
+const SignupForm = ({ onSignup, onSocialSignup, socialSignupData = null }) => {
+  const isSocialSignup = !!socialSignupData?.credential;
+  const nicknamePlaceholder = socialSignupData?.rejoinCandidate
+    ? "새 닉네임을 입력하세요"
+    : "닉네임을 입력하세요";
+
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [nickname, setNickname] = useState("");
@@ -35,8 +40,29 @@ const SignupForm = ({ onSignup }) => {
 
   const validatePassword = (value) =>
     /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/.test(
-      value,
+      value
     );
+
+  useEffect(() => {
+    if (!isSocialSignup) {
+      return;
+    }
+
+    setEmail(socialSignupData.email || "");
+    setNickname(socialSignupData.nickname || "");
+    setHasCheckedEmail(true);
+    setIsEmailAvailable(true);
+    setIsVerified(true);
+    setMessage(
+      socialSignupData.rejoinCandidate
+        ? "다시 돌아오신 것을 환영합니다. 닉네임과 약관 동의 후 재가입을 마무리해 주세요."
+        : "구글 계정 확인이 완료되었습니다. 닉네임과 약관 동의 후 가입을 마무리해 주세요."
+    );
+    setIsMessageSuccess(true);
+    setCode("");
+    setTimer(0);
+    setIsTimerRunning(false);
+  }, [isSocialSignup, socialSignupData]);
 
   useEffect(() => {
     let interval = null;
@@ -73,39 +99,13 @@ const SignupForm = ({ onSignup }) => {
     setMarketingConsent(nextValue);
   };
 
-  const handleToggleService = () => {
-    setAgreeService((prev) => !prev);
-  };
-
-  const handleTogglePrivacy = () => {
-    setAgreePrivacy((prev) => !prev);
-  };
-
-  const handleToggleMarketing = () => {
-    setMarketingConsent((prev) => !prev);
-  };
-
-  const openTermsModal = (termsKey) => {
-    setActiveTermsKey(termsKey);
-  };
-
-  const closeTermsModal = () => {
-    setActiveTermsKey(null);
-  };
+  const openTermsModal = (termsKey) => setActiveTermsKey(termsKey);
+  const closeTermsModal = () => setActiveTermsKey(null);
 
   const handleAgreeFromModal = () => {
-    if (activeTermsKey === "service") {
-      setAgreeService(true);
-    }
-
-    if (activeTermsKey === "privacy") {
-      setAgreePrivacy(true);
-    }
-
-    if (activeTermsKey === "marketing") {
-      setMarketingConsent(true);
-    }
-
+    if (activeTermsKey === "service") setAgreeService(true);
+    if (activeTermsKey === "privacy") setAgreePrivacy(true);
+    if (activeTermsKey === "marketing") setMarketingConsent(true);
     closeTermsModal();
   };
 
@@ -134,9 +134,7 @@ const SignupForm = ({ onSignup }) => {
       setIsCheckingEmail(true);
 
       const params = new URLSearchParams({ email: email.trim() });
-      const res = await fetch(
-        `/users/check-email?${params.toString()}`,
-      );
+      const res = await fetch(`/users/check-email?${params.toString()}`);
       const data = await res.text();
       const available = res.ok && data.includes("사용 가능");
 
@@ -232,38 +230,8 @@ const SignupForm = ({ onSignup }) => {
     }
   };
 
-  const submitDirectly = async () => {
-    const res = await fetch("/users/signup", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: email.trim(),
-        password,
-        nickname: nickname.trim(),
-        marketingConsent,
-      }),
-    });
-
-    const data = await res.text();
-    alert(data);
-  };
-
   const handleSignup = async (e) => {
     e.preventDefault();
-
-    if (!hasCheckedEmail || !isEmailAvailable) {
-      setMessage("이메일 중복 확인을 먼저 완료해 주세요.");
-      setIsMessageSuccess(false);
-      return;
-    }
-
-    if (!isVerified) {
-      setMessage("이메일 인증을 먼저 완료해 주세요.");
-      setIsMessageSuccess(false);
-      return;
-    }
 
     if (!nickname.trim()) {
       setMessage("닉네임을 입력해 주세요.");
@@ -277,33 +245,50 @@ const SignupForm = ({ onSignup }) => {
       return;
     }
 
-    if (!validatePassword(password)) {
-      setMessage("비밀번호는 8자 이상이며 영문, 숫자, 특수문자를 포함해야 합니다.");
-      setIsMessageSuccess(false);
-      return;
-    }
+    if (!isSocialSignup) {
+      if (!hasCheckedEmail || !isEmailAvailable) {
+        setMessage("이메일 중복 확인을 먼저 완료해 주세요.");
+        setIsMessageSuccess(false);
+        return;
+      }
 
-    if (password !== passwordConfirm) {
-      setMessage("비밀번호가 일치하지 않습니다.");
-      setIsMessageSuccess(false);
-      return;
+      if (!isVerified) {
+        setMessage("이메일 인증을 먼저 완료해 주세요.");
+        setIsMessageSuccess(false);
+        return;
+      }
+
+      if (!validatePassword(password)) {
+        setMessage("비밀번호는 8자 이상이며 영문, 숫자, 특수문자를 포함해야 합니다.");
+        setIsMessageSuccess(false);
+        return;
+      }
+
+      if (password !== passwordConfirm) {
+        setMessage("비밀번호가 일치하지 않습니다.");
+        setIsMessageSuccess(false);
+        return;
+      }
     }
 
     try {
       setIsSubmitting(true);
 
-      const form = {
+      if (isSocialSignup) {
+        await onSocialSignup({
+          credential: socialSignupData.credential,
+          nickname: nickname.trim(),
+          marketingConsent,
+        });
+        return;
+      }
+
+      await onSignup({
         email: email.trim(),
         password,
         nickname: nickname.trim(),
         marketingConsent,
-      };
-
-      if (onSignup) {
-        await onSignup(form);
-      } else {
-        await submitDirectly();
-      }
+      });
     } catch (error) {
       setMessage("회원가입 처리 중 오류가 발생했습니다.");
       setIsMessageSuccess(false);
@@ -314,119 +299,128 @@ const SignupForm = ({ onSignup }) => {
 
   return (
     <form className="form-box signup-form" onSubmit={handleSignup}>
-      <h3 className="section-title">회원가입</h3>
+      <h3 className="section-title">
+        {isSocialSignup ? "간편회원가입" : "회원가입"}
+      </h3>
 
-      <div className="input-group">
-        <label className="input-label">이메일</label>
-        <div className="signup-inline-group">
-          <div className="input-wrapper signup-inline-field">
-            <span className="input-icon">✉️</span>
-            <input
-              className="custom-input"
-              type="email"
-              placeholder="이메일을 입력하세요"
-              value={email}
-              onChange={handleEmailChange}
-              disabled={isVerified}
-            />
+      <AppInput
+        label="이메일"
+        name="email"
+        placeholder="이메일을 입력하세요"
+        icon="✉️"
+        value={email}
+        onChange={handleEmailChange}
+        disabled={isSocialSignup || isVerified}
+      />
+
+      {!isSocialSignup && (
+        <>
+          <div className="signup-action-row">
+            <AppButton
+              type="button"
+              variant="primary"
+              fullWidth
+              onClick={handleCheckEmail}
+              disabled={isVerified || isCheckingEmail}
+            >
+              {isCheckingEmail ? "확인 중..." : "이메일 중복 확인"}
+            </AppButton>
           </div>
-          <button
+
+          <div className="signup-action-row">
+            <AppButton
+              type="button"
+              variant="primary"
+              fullWidth
+              onClick={handleSendCode}
+              disabled={isVerified || isSendingCode}
+            >
+              {isSendingCode ? "전송 중..." : "인증번호 보내기"}
+            </AppButton>
+          </div>
+
+          <AppInput
+            label="인증번호"
+            name="code"
+            placeholder="인증번호를 입력하세요"
+            icon="🔐"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            disabled={isVerified}
+          />
+
+          {(isTimerRunning || isVerified) && (
+            <div className="signup-meta-row">
+              {isTimerRunning && !isVerified ? (
+                <p className="helper-text error">남은 시간 {formatTime(timer)}</p>
+              ) : (
+                <p className="helper-text success">이메일 인증이 완료되었습니다.</p>
+              )}
+            </div>
+          )}
+
+          <AppButton
             type="button"
-            className="inline-action-button"
-            onClick={handleCheckEmail}
-            disabled={isVerified || isCheckingEmail}
+            variant="primary"
+            fullWidth
+            onClick={handleVerifyCode}
+            disabled={isVerified || isVerifyingCode}
           >
-            {isCheckingEmail ? "확인 중..." : "중복체크"}
-          </button>
-        </div>
-      </div>
+            {isVerified
+              ? "인증 완료"
+              : isVerifyingCode
+                ? "확인 중..."
+                : "인증번호 확인"}
+          </AppButton>
+        </>
+      )}
 
       {message && (
         <p
-          className={`signup-status ${isMessageSuccess ? "signup-status--success" : "signup-status--error"
-            }`}
+          className={`signup-status ${
+            isMessageSuccess ? "signup-status--success" : "signup-status--error"
+          }`}
         >
           {message}
         </p>
       )}
 
-      <div className="signup-action-row">
-        <AppButton
-          type="button"
-          variant="primary"
-          fullWidth
-          onClick={handleSendCode}
-          disabled={isVerified || isSendingCode}
-        >
-          {isSendingCode ? "전송 중..." : "인증번호 보내기"}
-        </AppButton>
-      </div>
-
-      <AppInput
-        label="인증번호"
-        placeholder="인증번호를 입력하세요"
-        icon="🔐"
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        disabled={isVerified}
-      />
-
-      {(isTimerRunning || isVerified) && (
-        <div className="signup-meta-row">
-          {isTimerRunning && !isVerified ? (
-            <p className="helper-text error">남은 시간 {formatTime(timer)}</p>
-          ) : (
-            <p className="helper-text success">이메일 인증이 완료되었습니다.</p>
-          )}
-        </div>
-      )}
-
-      <AppButton
-        type="button"
-        variant="primary"
-        fullWidth
-        onClick={handleVerifyCode}
-        disabled={isVerified || isVerifyingCode}
-      >
-        {isVerified
-          ? "인증 완료"
-          : isVerifyingCode
-            ? "확인 중..."
-            : "인증번호 확인"}
-      </AppButton>
-
       <AppInput
         label="닉네임"
         name="nickname"
-        placeholder="닉네임을 입력하세요"
-        icon="🙂"
+        placeholder={nicknamePlaceholder}
+        icon="👤"
         value={nickname}
         onChange={(e) => setNickname(e.target.value)}
       />
 
-      <AppInput
-        label="비밀번호"
-        name="password"
-        type="password"
-        placeholder="비밀번호를 입력하세요"
-        icon="🔒"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+      {!isSocialSignup && (
+        <>
+          <AppInput
+            label="비밀번호"
+            name="password"
+            type="password"
+            placeholder="비밀번호를 입력하세요"
+            icon="🔒"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
-      <p className="helper-text">
-        비밀번호는 8자 이상, 영문·숫자·특수문자를 포함해야 합니다.
-      </p>
+          <p className="helper-text">
+            비밀번호는 8자 이상이며 영문, 숫자, 특수문자를 포함해야 합니다.
+          </p>
 
-      <AppInput
-        label="비밀번호 확인"
-        name="passwordConfirm"
-        type="password"
-        placeholder="비밀번호를 다시 입력하세요"
-        icon="🔑"
-        value={passwordConfirm}
-        onChange={(e) => setPasswordConfirm(e.target.value)}
-      />
+          <AppInput
+            label="비밀번호 확인"
+            name="passwordConfirm"
+            type="password"
+            placeholder="비밀번호를 다시 입력하세요"
+            icon="🔏"
+            value={passwordConfirm}
+            onChange={(e) => setPasswordConfirm(e.target.value)}
+          />
+        </>
+      )}
 
       <TermsSection
         agreeAll={agreeAll}
@@ -434,16 +428,20 @@ const SignupForm = ({ onSignup }) => {
         agreePrivacy={agreePrivacy}
         agreeMarketing={marketingConsent}
         onAgreeAllChange={handleAgreeAllChange}
-        onToggleService={handleToggleService}
-        onTogglePrivacy={handleTogglePrivacy}
-        onToggleMarketing={handleToggleMarketing}
+        onToggleService={() => setAgreeService((prev) => !prev)}
+        onTogglePrivacy={() => setAgreePrivacy((prev) => !prev)}
+        onToggleMarketing={() => setMarketingConsent((prev) => !prev)}
         onOpenServiceTerms={() => openTermsModal("service")}
         onOpenPrivacyTerms={() => openTermsModal("privacy")}
         onOpenMarketingTerms={() => openTermsModal("marketing")}
       />
 
       <AppButton type="submit" variant="primary" fullWidth disabled={isSubmitting}>
-        {isSubmitting ? "처리 중..." : "회원가입"}
+        {isSubmitting
+          ? "처리 중..."
+          : isSocialSignup
+            ? "간편회원가입 완료"
+            : "회원가입"}
       </AppButton>
 
       <TermsModal

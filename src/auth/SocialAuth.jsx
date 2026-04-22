@@ -1,19 +1,109 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 
-const SocialAuth = () => {
+const GOOGLE_SCRIPT_ID = "google-identity-services";
+const GOOGLE_SCRIPT_SRC = "https://accounts.google.com/gsi/client";
+
+const SocialAuth = ({ onGoogleLogin }) => {
+  const buttonRef = useRef(null);
+  const [isReady, setIsReady] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+  useEffect(() => {
+    if (!clientId) {
+      setErrorMessage("Google 로그인 설정이 아직 연결되지 않았습니다.");
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const renderGoogleButton = () => {
+      if (cancelled || !window.google?.accounts?.id || !buttonRef.current) {
+        return;
+      }
+
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response) => {
+          if (!response?.credential) {
+            setErrorMessage("Google 로그인 응답을 확인하지 못했습니다.");
+            return;
+          }
+
+          setErrorMessage("");
+          await onGoogleLogin(response.credential);
+        },
+      });
+
+      buttonRef.current.innerHTML = "";
+      window.google.accounts.id.renderButton(buttonRef.current, {
+        theme: "outline",
+        size: "large",
+        shape: "pill",
+        width: 360,
+        text: "signin_with",
+      });
+      setIsReady(true);
+    };
+
+    const existingScript = document.getElementById(GOOGLE_SCRIPT_ID);
+    if (existingScript) {
+      if (window.google?.accounts?.id) {
+        renderGoogleButton();
+      } else {
+        existingScript.addEventListener("load", renderGoogleButton, {
+          once: true,
+        });
+      }
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const script = document.createElement("script");
+    script.id = GOOGLE_SCRIPT_ID;
+    script.src = GOOGLE_SCRIPT_SRC;
+    script.async = true;
+    script.defer = true;
+    script.onload = renderGoogleButton;
+    script.onerror = () => {
+      if (!cancelled) {
+        setErrorMessage("Google 로그인 스크립트를 불러오지 못했습니다.");
+      }
+    };
+
+    document.head.appendChild(script);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId, onGoogleLogin]);
+
   return (
     <div className="social-auth">
       <div className="divider">
         <span>또는</span>
       </div>
 
-      <button className="google-button">
-        <img
-          src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/smartlock/icon_google.svg"
-          alt="Google"
+      <div className="google-login-panel">
+        <div
+          ref={buttonRef}
+          className={`google-login-slot ${isReady ? "is-ready" : ""}`}
         />
-        <span>Google로 시작하기</span>
-      </button>
+
+        {!isReady && !errorMessage && (
+          <button type="button" className="google-button" disabled>
+            <img
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/smartlock/icon_google.svg"
+              alt="Google"
+            />
+            <span>Google 로그인 준비 중...</span>
+          </button>
+        )}
+
+        {errorMessage && <p className="helper-text error">{errorMessage}</p>}
+      </div>
     </div>
   );
 };

@@ -16,7 +16,10 @@ const AuthPage = ({
   title,
   description,
   onLogin,
+  onGoogleLogin,
   onSignup,
+  onSocialSignup,
+  socialSignupData,
   initialMode = "login",
   onChangeMode,
   authMessage,
@@ -116,7 +119,11 @@ const AuthPage = ({
                 </button>
               </div>
 
-              <SignupForm onSignup={onSignup} />
+              <SignupForm
+                onSignup={onSignup}
+                onSocialSignup={onSocialSignup}
+                socialSignupData={socialSignupData}
+              />
             </>
           )}
 
@@ -137,7 +144,7 @@ const AuthPage = ({
             </>
           )}
 
-          <SocialAuth />
+          <SocialAuth onGoogleLogin={onGoogleLogin} />
         </div>
       </div>
     </div>
