@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 const PAGE_SIZE = 10;
+const BOARD_NOTICE_PREVIEW_COUNT = 1;
 
 const FreeBoardPage = ({
   currentUser,
@@ -12,7 +13,8 @@ const FreeBoardPage = ({
   onSelectNoticeBoard,
 }) => {
   const [posts, setPosts] = useState([]);
-  const [noticePosts, setNoticePosts] = useState([]);
+  const [freeBoardNoticePosts, setFreeBoardNoticePosts] = useState([]);
+  const [globalNotices, setGlobalNotices] = useState([]);
   const [commentedPosts, setCommentedPosts] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -22,8 +24,19 @@ const FreeBoardPage = ({
   const [keyword, setKeyword] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showAllFreeBoardNotices, setShowAllFreeBoardNotices] = useState(false);
 
   const currentUserId = currentUser?.userId ?? currentUser?.id ?? null;
+
+  const isBoardNoticePost = (post) => {
+    return (
+      post?.isNotice === true ||
+      post?.is_notice === 1 ||
+      post?.is_notice === true ||
+      post?.notice === true ||
+      post?.noticeYn === "Y"
+    );
+  };
 
   const sortByLatest = (list) =>
     [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -37,13 +50,38 @@ const FreeBoardPage = ({
     return Array.isArray(data) ? data : [];
   };
 
-  const fetchNotices = async () => {
-    const response = await fetch("http://localhost:8081/api/community/notices");
-    if (!response.ok) {
-      throw new Error("공지사항 목록을 불러오지 못했습니다.");
+  const fetchGlobalNotices = async () => {
+    try {
+      const response = await fetch("http://localhost:8081/api/community/notices");
+      if (!response.ok) {
+        throw new Error("전역 공지를 불러오지 못했습니다.");
+      }
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.warn("전역 공지 조회 실패:", error);
+      return [];
     }
-    const data = await response.json();
-    return Array.isArray(data) ? data : [];
+  };
+
+  const fetchFreeBoardNoticesOptional = async () => {
+    try {
+      const response = await fetch("http://localhost:8081/api/community/boards/free/notices");
+
+      if (response.status === 404) {
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error("자유게시판 공지를 불러오지 못했습니다.");
+      }
+
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.warn("자유게시판 공지 전용 API 미사용, fallback으로 처리:", error);
+      return null;
+    }
   };
 
   const fetchCommentedPosts = async (basePosts = posts) => {
@@ -64,6 +102,12 @@ const FreeBoardPage = ({
         }
       );
 
+      if (response.status === 404) {
+        const fallback = basePosts.filter((post) => post.commentedByCurrentUser);
+        setCommentedPosts(fallback);
+        return;
+      }
+
       if (!response.ok) {
         throw new Error("내 댓글 글 목록 API 미지원");
       }
@@ -82,20 +126,31 @@ const FreeBoardPage = ({
     try {
       setLoading(true);
 
-      const [freePostData, noticeData] = await Promise.all([
+      const [postList, globalNoticeList, freeBoardNoticeData] = await Promise.all([
         fetchFreePosts(),
-        fetchNotices(),
+        fetchGlobalNotices(),
+        fetchFreeBoardNoticesOptional(),
       ]);
 
-      const postList = Array.isArray(freePostData) ? freePostData : [];
       setPosts(postList);
-      setNoticePosts(Array.isArray(noticeData) ? noticeData : []);
+      setGlobalNotices(sortByLatest(globalNoticeList));
       setCurrentPage(1);
+      setShowAllFreeBoardNotices(false);
+
+      if (Array.isArray(freeBoardNoticeData)) {
+        setFreeBoardNoticePosts(sortByLatest(freeBoardNoticeData));
+      } else {
+        setFreeBoardNoticePosts(
+          sortByLatest(postList.filter((post) => isBoardNoticePost(post)))
+        );
+      }
+
       fetchCommentedPosts(postList);
     } catch (e) {
       console.error(e);
       setPosts([]);
-      setNoticePosts([]);
+      setFreeBoardNoticePosts([]);
+      setGlobalNotices([]);
       setCurrentPage(1);
     } finally {
       setLoading(false);
@@ -123,16 +178,27 @@ const FreeBoardPage = ({
     return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
   };
 
-  const globalNotice = useMemo(() => {
-    return sortByLatest(noticePosts)[0] || null;
-  }, [noticePosts]);
+  const latestGlobalNotice = useMemo(() => {
+    return globalNotices.length > 0 ? globalNotices[0] : null;
+  }, [globalNotices]);
 
-  const freeBoardRuleNotice = useMemo(() => {
-    return sortByLatest(posts.filter((post) => post.isNotice))[0] || null;
-  }, [posts]);
+  const freeBoardNoticePreview = useMemo(() => {
+    return freeBoardNoticePosts.slice(0, BOARD_NOTICE_PREVIEW_COUNT);
+  }, [freeBoardNoticePosts]);
+
+  const hiddenFreeBoardNoticeCount = Math.max(
+    0,
+    freeBoardNoticePosts.length - BOARD_NOTICE_PREVIEW_COUNT
+  );
+
+  const displayedFreeBoardNotices = useMemo(() => {
+    return showAllFreeBoardNotices
+      ? freeBoardNoticePosts
+      : freeBoardNoticePreview;
+  }, [showAllFreeBoardNotices, freeBoardNoticePosts, freeBoardNoticePreview]);
 
   const normalPosts = useMemo(() => {
-    return posts.filter((post) => !post.isNotice);
+    return posts.filter((post) => !isBoardNoticePost(post));
   }, [posts]);
 
   const commentedPostIdSet = useMemo(() => {
@@ -156,18 +222,11 @@ const FreeBoardPage = ({
       .filter((post) => {
         const likeCount = post.likeCount ?? 0;
 
-        if (filterType === "5") {
-          return likeCount >= 5;
-        }
-
-        if (filterType === "10") {
-          return likeCount >= 10;
-        }
-
+        if (filterType === "5") return likeCount >= 5;
+        if (filterType === "10") return likeCount >= 10;
         if (filterType === "my") {
           return currentUserId != null && post.userId === currentUserId;
         }
-
         if (filterType === "commented") {
           return commentedPostIdSet.has(post.postId);
         }
@@ -237,42 +296,26 @@ const FreeBoardPage = ({
     return styles.tr;
   };
 
-  const renderFixedNoticeCard = (label, post, emptyText) => {
-    return (
-      <button
-        type="button"
-        style={{
-          ...styles.fixedNoticeCard,
-          ...(post ? {} : styles.fixedNoticeCardDisabled),
-        }}
-        onClick={() => {
-          if (post?.postId) {
-            onSelectPost?.(post.postId);
-          }
-        }}
-        disabled={!post}
-      >
-        <div style={styles.fixedNoticeTop}>
-          <span style={styles.fixedNoticeLabel}>{label}</span>
-          {post?.createdAt && (
-            <span style={styles.fixedNoticeDate}>
-              {formatDateTime(post.createdAt)}
-            </span>
-          )}
-        </div>
-        <div style={styles.fixedNoticeTitle}>
-          {post?.title || emptyText}
-        </div>
-        {post && (
-          <div style={styles.fixedNoticeMeta}>
+  const renderBoardNoticeItem = (post, index) => (
+    <button
+      key={post.postId}
+      type="button"
+      style={styles.boardNoticeItem}
+      onClick={() => onSelectPost?.(post.postId)}
+    >
+      <div style={styles.boardNoticeLeft}>
+        <span style={styles.boardNoticeIndex}>{index + 1}</span>
+        <div style={styles.boardNoticeTextWrap}>
+          <div style={styles.boardNoticeTitle}>{post.title}</div>
+          <div style={styles.boardNoticeMeta}>
             <span>{post.nickname}</span>
+            <span>{formatDateTime(post.createdAt)}</span>
             <span>댓글 {post.commentCount ?? 0}</span>
-            <span>조회 {post.viewCount ?? 0}</span>
           </div>
-        )}
-      </button>
-    );
-  };
+        </div>
+      </div>
+    </button>
+  );
 
   const renderPostRow = (post) => (
     <tr
@@ -359,41 +402,48 @@ const FreeBoardPage = ({
         </aside>
 
         <div style={styles.content}>
-          <div style={styles.heroCard}>
-            <div style={styles.heroTop}>
-              <div>
-                <div style={styles.heroBadge}>FREE BOARD</div>
-                <h1 style={styles.heroTitle}>자유게시판</h1>
-                <p style={styles.heroDesc}>
-                  커뮤니티에 들어오면 바로 자유게시판 글을 보고, 종목게시판 버튼을 눌러 원하는 종목 게시판으로 이동할 수 있습니다.
-                </p>
+          {latestGlobalNotice && (
+            <button
+              type="button"
+              style={styles.globalNoticeBanner}
+              onClick={() => onSelectPost?.(latestGlobalNotice.postId)}
+            >
+              <span style={styles.globalNoticeBadge}>전역공지</span>
+              <span style={styles.globalNoticeTitle}>
+                {latestGlobalNotice.title}
+              </span>
+              <span style={styles.globalNoticeDate}>
+                {formatDateTime(latestGlobalNotice.createdAt)}
+              </span>
+            </button>
+          )}
+
+          <div style={styles.boardNoticeCard}>
+            <div style={styles.boardNoticeCardTop}>
+              <span style={styles.boardNoticeCardLabel}>📌 자유게시판 공지</span>
+              {freeBoardNoticePosts.length > BOARD_NOTICE_PREVIEW_COUNT && (
+                <button
+                  type="button"
+                  style={styles.boardNoticeToggleButton}
+                  onClick={() =>
+                    setShowAllFreeBoardNotices((prev) => !prev)
+                  }
+                >
+                  {showAllFreeBoardNotices
+                    ? "접기"
+                    : `공지 전체보기${hiddenFreeBoardNoticeCount > 0 ? ` (+${hiddenFreeBoardNoticeCount})` : ""}`}
+                </button>
+              )}
+            </div>
+
+            {displayedFreeBoardNotices.length === 0 ? (
+              <div style={styles.boardNoticeEmpty}>
+                등록된 자유게시판 공지가 없습니다.
               </div>
-            </div>
-
-            <div style={styles.tabRow}>
-              <button type="button" style={styles.tabButtonActive}>
-                자유게시판
-              </button>
-              <button
-                type="button"
-                style={styles.tabButton}
-                onClick={onOpenStockBoardLobby}
-              >
-                종목게시판
-              </button>
-            </div>
-          </div>
-
-          <div style={styles.fixedNoticeGrid}>
-            {renderFixedNoticeCard(
-              "최신 공지",
-              globalNotice,
-              "등록된 전체 공지가 없습니다."
-            )}
-            {renderFixedNoticeCard(
-              "자유게시판 이용수칙",
-              freeBoardRuleNotice,
-              "등록된 자유게시판 공지가 없습니다."
+            ) : (
+              <div style={styles.boardNoticeList}>
+                {displayedFreeBoardNotices.map(renderBoardNoticeItem)}
+              </div>
             )}
           </div>
 
@@ -520,7 +570,7 @@ const FreeBoardPage = ({
             </div>
 
             <div style={styles.noticeGuide}>
-              전체 최신 공지 1개와 자유게시판 공지 1개는 상단에 고정되고, 일반 글만 아래 리스트에 표시됩니다.
+              자유게시판 공지가 상단에 기본 노출되며, 더 많은 공지는 같은 페이지에서 펼쳐서 볼 수 있습니다.
             </div>
 
             <div style={styles.tableWrap}>
@@ -692,123 +742,140 @@ const styles = {
     display: "grid",
     gap: "18px",
   },
-  heroCard: {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
-    borderRadius: "20px",
-    padding: "24px 28px",
-    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
-  },
-  heroTop: {
+  globalNoticeBanner: {
+    width: "100%",
     display: "flex",
-    justifyContent: "space-between",
-    gap: "16px",
-    alignItems: "flex-start",
-    marginBottom: "16px",
+    alignItems: "center",
+    gap: "12px",
+    border: "1px solid #dbeafe",
+    background: "linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%)",
+    borderRadius: "16px",
+    padding: "14px 16px",
+    cursor: "pointer",
+    textAlign: "left",
+    boxShadow: "0 8px 20px rgba(37, 99, 235, 0.06)",
   },
-  heroBadge: {
-    display: "inline-block",
-    padding: "6px 12px",
+  globalNoticeBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: "72px",
+    height: "28px",
     borderRadius: "999px",
-    background: "#eef2ff",
-    color: "#4c6ef5",
+    background: "#dbeafe",
+    color: "#1d4ed8",
     fontSize: "12px",
-    fontWeight: "800",
-    marginBottom: "10px",
+    fontWeight: "900",
+    flexShrink: 0,
   },
-  heroTitle: {
-    margin: "0 0 8px",
-    fontSize: "30px",
+  globalNoticeTitle: {
+    flex: 1,
+    fontSize: "14px",
     fontWeight: "800",
     color: "#111827",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   },
-  heroDesc: {
-    margin: 0,
-    fontSize: "14px",
+  globalNoticeDate: {
+    fontSize: "12px",
     color: "#6b7280",
-    lineHeight: "1.7",
+    fontWeight: "700",
+    flexShrink: 0,
   },
-  tabRow: {
-    display: "flex",
-    gap: "10px",
-    flexWrap: "wrap",
-  },
-  tabButton: {
-    height: "40px",
-    padding: "0 18px",
-    borderRadius: "12px",
-    border: "1px solid #d1d5db",
-    background: "#fff",
-    color: "#374151",
-    fontSize: "14px",
-    fontWeight: "800",
-    cursor: "pointer",
-  },
-  tabButtonActive: {
-    height: "40px",
-    padding: "0 18px",
-    borderRadius: "12px",
-    border: "1px solid #111827",
-    background: "#111827",
-    color: "#fff",
-    fontSize: "14px",
-    fontWeight: "800",
-    cursor: "pointer",
-  },
-  fixedNoticeGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: "16px",
-  },
-  fixedNoticeCard: {
-    textAlign: "left",
+  boardNoticeCard: {
+    background: "linear-gradient(135deg, #fffaf0 0%, #fff7ed 100%)",
     border: "1px solid #fed7aa",
-    background: "#fffaf5",
     borderRadius: "18px",
     padding: "18px",
-    cursor: "pointer",
+    boxShadow: "0 10px 24px rgba(217, 119, 6, 0.08)",
   },
-  fixedNoticeCardDisabled: {
-    cursor: "default",
-    opacity: 0.7,
-  },
-  fixedNoticeTop: {
+  boardNoticeCardTop: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "12px",
-    marginBottom: "10px",
+    marginBottom: "12px",
+    flexWrap: "wrap",
   },
-  fixedNoticeLabel: {
+  boardNoticeCardLabel: {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    height: "26px",
-    padding: "0 10px",
+    height: "28px",
+    padding: "0 12px",
     borderRadius: "999px",
     background: "#fff0d9",
     color: "#d9480f",
     fontSize: "12px",
-    fontWeight: "800",
+    fontWeight: "900",
+    letterSpacing: "0.02em",
   },
-  fixedNoticeDate: {
+  boardNoticeToggleButton: {
+    border: "none",
+    background: "transparent",
+    color: "#c2410c",
+    fontSize: "13px",
+    fontWeight: "800",
+    cursor: "pointer",
+    padding: 0,
+  },
+  boardNoticeList: {
+    display: "grid",
+    gap: "10px",
+  },
+  boardNoticeItem: {
+    width: "100%",
+    border: "1px solid #fde6b3",
+    background: "#ffffff",
+    borderRadius: "14px",
+    padding: "12px 14px",
+    cursor: "pointer",
+    textAlign: "left",
+    boxShadow: "0 4px 10px rgba(15, 23, 42, 0.03)",
+  },
+  boardNoticeLeft: {
+    display: "flex",
+    gap: "12px",
+    alignItems: "flex-start",
+  },
+  boardNoticeIndex: {
+    minWidth: "26px",
+    height: "26px",
+    borderRadius: "999px",
+    background: "#fff0d9",
+    color: "#d9480f",
     fontSize: "12px",
-    color: "#6b7280",
-    fontWeight: "700",
+    fontWeight: "900",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
-  fixedNoticeTitle: {
-    fontSize: "16px",
-    fontWeight: "800",
+  boardNoticeTextWrap: {
+    minWidth: 0,
+    display: "grid",
+    gap: "6px",
+    width: "100%",
+  },
+  boardNoticeTitle: {
+    fontSize: "14px",
+    fontWeight: "900",
     color: "#111827",
     lineHeight: "1.5",
-    marginBottom: "10px",
   },
-  fixedNoticeMeta: {
+  boardNoticeMeta: {
     display: "flex",
     gap: "10px",
     flexWrap: "wrap",
     fontSize: "12px",
-    color: "#6b7280",
+    color: "#92400e",
+  },
+  boardNoticeEmpty: {
+    fontSize: "14px",
+    color: "#9a3412",
+    padding: "10px 0",
+    fontWeight: "700",
   },
   toolbarCard: {
     background: "#fff",
@@ -892,31 +959,31 @@ const styles = {
     background: "#f8fafc",
     border: "1px solid #e5e7eb",
     borderRadius: "12px",
-    padding: "10px 12px",
-    fontWeight: "700",
+    padding: "12px 14px",
   },
   listCard: {
     background: "#fff",
     border: "1px solid #e5e7eb",
     borderRadius: "18px",
-    padding: "20px",
+    padding: "18px",
     boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)",
   },
   listHeaderRow: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
     gap: "12px",
-    marginBottom: "10px",
+    alignItems: "center",
+    marginBottom: "12px",
+    flexWrap: "wrap",
   },
   sectionTitle: {
     margin: 0,
-    fontSize: "20px",
+    fontSize: "18px",
     fontWeight: "800",
     color: "#111827",
   },
   postCount: {
-    fontSize: "14px",
+    fontSize: "13px",
     color: "#6b7280",
     fontWeight: "700",
   },
@@ -955,12 +1022,6 @@ const styles = {
   tr: {
     cursor: "pointer",
     borderBottom: "1px solid #f1f5f9",
-  },
-  popularRow: {
-    background: "#f8fbff",
-  },
-  bestRow: {
-    background: "#fff7ed",
   },
   td: {
     padding: "14px 12px",
@@ -1003,9 +1064,27 @@ const styles = {
     fontSize: "13px",
     fontWeight: "700",
   },
-  emptyTableCell: {
-    padding: "40px 16px",
+  popularRow: {
+    background: "#f8fbff",
+  },
+  bestRow: {
+    background: "#fff7ed",
+  },
+  emptyCard: {
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "18px",
+    padding: "32px",
     textAlign: "center",
+  },
+  emptyText: {
+    margin: 0,
+    fontSize: "14px",
+    color: "#6b7280",
+  },
+  emptyTableCell: {
+    textAlign: "center",
+    padding: "32px 12px",
     color: "#6b7280",
     fontSize: "14px",
   },
@@ -1017,34 +1096,19 @@ const styles = {
     flexWrap: "wrap",
   },
   pageButton: {
-    minWidth: "38px",
-    height: "38px",
+    minWidth: "36px",
+    height: "36px",
     borderRadius: "10px",
     border: "1px solid #d1d5db",
     background: "#fff",
     color: "#374151",
     cursor: "pointer",
-    fontSize: "13px",
     fontWeight: "700",
   },
   pageButtonActive: {
     background: "#111827",
     color: "#fff",
     border: "1px solid #111827",
-  },
-  emptyCard: {
-    backgroundColor: "#fff",
-    border: "1px solid #e5e7eb",
-    borderRadius: "18px",
-    padding: "52px 24px",
-    textAlign: "center",
-    boxShadow: "0 10px 24px rgba(15, 23, 42, 0.04)",
-  },
-  emptyText: {
-    margin: 0,
-    fontSize: "14px",
-    color: "#6b7280",
-    lineHeight: "1.6",
   },
 };
 

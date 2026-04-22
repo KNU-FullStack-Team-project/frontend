@@ -864,7 +864,12 @@ const CommunityPostDetailPage = ({
               {postDetail.comments.map((comment) => (
                 <div key={comment.commentId} style={styles.commentItem}>
                   <div style={styles.commentTop}>
-                    <span style={styles.nickname}>{comment.nickname}</span>
+                    <span style={styles.nickname}>
+                      {comment.nickname}
+                      {comment.userId === postDetail.userId && (
+                        <span style={styles.authorBadge}>(작성자)</span>
+                      )}
+                    </span>
                     <div style={styles.commentTopRight}>
                       <span style={styles.commentDate}>
                         {formatDateTime(comment.createdAt)}
@@ -1080,6 +1085,12 @@ const styles = {
   nickname: {
     fontWeight: "800",
     color: "#374151",
+  },
+  authorBadge: {
+    marginLeft: "6px",
+    fontSize: "12px",
+    fontWeight: "800",
+    color: "#d9480f",
   },
   topActionRow: {
     display: "flex",

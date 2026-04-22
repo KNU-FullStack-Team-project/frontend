@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 const PAGE_SIZE = 10;
+const BOARD_NOTICE_PREVIEW_COUNT = 1;
 
 const StockCommunityPage = ({
   symbol,
@@ -24,8 +25,12 @@ const StockCommunityPage = ({
   const [keyword, setKeyword] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showAllStockBoardNotices, setShowAllStockBoardNotices] = useState(false);
 
   const currentUserId = currentUser?.userId ?? currentUser?.id ?? null;
+
+  const sortByLatest = (list) =>
+    [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const fetchData = async () => {
     if (!symbol) return;
@@ -48,11 +53,13 @@ const StockCommunityPage = ({
 
       const stockData = await stockResponse.json();
       const postData = await postResponse.json();
+      const postList = Array.isArray(postData) ? postData : [];
 
       setStockInfo(stockData);
-      setPosts(Array.isArray(postData) ? postData : []);
+      setPosts(postList);
       setCurrentPage(1);
-      fetchCommentedPosts(Array.isArray(postData) ? postData : []);
+      setShowAllStockBoardNotices(false);
+      fetchCommentedPosts(postList);
     } catch (e) {
       console.error(e);
       setStockInfo(null);
@@ -115,6 +122,25 @@ const StockCommunityPage = ({
 
     return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
   };
+
+  const stockBoardNoticePosts = useMemo(() => {
+    return sortByLatest(posts.filter((post) => post.isNotice));
+  }, [posts]);
+
+  const stockBoardNoticePreview = useMemo(() => {
+    return stockBoardNoticePosts.slice(0, BOARD_NOTICE_PREVIEW_COUNT);
+  }, [stockBoardNoticePosts]);
+
+  const hiddenStockBoardNoticeCount = Math.max(
+    0,
+    stockBoardNoticePosts.length - BOARD_NOTICE_PREVIEW_COUNT
+  );
+
+  const displayedStockBoardNotices = useMemo(() => {
+    return showAllStockBoardNotices
+      ? stockBoardNoticePosts
+      : stockBoardNoticePreview;
+  }, [showAllStockBoardNotices, stockBoardNoticePosts, stockBoardNoticePreview]);
 
   const normalPosts = useMemo(() => {
     return posts.filter((post) => !post.isNotice);
@@ -222,6 +248,27 @@ const StockCommunityPage = ({
     return styles.tr;
   };
 
+  const renderBoardNoticeItem = (post, index) => (
+    <button
+      key={post.postId}
+      type="button"
+      style={styles.boardNoticeItem}
+      onClick={() => onSelectPost?.(post.postId)}
+    >
+      <div style={styles.boardNoticeLeft}>
+        <span style={styles.boardNoticeIndex}>{index + 1}</span>
+        <div style={styles.boardNoticeTextWrap}>
+          <div style={styles.boardNoticeTitle}>{post.title}</div>
+          <div style={styles.boardNoticeMeta}>
+            <span>{post.nickname}</span>
+            <span>{formatDateTime(post.createdAt)}</span>
+            <span>댓글 {post.commentCount ?? 0}</span>
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+
   const renderPostRow = (post) => (
     <tr
       key={post.postId}
@@ -327,57 +374,33 @@ const StockCommunityPage = ({
         </aside>
 
         <div style={styles.content}>
-          <div style={styles.heroCard}>
-            <div style={styles.heroTop}>
-              <div>
-                <div style={styles.heroBadge}>STOCK COMMUNITY</div>
-                <h1 style={styles.heroTitle}>
-                  {stockInfo?.stockName || stockInfo?.name || symbol} 게시판
-                </h1>
-                <p style={styles.heroDesc}>
-                  종목에 대한 의견, 매수/매도 관점, 시장 반응을 자유롭게 공유해보세요.
-                </p>
-              </div>
-
-              <div style={styles.heroRight}>
-                <div style={styles.heroSymbol}>
-                  {stockInfo?.stockCode || stockInfo?.symbol || symbol}
-                </div>
-                <div style={styles.heroPrice}>
-                  {stockInfo?.currentPrice
-                    ? `${Number(stockInfo.currentPrice).toLocaleString("ko-KR")}원`
-                    : "-"}
-                </div>
-                <div
-                  style={{
-                    ...styles.heroChange,
-                    color:
-                      Number(stockInfo?.changeRate) >= 0 ? "#e03131" : "#1971c2",
-                  }}
+          <div style={styles.boardNoticeCard}>
+            <div style={styles.boardNoticeCardTop}>
+              <span style={styles.boardNoticeCardLabel}>종목게시판 공지</span>
+              {stockBoardNoticePosts.length > BOARD_NOTICE_PREVIEW_COUNT && (
+                <button
+                  type="button"
+                  style={styles.boardNoticeToggleButton}
+                  onClick={() =>
+                    setShowAllStockBoardNotices((prev) => !prev)
+                  }
                 >
-                  {stockInfo?.changeRate != null
-                    ? `${Number(stockInfo.changeRate) >= 0 ? "+" : ""}${stockInfo.changeRate}%`
-                    : "-"}
-                </div>
-              </div>
+                  {showAllStockBoardNotices
+                    ? "접기"
+                    : `공지 전체보기${hiddenStockBoardNoticeCount > 0 ? ` (+${hiddenStockBoardNoticeCount})` : ""}`}
+                </button>
+              )}
             </div>
 
-            <div style={styles.tabRow}>
-              <button
-                type="button"
-                style={styles.tabButton}
-                onClick={onMoveFreeBoard}
-              >
-                자유게시판
-              </button>
-              <button
-                type="button"
-                style={styles.tabButtonActive}
-                onClick={onBack}
-              >
-                종목게시판
-              </button>
-            </div>
+            {displayedStockBoardNotices.length === 0 ? (
+              <div style={styles.boardNoticeEmpty}>
+                등록된 종목게시판 공지가 없습니다.
+              </div>
+            ) : (
+              <div style={styles.boardNoticeList}>
+                {displayedStockBoardNotices.map(renderBoardNoticeItem)}
+              </div>
+            )}
           </div>
 
           <div style={styles.toolbarCard}>
@@ -503,7 +526,7 @@ const StockCommunityPage = ({
             </div>
 
             <div style={styles.noticeGuide}>
-              공지사항은 별도 공지 게시판에서 확인할 수 있으며, 이곳에는 일반 종목 게시글만 표시됩니다.
+              종목게시판 공지 2개가 상단에 기본 노출되며, 더 많은 공지는 같은 페이지에서 펼쳐서 볼 수 있습니다.
             </div>
 
             <div style={styles.tableWrap}>
@@ -675,90 +698,112 @@ const styles = {
     display: "grid",
     gap: "18px",
   },
-  heroCard: {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
-    borderRadius: "20px",
-    padding: "24px 28px",
-    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
-  },
-  heroTop: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "20px",
-    alignItems: "flex-start",
-    marginBottom: "16px",
-    flexWrap: "wrap",
-  },
-  heroBadge: {
-    display: "inline-block",
-    padding: "6px 12px",
-    borderRadius: "999px",
-    background: "#eef2ff",
-    color: "#4c6ef5",
-    fontSize: "12px",
-    fontWeight: "800",
-    marginBottom: "10px",
-  },
-  heroTitle: {
-    margin: "0 0 8px",
-    fontSize: "30px",
-    fontWeight: "800",
-    color: "#111827",
-  },
-  heroDesc: {
-    margin: 0,
-    fontSize: "14px",
-    color: "#6b7280",
-    lineHeight: "1.7",
-  },
-  heroRight: {
-    textAlign: "right",
-    minWidth: "180px",
-  },
-  heroSymbol: {
-    fontSize: "13px",
-    color: "#6b7280",
-    fontWeight: "700",
-    marginBottom: "8px",
-  },
-  heroPrice: {
-    fontSize: "24px",
-    fontWeight: "800",
-    color: "#111827",
-    marginBottom: "6px",
-  },
-  heroChange: {
-    fontSize: "15px",
-    fontWeight: "800",
-  },
-  tabRow: {
-    display: "flex",
-    gap: "10px",
-    flexWrap: "wrap",
-  },
-  tabButton: {
-    height: "40px",
-    padding: "0 18px",
-    borderRadius: "12px",
-    border: "1px solid #d1d5db",
-    background: "#fff",
-    color: "#374151",
-    fontSize: "14px",
-    fontWeight: "800",
-    cursor: "pointer",
-  },
-  tabButtonActive: {
-    height: "40px",
-    padding: "0 18px",
-    borderRadius: "12px",
-    border: "1px solid #111827",
-    background: "#111827",
-    color: "#fff",
-    fontSize: "14px",
-    fontWeight: "800",
-    cursor: "pointer",
-  },
+  boardNoticeCard: {
+  background: "linear-gradient(135deg, #fffaf0 0%, #fff7ed 100%)",
+  border: "1px solid #fed7aa",
+  borderRadius: "18px",
+  padding: "18px",
+  boxShadow: "0 10px 24px rgba(217, 119, 6, 0.08)",
+},
+
+boardNoticeCardTop: {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "12px",
+  marginBottom: "12px",
+  flexWrap: "wrap",
+},
+
+boardNoticeCardLabel: {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  height: "28px",
+  padding: "0 12px",
+  borderRadius: "999px",
+  background: "#fff0d9",
+  color: "#d9480f",
+  fontSize: "12px",
+  fontWeight: "900",
+  letterSpacing: "0.02em",
+},
+
+boardNoticeToggleButton: {
+  border: "none",
+  background: "transparent",
+  color: "#c2410c",
+  fontSize: "13px",
+  fontWeight: "800",
+  cursor: "pointer",
+  padding: 0,
+},
+
+boardNoticeList: {
+  display: "grid",
+  gap: "10px",
+},
+
+boardNoticeItem: {
+  width: "100%",
+  border: "1px solid #fde6b3",
+  background: "#ffffff",
+  borderRadius: "14px",
+  padding: "12px 14px",
+  cursor: "pointer",
+  textAlign: "left",
+  boxShadow: "0 4px 10px rgba(15, 23, 42, 0.03)",
+  position: "relative",
+},
+
+boardNoticeLeft: {
+  display: "flex",
+  gap: "12px",
+  alignItems: "flex-start",
+},
+
+boardNoticeIndex: {
+  minWidth: "26px",
+  height: "26px",
+  borderRadius: "999px",
+  background: "#fff0d9",
+  color: "#d9480f",
+  fontSize: "12px",
+  fontWeight: "900",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+},
+
+boardNoticeTextWrap: {
+  minWidth: 0,
+  display: "grid",
+  gap: "6px",
+  width: "100%",
+},
+
+boardNoticeTitle: {
+  fontSize: "14px",
+  fontWeight: "900",
+  color: "#111827",
+  lineHeight: "1.5",
+},
+
+boardNoticeMeta: {
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
+  fontSize: "12px",
+  color: "#92400e",
+},
+
+boardNoticeEmpty: {
+  fontSize: "14px",
+  color: "#9a3412",
+  padding: "10px 0",
+  fontWeight: "700",
+},
   toolbarCard: {
     background: "#fff",
     border: "1px solid #e5e7eb",

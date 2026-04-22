@@ -194,27 +194,6 @@ const StockBoardLobbyPage = ({
         </aside>
 
         <div style={styles.content}>
-          <div style={styles.heroCard}>
-            <div style={styles.heroBadge}>STOCK BOARD</div>
-            <h1 style={styles.heroTitle}>종목게시판</h1>
-            <p style={styles.heroDesc}>
-              원하는 종목을 선택하면 해당 종목 게시판으로 바로 이동합니다.
-            </p>
-
-            <div style={styles.tabRow}>
-              <button
-                type="button"
-                style={styles.tabButton}
-                onClick={onMoveFreeBoard}
-              >
-                자유게시판
-              </button>
-              <button type="button" style={styles.tabButtonActive}>
-                종목게시판
-              </button>
-            </div>
-          </div>
-
           <div style={styles.summaryGrid}>
             <div style={styles.summaryCard}>
               <div style={styles.summaryHeader}>
@@ -464,63 +443,6 @@ const styles = {
   content: {
     display: "grid",
     gap: "18px",
-  },
-  heroCard: {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
-    borderRadius: "20px",
-    padding: "24px 28px",
-    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.05)",
-  },
-  heroBadge: {
-    display: "inline-block",
-    padding: "6px 12px",
-    borderRadius: "999px",
-    background: "#eef2ff",
-    color: "#4c6ef5",
-    fontSize: "12px",
-    fontWeight: "800",
-    marginBottom: "10px",
-  },
-  heroTitle: {
-    margin: "0 0 8px",
-    fontSize: "30px",
-    fontWeight: "800",
-    color: "#111827",
-  },
-  heroDesc: {
-    margin: 0,
-    fontSize: "14px",
-    color: "#6b7280",
-    lineHeight: "1.7",
-  },
-  tabRow: {
-    display: "flex",
-    gap: "10px",
-    flexWrap: "wrap",
-    marginTop: "16px",
-  },
-  tabButton: {
-    height: "40px",
-    padding: "0 18px",
-    borderRadius: "12px",
-    border: "1px solid #d1d5db",
-    background: "#fff",
-    color: "#374151",
-    fontSize: "14px",
-    fontWeight: "800",
-    cursor: "pointer",
-  },
-  tabButtonActive: {
-    height: "40px",
-    padding: "0 18px",
-    borderRadius: "12px",
-    border: "1px solid #111827",
-    background: "#111827",
-    color: "#fff",
-    fontSize: "14px",
-    fontWeight: "800",
-    cursor: "pointer",
   },
   summaryGrid: {
     display: "grid",
