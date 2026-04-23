@@ -8,11 +8,13 @@ const ContestPage = ({
   onCreateCompetition,
   onEditCompetition,
   onDeleteCompetition,
+  onToggleCompetitionVisibility,
 }) => {
   const [contestList, setContestList] = useState([]);
   const [myCompetitions, setMyCompetitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingCompetitionId, setDeletingCompetitionId] = useState(null);
+  const [togglingCompetitionId, setTogglingCompetitionId] = useState(null);
 
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [showOnlyJoined, setShowOnlyJoined] = useState(false);
@@ -86,6 +88,8 @@ const ContestPage = ({
         return "예정";
       case "ENDED":
         return "종료";
+      case "CANCELED":
+        return "취소";
       default:
         return status;
     }
@@ -110,6 +114,12 @@ const ContestPage = ({
           background: "#f3f4f6",
           color: "#4b5563",
           border: "1px solid #e5e7eb",
+        };
+      case "CANCELED":
+        return {
+          background: "#fff5f5",
+          color: "#c92a2a",
+          border: "1px solid #ffc9c9",
         };
       default:
         return {
@@ -206,7 +216,7 @@ const ContestPage = ({
       <div style={styles.guideBox}>
         <div style={styles.guideTitle}>안내</div>
         <div style={styles.guideText}>
-          진행중/예정/종료 상태별로 대회를 확인할 수 있고, 참가한 대회만 따로
+          진행중/예정/종료/취소 상태별로 대회를 확인할 수 있고, 참가한 대회만 따로
           모아볼 수 있습니다. 검색창에서 대회명 또는 설명으로 원하는 대회를
           빠르게 찾을 수 있습니다.
         </div>
@@ -221,6 +231,7 @@ const ContestPage = ({
               { value: "ONGOING", label: "진행중" },
               { value: "SCHEDULED", label: "예정" },
               { value: "ENDED", label: "종료" },
+              { value: "CANCELED", label: "취소" },
             ].map((item) => (
               <button
                 key={item.value}
@@ -331,9 +342,7 @@ const ContestPage = ({
                 }}
               >
                 <div style={styles.cardTopRow}>
-                  <div
-                    style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}
-                  >
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                     <span
                       style={{
                         ...styles.statusBadge,
@@ -344,6 +353,10 @@ const ContestPage = ({
                     </span>
 
                     {isJoined && <span style={styles.joinedBadge}>참가중</span>}
+
+                    {isAdmin && contest.isPublic === false && (
+                      <span style={styles.privateBadge}>비공개</span>
+                    )}
                   </div>
                 </div>
 
@@ -359,8 +372,7 @@ const ContestPage = ({
                   <div style={styles.infoItem}>
                     <span style={styles.infoItemLabel}>기간</span>
                     <span style={styles.infoItemValue}>
-                      {formatDate(contest.startAt)} -{" "}
-                      {formatDate(contest.endAt)}
+                      {formatDate(contest.startAt)} - {formatDate(contest.endAt)}
                     </span>
                   </div>
 
@@ -436,8 +448,8 @@ const ContestPage = ({
                     onClick={(e) => {
                       e.stopPropagation();
 
-                      if (contest.status === "SCHEDULED") {
-                        alert("예정된 대회는 랭킹을 조회할 수 없습니다.");
+                      if (contest.status === "SCHEDULED" || contest.status === "CANCELED") {
+                        alert("예정/취소된 대회는 랭킹을 조회할 수 없습니다.");
                         return;
                       }
 
@@ -447,14 +459,14 @@ const ContestPage = ({
                     }}
                     style={{
                       ...styles.rankingButton,
-                      ...(contest.status === "SCHEDULED"
+                      ...((contest.status === "SCHEDULED" || contest.status === "CANCELED")
                         ? {
                           backgroundColor: "#ccc",
                           cursor: "not-allowed",
                         }
                         : {}),
                     }}
-                    disabled={contest.status === "SCHEDULED"}
+                    disabled={contest.status === "SCHEDULED" || contest.status === "CANCELED"}
                   >
                     랭킹보기
                   </button>
@@ -476,8 +488,42 @@ const ContestPage = ({
                       onClick={async (e) => {
                         e.stopPropagation();
 
+                        try {
+                          setTogglingCompetitionId(contest.competitionId);
+
+                          const success = await onToggleCompetitionVisibility(
+                            contest.competitionId,
+                            !contest.isPublic,
+                          );
+
+                          if (success) {
+                            fetchCompetitions();
+                          }
+                        } finally {
+                          setTogglingCompetitionId(null);
+                        }
+                      }}
+                      disabled={togglingCompetitionId === contest.competitionId}
+                      style={{
+                        ...styles.visibilityButton,
+                        ...(contest.isPublic
+                          ? styles.visibilityButtonHide
+                          : styles.visibilityButtonShow),
+                      }}
+                    >
+                      {togglingCompetitionId === contest.competitionId
+                        ? "변경 중..."
+                        : contest.isPublic
+                          ? "비공개"
+                          : "공개"}
+                    </button>
+
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+
                         const confirmDelete =
-                          window.confirm("정말 삭제하시겠습니까?");
+                          window.confirm("정말 삭제 처리하시겠습니까?");
                         if (!confirmDelete) return;
 
                         try {
@@ -503,7 +549,7 @@ const ContestPage = ({
                       }}
                     >
                       {deletingCompetitionId === contest.competitionId
-                        ? "삭제 중..."
+                        ? "처리 중..."
                         : "삭제"}
                     </button>
                   </div>
@@ -732,6 +778,18 @@ const styles = {
     color: "#fff",
     border: "1px solid #111827",
   },
+  privateBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "6px 10px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800",
+    background: "#fff7ed",
+    color: "#c2410c",
+    border: "1px solid #fed7aa",
+  },
   categoryText: {
     fontSize: "12px",
     fontWeight: "700",
@@ -849,11 +907,11 @@ const styles = {
   },
   adminButtonRow: {
     marginTop: "12px",
-    display: "flex",
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr 1fr",
     gap: "8px",
   },
   editButton: {
-    flex: 1,
     height: "40px",
     borderRadius: "10px",
     border: "1px solid #d1d5db",
@@ -863,8 +921,25 @@ const styles = {
     fontWeight: "700",
     fontSize: "13px",
   },
+  visibilityButton: {
+    height: "40px",
+    borderRadius: "10px",
+    border: "1px solid #d1d5db",
+    cursor: "pointer",
+    fontWeight: "700",
+    fontSize: "13px",
+  },
+  visibilityButtonHide: {
+    background: "#fff7ed",
+    color: "#c2410c",
+    border: "1px solid #fed7aa",
+  },
+  visibilityButtonShow: {
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    border: "1px solid #bfdbfe",
+  },
   deleteButton: {
-    flex: 1,
     height: "40px",
     borderRadius: "10px",
     border: "none",

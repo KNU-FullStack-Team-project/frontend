@@ -39,7 +39,7 @@ const ContestDetailPage = ({
       .finally(() => {
         setLoading(false);
       });
-  }, [competitionId]);
+  }, [competitionId, currentUser]);
 
   useEffect(() => {
     if (!competitionId || !isAdmin) {
@@ -73,7 +73,7 @@ const ContestDetailPage = ({
       .finally(() => {
         setParticipantLoading(false);
       });
-  }, [competitionId, isAdmin]);
+  }, [competitionId, isAdmin, currentUser]);
 
   const formatStatus = (status) => {
     switch (status) {
@@ -83,6 +83,8 @@ const ContestDetailPage = ({
         return "예정";
       case "ENDED":
         return "종료";
+      case "CANCELED":
+        return "취소";
       default:
         return status;
     }
@@ -104,6 +106,11 @@ const ContestDetailPage = ({
         return {
           backgroundColor: "#f1f3f5",
           color: "#495057",
+        };
+      case "CANCELED":
+        return {
+          backgroundColor: "#fff5f5",
+          color: "#c92a2a",
         };
       default:
         return {
@@ -148,6 +155,10 @@ const ContestDetailPage = ({
     return Number(amount).toLocaleString("ko-KR") + "원";
   };
 
+  const canJoin =
+    competition?.status === "ONGOING" &&
+    competition?.isPublic !== false;
+
   const handleJoin = async () => {
     if (joining) return;
 
@@ -158,6 +169,11 @@ const ContestDetailPage = ({
 
     if (!currentUser?.userId) {
       alert("사용자 정보가 없습니다.");
+      return;
+    }
+
+    if (!canJoin) {
+      alert("현재 참가할 수 없는 대회입니다.");
       return;
     }
 
@@ -243,6 +259,24 @@ const ContestDetailPage = ({
         >
           {formatStatus(competition.status)}
         </div>
+
+        {!competition.isPublic && isAdmin && (
+          <div
+            style={{
+              display: "inline-block",
+              marginLeft: "8px",
+              padding: "8px 14px",
+              borderRadius: "999px",
+              fontSize: "13px",
+              fontWeight: "700",
+              marginBottom: "18px",
+              backgroundColor: "#fff7ed",
+              color: "#c2410c",
+            }}
+          >
+            비공개
+          </div>
+        )}
 
         <h1
           style={{
@@ -439,20 +473,20 @@ const ContestDetailPage = ({
           <button
             type="button"
             onClick={handleJoin}
-            disabled={joining}
+            disabled={joining || !canJoin}
             style={{
               padding: "14px 22px",
               border: "none",
               borderRadius: "12px",
-              backgroundColor: joining ? "#999" : "#111",
+              backgroundColor: joining || !canJoin ? "#999" : "#111",
               color: "#fff",
-              cursor: joining ? "not-allowed" : "pointer",
+              cursor: joining || !canJoin ? "not-allowed" : "pointer",
               fontWeight: "700",
               fontSize: "15px",
               boxShadow: "0 10px 20px rgba(0,0,0,0.12)",
             }}
           >
-            {joining ? "참가 중..." : "참가하기"}
+            {joining ? "참가 중..." : canJoin ? "참가하기" : "참가 불가"}
           </button>
         </div>
       )}
@@ -510,7 +544,7 @@ const InfoCard = ({ label, value }) => {
           fontSize: "18px",
           fontWeight: "800",
           color: "#111",
-          wordBreak: "keep-all",
+          lineHeight: "1.5",
         }}
       >
         {value}

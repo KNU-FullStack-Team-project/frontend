@@ -634,34 +634,63 @@ const AppController = () => {
   };
 
   const handleDeleteCompetition = async (competitionId) => {
-    try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
+  try {
+    const token = localStorage.getItem("accessToken") || currentUser?.token;
 
-      const res = await fetch(
-        `/api/admin/competitions/${competitionId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const text = await res.text();
-
-      if (!res.ok) {
-        alert(text || "삭제 실패");
-        return false;
+    const res = await fetch(
+      `/api/competitions/${competitionId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
+    );
 
-      alert(text || "삭제 완료");
-      setSelectedCompetitionId(null);
-      return true;
-    } catch (e) {
-      alert("삭제 오류");
+    const text = await res.text();
+
+    if (!res.ok) {
+      alert(text || "삭제 실패");
       return false;
     }
-  };
+
+    alert(text || "삭제 처리 완료");
+    setSelectedCompetitionId(null);
+    return true;
+  } catch (e) {
+    alert("삭제 오류");
+    return false;
+  }
+};
+
+const handleToggleCompetitionVisibility = async (competitionId, isPublic) => {
+  try {
+    const token = localStorage.getItem("accessToken") || currentUser?.token;
+
+    const res = await fetch(
+      `/api/competitions/${competitionId}/visibility?isPublic=${isPublic}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const text = await res.text();
+
+    if (!res.ok) {
+      alert(text || "공개 상태 변경 실패");
+      return false;
+    }
+
+    alert(text || "공개 상태 변경 완료");
+    return true;
+  } catch (e) {
+    alert("공개 상태 변경 오류");
+    return false;
+  }
+};
 
   const handleBackFromFreeBoard = () => {
     setCurrentPage("home");
@@ -746,14 +775,15 @@ const AppController = () => {
       case "contest":
         return (
           <ContestPage
-            isLoggedIn={isLoggedIn}
-            currentUser={currentUser}
-            onSelectCompetition={handleSelectCompetition}
-            onCreateCompetition={handleCreateCompetition}
-            onEditCompetition={handleEditCompetition}
-            onDeleteCompetition={handleDeleteCompetition}
-            onViewRanking={handleViewRanking}
-          />
+  onSelectCompetition={handleSelectCompetition}
+  onViewRanking={handleViewRanking}
+  currentUser={currentUser}
+  isLoggedIn={isLoggedIn}
+  onCreateCompetition={handleCreateCompetition}
+  onEditCompetition={handleEditCompetition}
+  onDeleteCompetition={handleDeleteCompetition}
+  onToggleCompetitionVisibility={handleToggleCompetitionVisibility}
+/>
         );
 
       case "contestDetail":
