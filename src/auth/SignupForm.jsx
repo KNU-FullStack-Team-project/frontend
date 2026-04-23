@@ -134,7 +134,7 @@ const SignupForm = ({ onSignup, onSocialSignup, socialSignupData = null }) => {
       setIsCheckingEmail(true);
 
       const params = new URLSearchParams({ email: email.trim() });
-      const res = await fetch(`/users/check-email?${params.toString()}`);
+      const res = await fetch(`/api/users/check-email?${params.toString()}`);
       const data = await res.text();
       const available = res.ok && data.includes("사용 가능");
 
@@ -166,7 +166,7 @@ const SignupForm = ({ onSignup, onSocialSignup, socialSignupData = null }) => {
     try {
       setIsSendingCode(true);
 
-      const res = await fetch("/email/send/signup", {
+      const res = await fetch("/api/email/send/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -202,7 +202,7 @@ const SignupForm = ({ onSignup, onSocialSignup, socialSignupData = null }) => {
     try {
       setIsVerifyingCode(true);
 
-      const res = await fetch("/email/verify", {
+      const res = await fetch("/api/email/verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
