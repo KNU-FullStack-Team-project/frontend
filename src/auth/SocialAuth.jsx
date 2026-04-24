@@ -8,6 +8,12 @@ const SocialAuth = ({ onGoogleLogin }) => {
   const [isReady, setIsReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const onGoogleLoginRef = useRef(onGoogleLogin);
+
+  // onGoogleLogin 함수가 변경될 때마다 ref 업데이트
+  useEffect(() => {
+    onGoogleLoginRef.current = onGoogleLogin;
+  }, [onGoogleLogin]);
 
   useEffect(() => {
     if (!clientId) {
@@ -22,6 +28,9 @@ const SocialAuth = ({ onGoogleLogin }) => {
         return;
       }
 
+      // 이미 초기화되었는지 확인하거나 콜백 로직 업데이트
+      // 참고: Google GSI 라이브러리는 initialize가 여러 번 호출되면 경고를 발생시킵니다.
+      // onGoogleLogin이 변경되어도 재초기화할 필요가 없도록 ref를 사용합니다.
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: async (response) => {
@@ -31,7 +40,9 @@ const SocialAuth = ({ onGoogleLogin }) => {
           }
 
           setErrorMessage("");
-          await onGoogleLogin(response.credential);
+          if (onGoogleLoginRef.current) {
+            await onGoogleLoginRef.current(response.credential);
+          }
         },
       });
 
@@ -78,7 +89,7 @@ const SocialAuth = ({ onGoogleLogin }) => {
     return () => {
       cancelled = true;
     };
-  }, [clientId, onGoogleLogin]);
+  }, [clientId]); // Removed onGoogleLogin from dependencies to avoid re-initialization
 
   return (
     <div className="social-auth">
