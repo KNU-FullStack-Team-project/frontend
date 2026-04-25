@@ -52,7 +52,7 @@ const FreeBoardPage = ({
 
   const fetchGlobalNotices = async () => {
     try {
-      const response = await fetch("http://localhost:8081/api/community/notices");
+      const response = await fetch("/api/community/notices");
       if (!response.ok) {
         throw new Error("전역 공지를 불러오지 못했습니다.");
       }
@@ -66,7 +66,7 @@ const FreeBoardPage = ({
 
   const fetchFreeBoardNoticesOptional = async () => {
     try {
-      const response = await fetch("http://localhost:8081/api/community/boards/free/notices");
+      const response = await fetch("/api/community/boards/free/notices");
 
       if (response.status === 404) {
         return null;
