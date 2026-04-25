@@ -9,6 +9,18 @@ const cleanNumber = (val) => {
   return parseInt(String(val).replace(/,/g, "")) || 0;
 };
 
+// [수정] HTTP 환경에서도 작동하는 UUID 생성 함수
+const generateUUID = () => {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
 // [최적화] 프론트엔드 차트 데이터 캐시 (모달을 닫았다 열어도 1분간 유지)
 const chartCache = new Map();
 const CACHE_DURATION_MS = 60 * 1000; // 1분
@@ -236,7 +248,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
 
     try {
       setIsSubmitting(true);
-      const requestId = crypto.randomUUID(); // 고유 요청 ID 생성
+      const requestId = generateUUID(); // [수정] 자체 함수 사용
 
       const response = await fetch("/api/orders", {
         method: "POST",
