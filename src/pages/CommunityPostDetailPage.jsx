@@ -33,6 +33,10 @@ const CommunityPostDetailPage = ({
   const [isLiking, setIsLiking] = useState(false);
   const [isDisliking, setIsDisliking] = useState(false);
 
+  const [replyTargetCommentId, setReplyTargetCommentId] = useState(null);
+  const [replyContent, setReplyContent] = useState("");
+  const [commentVoteLoadingIds, setCommentVoteLoadingIds] = useState([]);
+
   const [reportTarget, setReportTarget] = useState(null);
   const [reportForm, setReportForm] = useState({
     reason: "",
@@ -412,6 +416,7 @@ const CommunityPostDetailPage = ({
           },
           body: JSON.stringify({
             content: commentContent.trim(),
+            parentCommentId: null,
           }),
         }
       );
@@ -429,6 +434,149 @@ const CommunityPostDetailPage = ({
     } catch (error) {
       console.error("댓글 작성 오류:", error);
       alert("댓글 작성 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleStartReply = (commentId) => {
+    if (!isLoggedIn || !currentUser?.userId) {
+      alert("로그인 후 답글을 작성할 수 있습니다.");
+      return;
+    }
+
+    setReplyTargetCommentId(commentId);
+    setReplyContent("");
+  };
+
+  const handleCancelReply = () => {
+    setReplyTargetCommentId(null);
+    setReplyContent("");
+  };
+
+  const handleSubmitReply = async (parentCommentId) => {
+    if (!isLoggedIn || !currentUser?.userId) {
+      alert("로그인 후 답글을 작성할 수 있습니다.");
+      return;
+    }
+
+    if (!replyContent.trim()) {
+      alert("답글 내용을 입력해주세요.");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
+
+      if (!token) {
+        alert("로그인 토큰이 없습니다.");
+        return;
+      }
+
+      const response = await fetch(
+        `/api/community/posts/${postId}/comments`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            content: replyContent.trim(),
+            parentCommentId,
+          }),
+        }
+      );
+
+      const text = await response.text();
+
+      if (!response.ok) {
+        alert(text || "답글 작성에 실패했습니다.");
+        return;
+      }
+
+      alert("답글이 작성되었습니다.");
+      setReplyContent("");
+      setReplyTargetCommentId(null);
+      fetchPostDetail();
+    } catch (error) {
+      console.error("답글 작성 오류:", error);
+      alert("답글 작성 중 오류가 발생했습니다.");
+    }
+  };
+
+  const updateCommentVoteState = (comments, commentId, voteType) => {
+    return (comments || []).map((comment) => {
+      if (comment.commentId === commentId) {
+        return {
+          ...comment,
+          likeCount: voteType === "LIKE" ? (comment.likeCount || 0) + 1 : (comment.likeCount || 0),
+          dislikeCount: voteType === "DISLIKE" ? (comment.dislikeCount || 0) + 1 : (comment.dislikeCount || 0),
+          votedByCurrentUser: true,
+          myVoteType: voteType,
+        };
+      }
+
+      return {
+        ...comment,
+        replies: updateCommentVoteState(comment.replies || [], commentId, voteType),
+      };
+    });
+  };
+
+  const handleVoteComment = async (comment, voteType) => {
+    if (!isLoggedIn || !currentUser?.userId) {
+      alert("로그인 후 댓글에 추천/비추천할 수 있습니다.");
+      return;
+    }
+
+    if (currentUser.userId === comment.userId) {
+      alert("본인 댓글은 추천/비추천할 수 없습니다.");
+      return;
+    }
+
+    if (comment.votedByCurrentUser) {
+      alert("이미 추천 또는 비추천한 댓글입니다.");
+      return;
+    }
+
+    const url = voteType === "LIKE"
+      ? `/api/community/comments/${comment.commentId}/like`
+      : `/api/community/comments/${comment.commentId}/dislike`;
+
+    try {
+      setCommentVoteLoadingIds((prev) => [...prev, comment.commentId]);
+
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
+
+      if (!token) {
+        alert("로그인 토큰이 없습니다.");
+        return;
+      }
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const text = await response.text();
+
+      if (!response.ok) {
+        alert(text || "댓글 투표에 실패했습니다.");
+        return;
+      }
+
+      setPostDetail((prev) => ({
+        ...prev,
+        comments: updateCommentVoteState(prev?.comments || [], comment.commentId, voteType),
+      }));
+
+      alert(voteType === "LIKE" ? "댓글 추천이 반영되었습니다." : "댓글 비추천이 반영되었습니다.");
+    } catch (error) {
+      console.error("댓글 투표 오류:", error);
+      alert("댓글 투표 중 오류가 발생했습니다.");
+    } finally {
+      setCommentVoteLoadingIds((prev) => prev.filter((id) => id !== comment.commentId));
     }
   };
 
@@ -648,6 +796,127 @@ const CommunityPostDetailPage = ({
       console.error("댓글 삭제 오류:", error);
       alert("댓글 삭제 중 오류가 발생했습니다.");
     }
+  };
+
+  const renderCommentItem = (comment, isReply = false) => {
+    const isAuthor = comment.userId === postDetail.userId;
+    const isVoting = commentVoteLoadingIds.includes(comment.commentId);
+    const canVoteComment = isLoggedIn && currentUser?.userId && currentUser.userId !== comment.userId;
+
+    return (
+      <div
+        key={comment.commentId}
+        style={{
+          ...(isReply ? styles.replyCommentItem : styles.commentItem),
+        }}
+      >
+        <div style={styles.commentTop}>
+          <span style={styles.nickname}>
+            {comment.nickname}
+            {isAuthor && <span style={styles.authorBadge}>(작성자)</span>}
+            {isReply && <span style={styles.replyBadge}>답글</span>}
+          </span>
+          <div style={styles.commentTopRight}>
+            <span style={styles.commentDate}>
+              {formatDateTime(comment.createdAt)}
+            </span>
+
+            {canReportComment(comment.userId) && (
+              <button
+                type="button"
+                onClick={() => openCommentReportModal(comment)}
+                style={styles.commentReportButton}
+              >
+                신고
+              </button>
+            )}
+
+            {canDeleteComment(comment.userId) && (
+              <button
+                type="button"
+                onClick={() => handleDeleteComment(comment.commentId)}
+                style={styles.commentDeleteButton}
+              >
+                삭제
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div style={styles.commentContent}>{comment.content}</div>
+
+        <div style={styles.commentActionBar}>
+          <button
+            type="button"
+            onClick={() => handleVoteComment(comment, "LIKE")}
+            disabled={!canVoteComment || comment.votedByCurrentUser || isVoting}
+            style={{
+              ...styles.commentVoteButton,
+              ...(comment.myVoteType === "LIKE" ? styles.commentVoteButtonSelected : {}),
+              ...((!canVoteComment || comment.votedByCurrentUser || isVoting) ? styles.commentVoteButtonDisabled : {}),
+            }}
+          >
+            👍 {comment.likeCount ?? 0}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleVoteComment(comment, "DISLIKE")}
+            disabled={!canVoteComment || comment.votedByCurrentUser || isVoting}
+            style={{
+              ...styles.commentVoteButton,
+              ...(comment.myVoteType === "DISLIKE" ? styles.commentDislikeButtonSelected : {}),
+              ...((!canVoteComment || comment.votedByCurrentUser || isVoting) ? styles.commentVoteButtonDisabled : {}),
+            }}
+          >
+            👎 {comment.dislikeCount ?? 0}
+          </button>
+
+          {!isReply && (
+            <button
+              type="button"
+              onClick={() => handleStartReply(comment.commentId)}
+              style={styles.replyButton}
+            >
+              답글
+            </button>
+          )}
+        </div>
+
+        {!isReply && replyTargetCommentId === comment.commentId && (
+          <div style={styles.replyWriteBox}>
+            <textarea
+              value={replyContent}
+              onChange={(e) => setReplyContent(e.target.value)}
+              placeholder="답글을 입력하세요."
+              style={styles.replyInput}
+            />
+            <div style={styles.replyWriteActionRow}>
+              <button
+                type="button"
+                onClick={() => handleSubmitReply(comment.commentId)}
+                style={styles.replySubmitButton}
+              >
+                답글 등록
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelReply}
+                style={styles.replyCancelButton}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!isReply && Array.isArray(comment.replies) && comment.replies.length > 0 && (
+          <div style={styles.replyList}>
+            {comment.replies.map((reply) => renderCommentItem(reply, true))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (!postId) {
@@ -981,44 +1250,7 @@ const CommunityPostDetailPage = ({
             <div style={styles.emptyInner}>아직 댓글이 없습니다.</div>
           ) : (
             <div style={styles.commentList}>
-              {postDetail.comments.map((comment) => (
-                <div key={comment.commentId} style={styles.commentItem}>
-                  <div style={styles.commentTop}>
-                    <span style={styles.nickname}>
-                      {comment.nickname}
-                      {comment.userId === postDetail.userId && (
-                        <span style={styles.authorBadge}>(작성자)</span>
-                      )}
-                    </span>
-                    <div style={styles.commentTopRight}>
-                      <span style={styles.commentDate}>
-                        {formatDateTime(comment.createdAt)}
-                      </span>
-
-                      {canReportComment(comment.userId) && (
-                        <button
-                          type="button"
-                          onClick={() => openCommentReportModal(comment)}
-                          style={styles.commentReportButton}
-                        >
-                          신고
-                        </button>
-                      )}
-
-                      {canDeleteComment(comment.userId) && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteComment(comment.commentId)}
-                          style={styles.commentDeleteButton}
-                        >
-                          삭제
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div style={styles.commentContent}>{comment.content}</div>
-                </div>
-              ))}
+              {postDetail.comments.map((comment) => renderCommentItem(comment))}
             </div>
           )}
         </div>
@@ -1589,6 +1821,28 @@ const styles = {
     padding: "14px 16px",
     background: "#fff",
   },
+  replyCommentItem: {
+    border: "1px solid #e5e7eb",
+    borderRadius: "14px",
+    padding: "14px 16px",
+    background: "#f8fafc",
+    marginLeft: "28px",
+    position: "relative",
+  },
+  replyBadge: {
+    marginLeft: "6px",
+    padding: "3px 7px",
+    borderRadius: "999px",
+    background: "#e0f2fe",
+    color: "#0369a1",
+    fontSize: "11px",
+    fontWeight: "900",
+  },
+  replyList: {
+    display: "grid",
+    gap: "10px",
+    marginTop: "12px",
+  },
   commentTop: {
     display: "flex",
     justifyContent: "space-between",
@@ -1634,6 +1888,91 @@ const styles = {
     textAlign: "left",
     whiteSpace: "pre-wrap",
     wordBreak: "break-word",
+  },
+  commentActionBar: {
+    display: "flex",
+    gap: "8px",
+    alignItems: "center",
+    flexWrap: "wrap",
+    marginTop: "10px",
+  },
+  commentVoteButton: {
+    border: "1px solid #d1d5db",
+    background: "#fff",
+    color: "#374151",
+    borderRadius: "999px",
+    padding: "6px 10px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "800",
+  },
+  commentVoteButtonSelected: {
+    background: "#eff6ff",
+    borderColor: "#93c5fd",
+    color: "#1d4ed8",
+  },
+  commentDislikeButtonSelected: {
+    background: "#fef2f2",
+    borderColor: "#fca5a5",
+    color: "#dc2626",
+  },
+  commentVoteButtonDisabled: {
+    opacity: 0.66,
+    cursor: "not-allowed",
+  },
+  replyButton: {
+    border: "1px solid #bfdbfe",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    borderRadius: "999px",
+    padding: "6px 10px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "800",
+  },
+  replyWriteBox: {
+    marginTop: "12px",
+    padding: "12px",
+    borderRadius: "12px",
+    background: "#f8fafc",
+    border: "1px solid #e5e7eb",
+  },
+  replyInput: {
+    width: "100%",
+    minHeight: "74px",
+    borderRadius: "10px",
+    border: "1px solid #d1d5db",
+    padding: "10px",
+    fontSize: "13px",
+    resize: "vertical",
+    outline: "none",
+    fontFamily: "inherit",
+  },
+  replyWriteActionRow: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "8px",
+    marginTop: "8px",
+  },
+  replySubmitButton: {
+    border: "none",
+    background: "#111827",
+    color: "#fff",
+    borderRadius: "9px",
+    padding: "8px 12px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "800",
+  },
+  replyCancelButton: {
+    border: "1px solid #d1d5db",
+    background: "#fff",
+    color: "#374151",
+    borderRadius: "9px",
+    padding: "8px 12px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "800",
   },
   modalOverlay: {
     position: "fixed",
