@@ -19,16 +19,6 @@ const ACTION_FILTERS = [
   { key: "NOTIFICATION", label: "알림" },
 ];
 
-const getActionTone = (actionType) => {
-  if (actionType === "LOGIN") return "success";
-  if (actionType === "LOGOUT") return "muted";
-  if (POST_ACTIONS.includes(actionType)) return "neutral";
-  if (actionType?.startsWith("INQUIRY")) return "info";
-  if (actionType?.startsWith("REPORT")) return "danger";
-  if (actionType?.startsWith("NOTIFICATION")) return "warning";
-  return "neutral";
-};
-
 const matchesFilter = (activity, filter) => {
   if (filter === "ALL") return true;
   if (filter === "ACCESS") return ACCESS_ACTIONS.includes(activity.actionType);
@@ -66,6 +56,8 @@ const UserActivityPage = ({ currentUser, targetUser, onBack, onOpenPost }) => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeFilter, setActiveFilter] = useState("ALL");
+  const [activitySearchKeyword, setActivitySearchKeyword] = useState("");
 
   useEffect(() => {
     const loadActivities = async () => {
@@ -100,11 +92,32 @@ const UserActivityPage = ({ currentUser, targetUser, onBack, onOpenPost }) => {
     loadActivities();
   }, [currentUser?.token, targetUser?.id]);
 
-  const [activeFilter, setActiveFilter] = useState("ALL");
-
   const filteredActivities = useMemo(
-    () => activities.filter((activity) => matchesFilter(activity, activeFilter)),
-    [activities, activeFilter],
+    () => {
+      const keyword = activitySearchKeyword.trim().toLowerCase();
+
+      return activities
+        .filter((activity) => matchesFilter(activity, activeFilter))
+        .filter((activity) => {
+          if (!keyword) {
+            return true;
+          }
+
+          return [
+            formatDateTime(activity.occurredAt),
+            activity.occurredAt,
+            targetUser?.nickname,
+            targetUser?.email,
+            activity.actionLabel,
+            activity.actionType,
+            activity.targetLabel,
+            activity.detail,
+          ]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(keyword));
+        });
+    },
+    [activities, activeFilter, activitySearchKeyword, targetUser?.email, targetUser?.nickname],
   );
 
   const summary = useMemo(() => {
@@ -166,71 +179,74 @@ const UserActivityPage = ({ currentUser, targetUser, onBack, onOpenPost }) => {
             </article>
           </div>
 
-          <div className="activity-filter-row">
-            {ACTION_FILTERS.map((filter) => (
-              <button
-                key={filter.key}
-                type="button"
-                className={`activity-filter-chip ${activeFilter === filter.key ? "is-active" : ""
+          <div className="activity-filter-toolbar">
+            <div className="activity-filter-row">
+              {ACTION_FILTERS.map((filter) => (
+                <button
+                  key={filter.key}
+                  type="button"
+                  className={`activity-filter-chip ${
+                    activeFilter === filter.key ? "is-active" : ""
                   }`}
-                onClick={() => setActiveFilter(filter.key)}
-              >
-                {filter.label}
-              </button>
-            ))}
+                  onClick={() => setActiveFilter(filter.key)}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+            <div className="admin-search-wrap activity-search-wrap">
+              <input
+                type="text"
+                className="admin-search-input"
+                placeholder="검색어 입력"
+                value={activitySearchKeyword}
+                onChange={(event) => setActivitySearchKeyword(event.target.value)}
+              />
+            </div>
           </div>
 
-          {filteredActivities.length === 0 ? (
-            <div className="activity-empty-state">
-              조건에 맞는 활동 로그가 없습니다.
-            </div>
-          ) : (
-            <div className="activity-timeline">
-              {filteredActivities.map((activity, index) => {
-                const isPostLinked = !!activity.postId && onOpenPost;
+          <table className="stock-table admin-table activity-table">
+            <thead>
+              <tr>
+                <th>날짜</th>
+                <th>활동</th>
+                <th>대상</th>
+                <th>내용</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredActivities.length === 0 ? (
+                <tr>
+                  <td colSpan="4">조건에 맞는 활동 로그가 없습니다.</td>
+                </tr>
+              ) : (
+                filteredActivities.map((activity, index) => {
+                  const isPostLinked = !!activity.postId && onOpenPost;
 
-                return (
-                  <article
-                    key={`${activity.actionType}-${activity.occurredAt}-${index}`}
-                    className="activity-timeline-item"
-                  >
-                    <div className="activity-timeline-rail">
-                      <span className="activity-timeline-dot"></span>
-                    </div>
-                    <button
-                      type="button"
-                      className="activity-timeline-body activity-log-button"
-                      onClick={() => {
-                        if (isPostLinked) {
-                          onOpenPost(activity.postId);
-                        }
-                      }}
-                    >
-                      <div className="activity-timeline-top">
-                        <span
-                          className={`activity-badge tone-${getActionTone(
-                            activity.actionType || "",
-                          )}`}
-                        >
-                          {activity.actionLabel || activity.actionType}
-                        </span>
-                        <time className="activity-time">
-                          {formatDateTime(activity.occurredAt)}
-                        </time>
-                      </div>
-                      <div className="activity-main-line">
-                        <strong>{activity.targetLabel || "-"}</strong>
-                      </div>
-                      <p className="activity-detail">{activity.detail || "-"}</p>
-                      {isPostLinked ? (
-                        <div className="activity-link-hint">클릭해서 해당 게시글 열기</div>
-                      ) : null}
-                    </button>
-                  </article>
-                );
-              })}
-            </div>
-          )}
+                  return (
+                    <tr key={`${activity.actionType}-${activity.occurredAt}-${index}`}>
+                      <td>{formatDateTime(activity.occurredAt)}</td>
+                      <td>{activity.actionLabel || activity.actionType || "-"}</td>
+                      <td>{activity.targetLabel || "-"}</td>
+                      <td>
+                        {isPostLinked ? (
+                          <button
+                            type="button"
+                            className="activity-table-link"
+                            onClick={() => onOpenPost(activity.postId)}
+                          >
+                            {activity.detail || "-"}
+                          </button>
+                        ) : (
+                          activity.detail || "-"
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </>
       ) : null}
     </div>
