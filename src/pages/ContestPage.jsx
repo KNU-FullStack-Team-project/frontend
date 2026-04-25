@@ -318,10 +318,10 @@ const ContestPage = ({
 
             const participantCount = Number(contest.participantCount ?? 0);
             const maxParticipants = Number(contest.maxParticipants ?? 0);
-            const percent =
-              maxParticipants > 0
-                ? Math.min((participantCount / maxParticipants) * 100, 100)
-                : 0;
+            const hasParticipantLimit = maxParticipants > 0;
+            const percent = hasParticipantLimit
+              ? Math.min((participantCount / maxParticipants) * 100, 100)
+              : null;
 
             return (
               <div
@@ -392,44 +392,47 @@ const ContestPage = ({
                   </div>
                 </div>
 
-                <div style={styles.progressWrap}>
-                  <div style={styles.progressHeader}>
-                    <span style={styles.progressLabel}>참가율</span>
-                    <span style={styles.progressValue}>
-                      {Math.round(percent)}%
-                    </span>
-                  </div>
+                {hasParticipantLimit ? (
+                  <div style={styles.progressWrap}>
+                    <div style={styles.progressHeader}>
+                      <span style={styles.progressLabel}>참가율</span>
+                      <span style={styles.progressValue}>
+                        {Math.round(percent)}%
+                      </span>
+                    </div>
 
-                  <div style={styles.progressBar}>
-                    <div
-                      style={{
-                        ...styles.progressFill,
-                        width: `${percent}%`,
-                        background:
-                          percent >= 100
-                            ? "linear-gradient(90deg, #ff8787 0%, #fa5252 100%)"
-                            : percent >= 70
-                              ? "linear-gradient(90deg, #ffd43b 0%, #fab005 100%)"
-                              : "linear-gradient(90deg, #748ffc 0%, #4c6ef5 100%)",
-                      }}
-                    />
-                  </div>
+                    <div style={styles.progressBar}>
+                      <div
+                        style={{
+                          ...styles.progressFill,
+                          width: `${percent}%`,
+                          background:
+                            percent >= 100
+                              ? "linear-gradient(90deg, #ff8787 0%, #fa5252 100%)"
+                              : percent >= 70
+                                ? "linear-gradient(90deg, #ffd43b 0%, #fab005 100%)"
+                                : "linear-gradient(90deg, #748ffc 0%, #4c6ef5 100%)",
+                        }}
+                      />
+                    </div>
 
-                  <div style={styles.progressFooter}>
-                    <span>
-                      {maxParticipants > 0
-                        ? `${participantCount} / ${maxParticipants}`
-                        : `${participantCount}명 참가`}
-                    </span>
-                    <span>
-                      {percent >= 100
-                        ? "정원 마감"
-                        : percent >= 70
-                          ? "참가 활발"
-                          : "참가 가능"}
-                    </span>
+                    <div style={styles.progressFooter}>
+                      <span>{participantCount} / {maxParticipants}</span>
+                      <span>
+                        {percent >= 100
+                          ? "정원 마감"
+                          : percent >= 70
+                            ? "참가 활발"
+                            : "참가 가능"}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div style={styles.noLimitBox}>
+                    <span style={styles.noLimitLabel}>정원 제한 없음</span>
+                    <span style={styles.noLimitValue}>현재 {participantCount}명 참가 중</span>
+                  </div>
+                )}
 
                 <div style={styles.actionRow}>
                   <button
@@ -834,6 +837,28 @@ const styles = {
     color: "#111827",
     fontWeight: "700",
     textAlign: "right",
+  },
+  noLimitBox: {
+    marginTop: "4px",
+    padding: "14px",
+    borderRadius: "14px",
+    background: "#f8fafc",
+    border: "1px solid #e5e7eb",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "10px",
+    flexWrap: "wrap",
+  },
+  noLimitLabel: {
+    fontSize: "13px",
+    fontWeight: "800",
+    color: "#374151",
+  },
+  noLimitValue: {
+    fontSize: "13px",
+    fontWeight: "700",
+    color: "#4c6ef5",
   },
   progressWrap: {
     marginTop: "4px",

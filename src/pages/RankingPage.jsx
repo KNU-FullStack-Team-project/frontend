@@ -243,6 +243,8 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
   const top3 = ranking.slice(0, 3);
   const others = ranking.slice(3);
 
+  const getDisplayRank = (user, fallbackRank) => user?.rank ?? fallbackRank;
+
   const resetFilters = () => {
     setSelectedStatus("ALL");
     setShowOnlyJoined(false);
@@ -250,6 +252,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
   };
 
   const renderTopCard = (user, displayRank) => {
+    const rankLabel = getDisplayRank(user, displayRank);
     const medalStyle =
       displayRank === 1
         ? styles.firstCard
@@ -259,7 +262,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
 
     return (
       <div key={displayRank} style={{ ...styles.topCard, ...medalStyle }}>
-        <div style={styles.topRankBadge}>{displayRank}위</div>
+        <div style={styles.topRankBadge}>{rankLabel}위</div>
         <div style={styles.profileCircle}>
           {user?.profileImageUrl ? (
             <img
@@ -508,7 +511,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
               <div style={styles.emptyIcon}>📊</div>
               <p style={styles.emptyTitle}>표시할 랭킹 데이터가 없습니다.</p>
               <p style={styles.emptyText}>
-                아직 랭킹 API가 준비되지 않았거나 참가자가 없습니다.
+                아직 거래를 완료한 참가자가 없습니다. 거래 내역이 있는 참가자만 랭킹에 표시됩니다.
               </p>
             </div>
           ) : (
@@ -523,13 +526,15 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
                 <div style={styles.listHeader}>
                   <span>순위</span>
                   <span>참가자</span>
+                  <span>총자산</span>
                   <span>수익률</span>
                   <span>평가손익</span>
                 </div>
 
                 {(others.length > 0 ? others : top3.slice(0)).map(
                   (user, index) => {
-                    const rank = others.length > 0 ? index + 4 : index + 1;
+                    const fallbackRank = others.length > 0 ? index + 4 : index + 1;
+                    const rank = getDisplayRank(user, fallbackRank);
                     const isMe =
                       isLoggedIn &&
                       currentUser?.userId &&
@@ -546,6 +551,9 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
                         <span style={styles.rankCell}>{rank}</span>
                         <span style={styles.nameCell}>
                           {user?.nickname ?? "-"}
+                        </span>
+                        <span style={styles.assetCell}>
+                          {user?.totalAsset != null ? formatMoney(user.totalAsset) : "-"}
                         </span>
                         <span
                           className={user?.returnRate > 0 ? "up" : user?.returnRate < 0 ? "down" : ""}
@@ -937,7 +945,7 @@ const styles = {
   },
   listHeader: {
     display: "grid",
-    gridTemplateColumns: "80px 1.5fr 1fr 1fr",
+    gridTemplateColumns: "80px 1.4fr 1fr 1fr 1fr",
     gap: "12px",
     padding: "16px 18px",
     background: "#f9fafb",
@@ -948,7 +956,7 @@ const styles = {
   },
   listRow: {
     display: "grid",
-    gridTemplateColumns: "80px 1.5fr 1fr 1fr",
+    gridTemplateColumns: "80px 1.4fr 1fr 1fr 1fr",
     gap: "12px",
     padding: "16px 18px",
     borderBottom: "1px solid #f3f4f6",
@@ -964,6 +972,10 @@ const styles = {
   nameCell: {
     fontWeight: "700",
     color: "#111827",
+  },
+  assetCell: {
+    fontWeight: "700",
+    color: "#374151",
   },
   rateCell: {
     fontWeight: "800",

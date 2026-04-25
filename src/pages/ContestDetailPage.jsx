@@ -316,7 +316,7 @@ const ContestDetailPage = ({
         />
         <InfoCard
           label="최대 참가자 수"
-          value={`${competition.maxParticipants ?? "-"}명`}
+          value={competition.maxParticipants != null ? `${competition.maxParticipants}명` : "제한 없음"}
         />
         <InfoCard
           label="현재 참가자 수"
