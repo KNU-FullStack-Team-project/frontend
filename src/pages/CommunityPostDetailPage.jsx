@@ -31,6 +31,7 @@ const CommunityPostDetailPage = ({
   const [uploadingFile, setUploadingFile] = useState(false);
 
   const [isLiking, setIsLiking] = useState(false);
+  const [isDisliking, setIsDisliking] = useState(false);
 
   const [reportTarget, setReportTarget] = useState(null);
   const [reportForm, setReportForm] = useState({
@@ -218,8 +219,8 @@ const CommunityPostDetailPage = ({
       return;
     }
 
-    if (postDetail?.likedByCurrentUser) {
-      alert("이미 추천한 게시글입니다.");
+    if (postDetail?.votedByCurrentUser || postDetail?.likedByCurrentUser) {
+      alert("이미 추천 또는 비추천한 게시글입니다.");
       return;
     }
 
@@ -254,6 +255,8 @@ const CommunityPostDetailPage = ({
         ...prev,
         likeCount: (prev?.likeCount || 0) + 1,
         likedByCurrentUser: true,
+        votedByCurrentUser: true,
+        myVoteType: "LIKE",
       }));
 
       alert("추천이 반영되었습니다.");
@@ -262,6 +265,65 @@ const CommunityPostDetailPage = ({
       alert("추천 중 오류가 발생했습니다.");
     } finally {
       setIsLiking(false);
+    }
+  };
+
+  const handleDislikePost = async () => {
+    if (!isLoggedIn || !currentUser?.userId) {
+      alert("로그인 후 비추천할 수 있습니다.");
+      return;
+    }
+
+    if (isMyPost) {
+      alert("본인 글은 비추천할 수 없습니다.");
+      return;
+    }
+
+    if (postDetail?.votedByCurrentUser || postDetail?.likedByCurrentUser) {
+      alert("이미 추천 또는 비추천한 게시글입니다.");
+      return;
+    }
+
+    try {
+      setIsDisliking(true);
+
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
+
+      if (!token) {
+        alert("로그인 토큰이 없습니다.");
+        return;
+      }
+
+      const response = await fetch(
+        `/api/community/posts/${postId}/dislike`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const text = await response.text();
+
+      if (!response.ok) {
+        alert(text || "비추천에 실패했습니다.");
+        return;
+      }
+
+      setPostDetail((prev) => ({
+        ...prev,
+        dislikeCount: (prev?.dislikeCount || 0) + 1,
+        votedByCurrentUser: true,
+        myVoteType: "DISLIKE",
+      }));
+
+      alert("비추천이 반영되었습니다.");
+    } catch (error) {
+      console.error("비추천 오류:", error);
+      alert("비추천 중 오류가 발생했습니다.");
+    } finally {
+      setIsDisliking(false);
     }
   };
 
@@ -664,6 +726,7 @@ const CommunityPostDetailPage = ({
                 <span>조회 {postDetail.viewCount ?? 0}</span>
                 <span>댓글 {postDetail.commentCount ?? 0}</span>
                 <span>추천 {postDetail.likeCount ?? 0}</span>
+                <span>비추천 {postDetail.dislikeCount ?? 0}</span>
               </div>
 
               <RichTextEditor
@@ -749,6 +812,7 @@ const CommunityPostDetailPage = ({
                 <span>조회 {postDetail.viewCount ?? 0}</span>
                 <span>댓글 {postDetail.commentCount ?? 0}</span>
                 <span>추천 {postDetail.likeCount ?? 0}</span>
+                <span>비추천 {postDetail.dislikeCount ?? 0}</span>
               </div>
 
               <div style={styles.topActionRow}>
@@ -756,19 +820,51 @@ const CommunityPostDetailPage = ({
                   <button
                     type="button"
                     onClick={handleLikePost}
-                    disabled={!isLoggedIn || postDetail.likedByCurrentUser || isLiking || isMyPost}
+                    disabled={
+                      !isLoggedIn ||
+                      postDetail.votedByCurrentUser ||
+                      postDetail.likedByCurrentUser ||
+                      isLiking ||
+                      isDisliking ||
+                      isMyPost
+                    }
                     style={{
                       ...styles.likeButton,
-                      ...((postDetail.likedByCurrentUser || isMyPost)
+                      ...((postDetail.votedByCurrentUser || postDetail.likedByCurrentUser || isMyPost)
                         ? styles.likeButtonDisabled
                         : {}),
                     }}
                   >
                     {isMyPost
                       ? "내 글은 추천 불가"
-                      : postDetail.likedByCurrentUser
+                      : postDetail.myVoteType === "LIKE"
                         ? "추천 완료"
                         : "👍 추천하기"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDislikePost}
+                    disabled={
+                      !isLoggedIn ||
+                      postDetail.votedByCurrentUser ||
+                      postDetail.likedByCurrentUser ||
+                      isLiking ||
+                      isDisliking ||
+                      isMyPost
+                    }
+                    style={{
+                      ...styles.dislikeButton,
+                      ...((postDetail.votedByCurrentUser || postDetail.likedByCurrentUser || isMyPost)
+                        ? styles.likeButtonDisabled
+                        : {}),
+                    }}
+                  >
+                    {isMyPost
+                      ? "내 글은 비추천 불가"
+                      : postDetail.myVoteType === "DISLIKE"
+                        ? "비추천 완료"
+                        : "👎 비추천"}
                   </button>
 
                   {canReportPost && (
@@ -1111,6 +1207,16 @@ const styles = {
     border: "none",
     background: "#2563eb",
     color: "#fff",
+    cursor: "pointer",
+    fontWeight: "700",
+    fontSize: "13px",
+  },
+  dislikeButton: {
+    padding: "10px 16px",
+    borderRadius: "10px",
+    border: "1px solid #d1d5db",
+    background: "#f1f3f5",
+    color: "#495057",
     cursor: "pointer",
     fontWeight: "700",
     fontSize: "13px",
