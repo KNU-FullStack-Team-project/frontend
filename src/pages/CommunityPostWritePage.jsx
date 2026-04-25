@@ -94,22 +94,22 @@ const CommunityPostWritePage = ({
     if (!isAdmin || form.noticeTarget === "none") {
       return {
         submitUrl: isStockBoard
-          ? `http://localhost:8081/api/community/stocks/${symbol}/posts`
-          : "http://localhost:8081/api/community/boards/free/posts",
+          ? `/api/community/stocks/${symbol}/posts`
+          : "/api/community/boards/free/posts",
         payloadIsNotice: false,
       };
     }
 
     if (form.noticeTarget === "global") {
       return {
-        submitUrl: "http://localhost:8081/api/community/notices",
+        submitUrl: "/api/community/notices",
         payloadIsNotice: true,
       };
     }
 
     if (form.noticeTarget === "free") {
       return {
-        submitUrl: "http://localhost:8081/api/community/boards/free/posts",
+        submitUrl: "/api/community/boards/free/posts",
         payloadIsNotice: true,
       };
     }
@@ -120,15 +120,15 @@ const CommunityPostWritePage = ({
       }
 
       return {
-        submitUrl: `http://localhost:8081/api/community/stocks/${symbol}/posts`,
+        submitUrl: `/api/community/stocks/${symbol}/posts`,
         payloadIsNotice: true,
       };
     }
 
     return {
       submitUrl: isStockBoard
-        ? `http://localhost:8081/api/community/stocks/${symbol}/posts`
-        : "http://localhost:8081/api/community/boards/free/posts",
+        ? `/api/community/stocks/${symbol}/posts`
+        : "/api/community/boards/free/posts",
       payloadIsNotice: false,
     };
   };
