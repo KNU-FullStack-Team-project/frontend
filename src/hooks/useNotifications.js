@@ -66,7 +66,7 @@ const useNotifications = (userId) => {
     });
 
     eventSource.addEventListener("connect", (event) => {
-      console.log("SSE Connected:", event.data);
+      // console.log("SSE Connected:", event.data);
     });
 
     eventSource.addEventListener("notification", (event) => {
