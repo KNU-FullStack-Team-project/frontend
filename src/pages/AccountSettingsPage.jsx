@@ -347,7 +347,9 @@ const AccountSettingsPage = ({
       <div className="content-card">
         <div className="section-header">
           <div>
-            <h3>회원정보수정</h3>
+            <p className="mypage-eyebrow">ACCOUNT SETTINGS</p>
+            <h3 className="mypage-title">회원정보수정</h3>
+            <p className="mypage-subtext">프로필 정보와 보안 설정을 관리하세요.</p>
           </div>
 
           <AppButton type="button" variant="outline" onClick={onBackToMyPage}>
@@ -360,11 +362,12 @@ const AccountSettingsPage = ({
         <div className="section-header">
           <div>
             <h3>프로필 사진</h3>
+            <p className="mypage-subtext">나를 표현하는 멋진 사진을 등록해 보세요.</p>
           </div>
         </div>
 
         <div className="profile-image-editor">
-          <div className="profile-image-preview">
+          <div className="profile-image-preview is-large">
             {profileImageUrl ? (
               <img
                 src={`${profileImageUrl}`}
@@ -398,6 +401,7 @@ const AccountSettingsPage = ({
         <div className="section-header">
           <div>
             <h3>닉네임 변경</h3>
+            <p className="mypage-subtext">사이트에서 사용할 고유한 이름을 설정합니다.</p>
           </div>
         </div>
 
@@ -430,6 +434,7 @@ const AccountSettingsPage = ({
           <div className="section-header">
             <div>
               <h3>비밀번호 변경</h3>
+              <p className="mypage-subtext">안전한 계정 관리를 위해 비밀번호를 주기적으로 변경해 주세요.</p>
             </div>
           </div>
 
@@ -488,6 +493,7 @@ const AccountSettingsPage = ({
         <div className="section-header">
           <div>
             <h3>회원탈퇴</h3>
+            <p className="mypage-subtext">탈퇴 시 모든 정보가 삭제되며 복구할 수 없습니다.</p>
           </div>
         </div>
 
