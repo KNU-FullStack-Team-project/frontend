@@ -49,4 +49,4 @@ jobs:
         script: |
           cd ~/teamproject
           # 컴포즈를 통해 프론트엔드 컨테이너만 빌드 및 재시작
-          sudo docker-compose up --build -d frontend
+          sudo docker compose up --build -d frontend
