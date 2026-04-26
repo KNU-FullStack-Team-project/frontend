@@ -951,6 +951,11 @@ const handleToggleCompetitionVisibility = async (competitionId, isPublic) => {
             isLoggedIn={isLoggedIn}
             onOpenLogin={handleOpenLogin}
             currentUser={currentUser}
+            onSelectNoticeBoard={handleMoveToNoticeBoard}
+            onSelectPost={(postId) => {
+              setSelectedCommunityBoardType("notice");
+              handleOpenCommunityPostDetail(postId);
+            }}
           />
         );
     }

@@ -3,9 +3,27 @@ import AppButton from "../common/AppButton";
 import InfoCard from "../common/InfoCard";
 import SectionTitle from "../common/SectionTitle";
 
-const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
+const HomePage = ({ isLoggedIn, onOpenLogin, currentUser, onSelectNoticeBoard, onSelectPost }) => {
   const [accountData, setAccountData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [latestNotice, setLatestNotice] = useState(null);
+
+  useEffect(() => {
+    const fetchLatestNotice = async () => {
+      try {
+        const response = await fetch("/api/community/notices");
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setLatestNotice(data[0]);
+          }
+        }
+      } catch (err) {
+        console.error("Notice fetch error:", err);
+      }
+    };
+    fetchLatestNotice();
+  }, []);
 
   useEffect(() => {
     if (isLoggedIn && currentUser?.email) {
@@ -61,6 +79,14 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
             </div>
           </section>
 
+          {latestNotice && (
+            <div style={styles.noticeBar} onClick={() => onSelectPost?.(latestNotice.postId)}>
+              <span style={styles.noticeBadge}>전역공지</span>
+              <span style={styles.noticeTitle}>{latestNotice.title}</span>
+              <span style={styles.noticeMore}>더보기 →</span>
+            </div>
+          )}
+
           <section className="landing-section" style={{ textAlign: "center" }}>
             <SectionTitle value="서비스 소개" />
             <div
@@ -109,6 +135,14 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser }) => {
         <h1 style={styles.heroTitle}>메인</h1>
         <p style={styles.heroText}>내 자산 현황을 한눈에 파악하고, 오늘의 투자 목표를 설정해보세요.</p>
       </div>
+
+      {latestNotice && (
+        <div style={styles.noticeBar} onClick={() => onSelectPost?.(latestNotice.postId)}>
+          <span style={styles.noticeBadge}>전역공지</span>
+          <span style={styles.noticeTitle}>{latestNotice.title}</span>
+          <span style={styles.noticeMore}>더보기 →</span>
+        </div>
+      )}
 
       <div className="dashboard-grid">
         <article className="mypage-stat-card">
@@ -274,6 +308,43 @@ const styles = {
     color: "rgba(255, 255, 255, 0.9)",
     lineHeight: "1.6",
     maxWidth: "800px",
+  },
+  noticeBar: {
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "16px",
+    padding: "14px 20px",
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "24px",
+    cursor: "pointer",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+    transition: "transform 0.2s ease",
+  },
+  noticeBadge: {
+    background: "#1d4ed8",
+    color: "#fff",
+    padding: "4px 10px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "800",
+    flexShrink: 0,
+  },
+  noticeTitle: {
+    fontSize: "14px",
+    color: "#374151",
+    fontWeight: "600",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    flex: 1,
+  },
+  noticeMore: {
+    fontSize: "13px",
+    color: "#6b7280",
+    fontWeight: "500",
+    flexShrink: 0,
   },
 };
 
