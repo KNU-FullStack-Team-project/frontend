@@ -205,7 +205,8 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
 
   const handleSearch = async (e) => {
     if (e) e.preventDefault();
-    if (!searchKeyword.trim()) {
+    const currentKeyword = searchKeyword.trim();
+    if (!currentKeyword) {
       setSearchResults(null);
       return;
     }
@@ -214,12 +215,15 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
       setIsSearching(true);
       const response = await fetch(
         `/api/stocks/search?keyword=${encodeURIComponent(
-          searchKeyword,
+          currentKeyword,
         )}`,
       );
       if (response.ok) {
         const data = await response.json();
-        setSearchResults(data);
+        // [수정] 레이스 컨디션 방지: 검색 결과가 도착했을 때의 키워드가 현재 검색어와 같을 때만 업데이트
+        if (searchKeyword.trim() === currentKeyword) {
+          setSearchResults(data);
+        }
       }
     } catch (err) {
       console.error("Search failed:", err);
@@ -305,11 +309,13 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
     return () => {
       if (currentTarget) observer.unobserve(currentTarget);
     };
-  }, [hasMore, loading, page, fetchStocks, activeTab]);
+    // [수정] searchResults, selectedIndustry, selectedType을 의존성에 추가하여 필터/검색 변경 시 관찰자 재설정 보장
+  }, [hasMore, loading, page, fetchStocks, activeTab, searchResults, selectedIndustry, selectedType]);
 
   // 시세 미수집 종목(0원)이 있을 경우 자동으로 정보를 다시 불러오는 로직 (지능형 자동 갱신)
   useEffect(() => {
-    if (activeTab !== "all" || loading || stocks.length === 0) return;
+    // [수정] 검색 중이거나 다른 탭일 때는 자동 갱신을 멈춰 리소스 낭비 및 레이스 컨디션 방지
+    if (activeTab !== "all" || loading || stocks.length === 0 || searchResults !== null) return;
 
     const hasIncompleteData = stocks.some(
       (s) => s.currentPrice === "0" || !s.currentPrice || s.currentPrice === "null"
@@ -323,7 +329,8 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
 
       return () => clearTimeout(timer);
     }
-  }, [stocks, loading, page, fetchStocks, activeTab]);
+    // [수정] 의존성 배열 보완
+  }, [stocks, loading, page, fetchStocks, activeTab, searchResults, selectedIndustry, selectedType]);
 
   const toggleFavorite = async (e, symbol) => {
     e.stopPropagation();
