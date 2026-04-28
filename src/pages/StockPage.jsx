@@ -724,6 +724,10 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
             stock={selectedStock}
             user={user}
             onOpenCommunity={onOpenCommunity}
+            onOpenCompare={() => {
+              setIsModalOpen(false);
+              setIsCompareMode(true);
+            }}
           />
         </Modal>
       </div>
