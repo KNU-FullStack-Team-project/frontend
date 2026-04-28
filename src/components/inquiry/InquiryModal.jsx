@@ -46,6 +46,7 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
   const fetchInquiries = async () => {
     setIsLoading(true);
     try {
+      const url = isAdmin ? "/api/inquiries/all" : "/api/inquiries/my";
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
