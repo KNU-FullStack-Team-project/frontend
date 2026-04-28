@@ -4,10 +4,11 @@ import * as Indicators from "../../utils/IndicatorUtils";
 const cleanNumber = (val) => {
   if (!val) return 0;
   if (typeof val === "number") return val;
-  return parseInt(String(val).replace(/,/g, "")) || 0;
+  // 숫자와 소수점 외의 모든 문자(₩, , 등) 제거
+  return parseInt(String(val).replace(/[^0-9.-]/g, "")) || 0;
 };
 
-const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
+const CandleChart = ({ data, indicators = {}, width = 800, height = 500, avgPrice = null }) => {
   const [hoverIdx, setHoverIdx] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -171,6 +172,30 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
         strokeWidth="1"
         strokeDasharray="2,2"
       />
+
+      {/* 평단가 라인 추가 */}
+      {avgPrice && avgPrice > 0 && (
+        <>
+          <line
+            x1={margin.left}
+            y1={getY(cleanNumber(avgPrice))}
+            x2={svgWidth - margin.right}
+            y2={getY(cleanNumber(avgPrice))}
+            stroke="#10b981"
+            strokeWidth="1.5"
+            strokeDasharray="5,5"
+          />
+          <text 
+            x={scrollLeftState + 15} 
+            y={getY(cleanNumber(avgPrice)) - 5} 
+            fill="#10b981" 
+            fontSize="10" 
+            fontWeight="700"
+          >
+            내 평단가: {cleanNumber(avgPrice).toLocaleString()}
+          </text>
+        </>
+      )}
 
       {/* 볼린저 밴드 영역 채우기 */}
       {indicators.bb && computedIndicators.bb && (
@@ -500,6 +525,12 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
             <span>종가</span>
             <span style={{ fontWeight: 800 }}>{cleanNumber(sortedData[hoverIdx].close).toLocaleString()}</span>
           </div>
+          {avgPrice && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', marginBottom: '4px', color: '#10b981' }}>
+              <span>내 평단가</span>
+              <span style={{ fontWeight: 800 }}>{cleanNumber(avgPrice).toLocaleString()}</span>
+            </div>
+          )}
           {computedIndicators.ma5 && computedIndicators.ma5[hoverIdx] && (
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', color: '#ff3b30' }}>
               <span>MA5</span>
