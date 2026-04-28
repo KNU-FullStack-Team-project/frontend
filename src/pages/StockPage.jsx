@@ -123,18 +123,11 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
 
   const fetchFavorites = useCallback(async () => {
     const userId = user?.userId || user?.id;
-    const token = localStorage.getItem("accessToken") || user?.token;
-
-    if (!userId || !token) return;
+    if (!userId) return;
 
     try {
       const response = await fetch(
-        `/api/favorites?userId=${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+        `/api/favorites?userId=${userId}`
       );
 
       if (response.ok) {
@@ -148,19 +141,12 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
 
   const fetchFavoriteDetails = useCallback(async () => {
     const userId = user?.userId || user?.id;
-    const token = localStorage.getItem("accessToken") || user?.token;
-
-    if (!userId || !token) return;
+    if (!userId) return;
 
     try {
       setIsFavoritesLoading(true);
       const response = await fetch(
-        `/api/favorites/details?userId=${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+        `/api/favorites/details?userId=${userId}`
       );
 
       if (response.ok) {
@@ -176,19 +162,13 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
 
   const fetchHeldStocks = useCallback(async () => {
     const accountId = user?.accountId;
-    const token = localStorage.getItem("accessToken") || user?.token;
 
-    if (!accountId || !token) return;
+    if (!accountId) return;
 
     try {
       setIsHoldingsLoading(true);
       const response = await fetch(
-        `/api/orders/holdings?accountId=${accountId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+        `/api/orders/holdings?accountId=${accountId}`
       );
 
       if (response.ok) {
@@ -243,9 +223,8 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
       fetchStocks(1, true);
 
       const userId = user?.userId || user?.id;
-      const token = localStorage.getItem("accessToken") || user?.token;
 
-      if (userId && token) {
+      if (userId) {
         fetchFavorites();
       } else {
         const savedFavs = localStorage.getItem("favoriteStocks");
@@ -327,9 +306,8 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
     e.stopPropagation();
 
     const userId = user?.userId || user?.id;
-    const token = localStorage.getItem("accessToken") || user?.token;
 
-    if (!userId || !token) {
+    if (!userId) {
       const newFavs = new Set(favorites);
       if (newFavs.has(symbol)) {
         newFavs.delete(symbol);
@@ -363,7 +341,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
         {
           method,
           headers: {
-            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         },
       );

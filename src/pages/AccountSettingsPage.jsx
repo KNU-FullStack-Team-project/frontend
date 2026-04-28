@@ -65,8 +65,7 @@ const AccountSettingsPage = ({
       try {
         const params = new URLSearchParams({ email: currentUser.email });
         const response = await fetch(
-          `/api/users/profile?${params.toString()}`,
-          { headers: { Authorization: `Bearer ${currentUser.token}` } },
+          `/api/users/profile?${params.toString()}`
         );
 
         if (!response.ok) {
@@ -86,7 +85,7 @@ const AccountSettingsPage = ({
     };
 
     loadProfile();
-  }, [currentUser?.email, currentUser?.token, onUpdateCurrentUser]);
+  }, [currentUser?.email, onUpdateCurrentUser]);
 
   useEffect(() => {
     setNickname(currentUser?.nickname || "");
@@ -114,8 +113,7 @@ const AccountSettingsPage = ({
           email: currentUser.email,
         });
         const response = await fetch(
-          `/api/users/check-nickname?${params.toString()}`,
-          { headers: { Authorization: `Bearer ${currentUser.token}` } },
+          `/api/users/check-nickname?${params.toString()}`
         );
 
         const message = await response.text();
@@ -142,7 +140,7 @@ const AccountSettingsPage = ({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [nickname, currentUser?.email, currentUser?.nickname, currentUser?.token]);
+  }, [nickname, currentUser?.email, currentUser?.nickname]);
 
   const handleNicknameChange = (event) => {
     setNickname(event.target.value);
@@ -233,7 +231,6 @@ const AccountSettingsPage = ({
         `/api/users/profile-image?${params.toString()}`,
         {
           method: "POST",
-          headers: { Authorization: `Bearer ${currentUser.token}` },
           body: formData,
         },
       );

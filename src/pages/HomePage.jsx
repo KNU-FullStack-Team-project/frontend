@@ -30,21 +30,8 @@ const HomePage = ({ isLoggedIn, onOpenLogin, currentUser, onSelectNoticeBoard, o
       const fetchDashboard = async () => {
         setLoading(true);
         try {
-          const token =
-            localStorage.getItem("accessToken") || currentUser?.token;
-
-          if (!token) {
-            setLoading(false);
-            return;
-          }
-
           const response = await fetch(
-            `/api/accounts/my/dashboard?email=${currentUser.email}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            },
+            `/api/accounts/my/dashboard?email=${currentUser.email}`
           );
 
           if (response.ok) {

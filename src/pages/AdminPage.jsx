@@ -21,9 +21,6 @@ const AdminPage = ({
     const loadUsers = async () => {
       try {
         const response = await fetch("/api/admin/users", {
-          headers: {
-            Authorization: `Bearer ${currentUser?.token}`,
-          },
         });
         if (!response.ok) {
           throw new Error("failed");
@@ -46,7 +43,7 @@ const AdminPage = ({
     };
 
     loadUsers();
-  }, [currentUser?.token]);
+  }, []);
 
   const handleUserFieldChange = (userId, field, value) => {
     setEditedUsers((prev) => ({
@@ -73,7 +70,6 @@ const AdminPage = ({
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${currentUser?.token}`,
           },
           body: JSON.stringify(nextUser),
         },

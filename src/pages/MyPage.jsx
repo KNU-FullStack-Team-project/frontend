@@ -67,19 +67,9 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   const fetchDashboardData = async (accountId) => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
 
       const response = await fetch(
-        `/api/accounts/my/dashboard?email=${targetEmail}&accountId=${accountId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        `/api/accounts/my/dashboard?email=${targetEmail}&accountId=${accountId}`
       );
 
       if (response.ok) {
@@ -99,25 +89,11 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     }
 
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        setError(TEXT.loginMissing);
-        return;
-      }
-
       const params = new URLSearchParams({ email: targetEmail });
-      const commonHeaders = {
-        Authorization: `Bearer ${token}`,
-      };
 
       const [profileResponse, accountsResponse] = await Promise.all([
-        fetch(`/api/users/profile?${params.toString()}`, {
-          headers: commonHeaders,
-        }),
-        fetch(`/api/accounts/my?${params.toString()}`, {
-          headers: commonHeaders,
-        }),
+        fetch(`/api/users/profile?${params.toString()}`),
+        fetch(`/api/accounts/my?${params.toString()}`),
       ]);
 
       if (!profileResponse.ok || !accountsResponse.ok) {
@@ -152,10 +128,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
       const userId = profileData?.id || currentUser?.userId;
       if (userId) {
         const compResponse = await fetch(
-          `/api/competitions/my?userId=${userId}`,
-          {
-            headers: commonHeaders,
-          }
+          `/api/competitions/my?userId=${userId}`
         );
         if (compResponse.ok) {
           const compData = await compResponse.json();
@@ -190,19 +163,10 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     setResettingAccountId(accountId);
 
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        throw new Error(TEXT.loginMissing);
-      }
-
       const response = await fetch(
         `/api/accounts/${accountId}/reset-cash`,
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         }
       );
 

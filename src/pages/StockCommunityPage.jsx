@@ -76,16 +76,11 @@ const StockCommunityPage = ({
       return;
     }
 
-    const token = localStorage.getItem("accessToken") || currentUser?.token;
-
     try {
       setLoadingCommentedPosts(true);
 
       const response = await fetch(
-        `/api/community/stocks/${symbol}/posts/commented-by-me`,
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }
+        `/api/community/stocks/${symbol}/posts/commented-by-me`
       );
 
       if (!response.ok) {

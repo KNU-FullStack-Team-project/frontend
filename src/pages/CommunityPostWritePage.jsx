@@ -134,16 +134,11 @@ const CommunityPostWritePage = ({
   };
 
   const uploadImage = async (file) => {
-    const token = localStorage.getItem("accessToken") || currentUser?.token;
-
     const formData = new FormData();
     formData.append("file", file);
 
     const response = await fetch("/api/community/uploads/images", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
       body: formData,
     });
 
@@ -165,8 +160,6 @@ const CommunityPostWritePage = ({
       return;
     }
 
-    const token = localStorage.getItem("accessToken") || currentUser?.token;
-
     try {
       setUploadingFile(true);
 
@@ -177,9 +170,6 @@ const CommunityPostWritePage = ({
 
         const response = await fetch("/api/community/uploads/files", {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
           body: formData,
         });
 
@@ -222,8 +212,6 @@ const CommunityPostWritePage = ({
       return;
     }
 
-    const token = localStorage.getItem("accessToken") || currentUser?.token;
-
     try {
       setSubmitting(true);
 
@@ -233,7 +221,6 @@ const CommunityPostWritePage = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           title: form.title.trim(),

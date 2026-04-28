@@ -78,11 +78,6 @@ const UserActivityPage = ({ currentUser, targetUser, onBack, onOpenPost }) => {
       try {
         const response = await fetch(
           `/api/admin/users/${targetUser.id}/activities`,
-          {
-            headers: {
-              Authorization: `Bearer ${currentUser?.token}`,
-            },
-          },
         );
 
         if (!response.ok) {
@@ -98,7 +93,7 @@ const UserActivityPage = ({ currentUser, targetUser, onBack, onOpenPost }) => {
     };
 
     loadActivities();
-  }, [currentUser?.token, targetUser?.id]);
+  }, [targetUser?.id]);
 
   const [activeFilter, setActiveFilter] = useState("ALL");
 

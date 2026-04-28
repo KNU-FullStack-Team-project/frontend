@@ -29,12 +29,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
     }
 
     fetch(
-      `/api/competitions/my?userId=${currentUser.userId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${currentUser?.token}`,
-        },
-      },
+      `/api/competitions/my?userId=${currentUser.userId}`
     )
       .then(async (res) => {
         if (!res.ok) {
@@ -55,11 +50,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
     setCompetitionLoading(true);
     setCompetitionError("");
 
-    fetch("/api/competitions", {
-      headers: {
-        Authorization: `Bearer ${currentUser?.token}`,
-      },
-    })
+    fetch("/api/competitions")
       .then(async (res) => {
         if (!res.ok) {
           throw new Error("대회 목록을 불러오지 못했습니다.");
@@ -116,11 +107,7 @@ const RankingPage = ({ selectedCompetitionId, currentUser, isLoggedIn }) => {
     setRankingLoading(true);
     setRankingError("");
 
-    fetch(`/api/competitions/${selectedId}/ranking`, {
-      headers: {
-        Authorization: `Bearer ${currentUser?.token}`,
-      },
-    })
+    fetch(`/api/competitions/${selectedId}/ranking`)
       .then(async (res) => {
         if (!res.ok) {
           const text = await res.text();

@@ -38,6 +38,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [detailTab, setDetailTab] = useState("trade");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [alertTargetPrice, setAlertTargetPrice] = useState(0);
   const [alertDirection, setAlertDirection] = useState("ABOVE"); // ABOVE or BELOW
@@ -67,18 +68,11 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   }, [stock, orderType, targetPrice, alertTargetPrice]);
 
   const handleCreateAlert = async () => {
-    const token = localStorage.getItem("accessToken") || user?.token;
-    if (!user || !token) {
-      alert("로그인이 필요합니다.");
-      return;
-    }
-
     try {
       const response = await fetch(`/api/price-alerts/${user.id || user.userId}`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           stockId: stock.id || stock.stockId || 1, // Ensure various ID field names are handled
@@ -116,6 +110,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
 
       try {
         setLoading(true);
+        setError(null);
         const response = await fetch(
           `/api/stocks/${stock.symbol}/history?period=${period}`,
           { signal: abortController.signal }
@@ -132,10 +127,9 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
           setCandles([]);
         }
       } catch (err) {
-        if (err.name === 'AbortError') {
-          console.log('[Abort] Previous chart request cancelled');
-        } else {
-          console.error(err);
+        if (err.name !== 'AbortError') {
+          console.error("Chart fetch error:", err);
+          setError("차트 데이터를 불러오는 중 오류가 발생했습니다.");
         }
       } finally {
         setLoading(false);
@@ -151,17 +145,9 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
 
   const fetchUserAccounts = React.useCallback(async () => {
     if (!user?.email) return;
-    const token = localStorage.getItem("accessToken") || user?.token;
-    if (!token) return;
-
     try {
       const response = await fetch(
-        `/api/accounts/my?email=${user.email}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        `/api/accounts/my?email=${user.email}`
       );
       if (response.ok) {
         const data = await response.json();
@@ -178,17 +164,9 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   const fetchAccountData = React.useCallback(async () => {
     if (!user?.email || !selectedAccountId) return;
 
-    const token = localStorage.getItem("accessToken") || user?.token;
-    if (!token) return;
-
     try {
       const response = await fetch(
-        `/api/accounts/my/dashboard?email=${user.email}&accountId=${selectedAccountId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        `/api/accounts/my/dashboard?email=${user.email}&accountId=${selectedAccountId}`
       );
 
       if (response.ok) {
@@ -211,41 +189,6 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   }, [selectedAccountId, fetchAccountData]);
 
   const handleOrder = async () => {
-    const token = localStorage.getItem("accessToken") || user?.token;
-
-    if (!user || !token) {
-      alert("로그인이 필요합니다.");
-      return;
-    }
-
-    if (!accountData) {
-      alert("계좌 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
-      return;
-    }
-
-    if (!quantity || quantity <= 0) {
-      alert("수량을 입력해주세요.");
-      return;
-    }
-
-    if (orderType === "LIMIT") {
-      const current = cleanNumber(stock.currentPrice);
-      const base = cleanNumber(stock.basePrice) || current;
-      const lower = base * 0.7;
-      const upper = base * 1.3;
-
-      if (targetPrice < lower || targetPrice > upper) {
-        alert(
-          `지정가는 전일 종가 기준 ±30% 이내여야 합니다.\n(가능 범위: ${Math.floor(
-            lower
-          ).toLocaleString()} ~ ${Math.ceil(upper).toLocaleString()})`
-        );
-        return;
-      }
-    }
-
-    if (isSubmitting) return;
-
     try {
       setIsSubmitting(true);
       const requestId = generateUUID(); // [수정] 자체 함수 사용
@@ -253,8 +196,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           accountId: selectedAccountId,
@@ -530,6 +472,10 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
             {loading ? (
               <div className="loading-placeholder">
                 차트 데이터를 불러오는 중...
+              </div>
+            ) : error ? (
+              <div className="error-placeholder" style={{ color: '#ef4444', textAlign: 'center', padding: '40px' }}>
+                {error}
               </div>
             ) : (
               <CandleChart

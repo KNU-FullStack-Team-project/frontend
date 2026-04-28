@@ -56,19 +56,11 @@ const AppController = () => {
   const autoLogoutTimeoutRef = useRef(null);
 
   const handleLogout = useCallback(() => {
-    const token = localStorage.getItem("accessToken");
-
-    if (token) {
-      fetch("/api/users/logout", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }).catch(() => { });
-    }
+    fetch("/api/users/logout", {
+      method: "POST",
+    }).catch(() => { });
 
     localStorage.removeItem("currentUser");
-    localStorage.removeItem("accessToken");
     setCurrentUser(null);
     setIsLoggedIn(false);
     setCurrentPage("home");
@@ -119,69 +111,43 @@ const AppController = () => {
 
   useEffect(() => {
     const savedUser = localStorage.getItem("currentUser");
-    const savedToken = localStorage.getItem("accessToken");
 
-    try {
-      if (savedUser) {
+    if (savedUser) {
+      try {
         const parsedUser = JSON.parse(savedUser);
-        const token = savedToken || parsedUser?.token;
-
-        if (parsedUser && token) {
-          const isExpired = checkTokenExpiration(token);
-
-          if (isExpired) {
-            handleLogout();
-          } else {
-            const restoredUser = { ...parsedUser, token };
-            setCurrentUser(restoredUser);
+        // 서버에 현재 세션 유효성 확인
+        fetch(`/api/users/profile?email=${parsedUser.email}`)
+          .then(res => {
+            if (res.ok) {
+              return res.json();
+            } else {
+              throw new Error("Session invalid");
+            }
+          })
+          .then(data => {
+            const loginUser = {
+              userId: data.id || data.userId,
+              email: data.email,
+              nickname: data.nickname,
+              role: data.role === "ADMIN" ? "admin" : "user",
+              accountId: data.accountId,
+              profileImageUrl: data.profileImageUrl,
+              isSocialLogin: parsedUser.isSocialLogin,
+            };
+            setCurrentUser(loginUser);
             setIsLoggedIn(true);
-            localStorage.setItem("currentUser", JSON.stringify(restoredUser));
-            localStorage.setItem("accessToken", token);
-            setupAutoLogout(token);
-          }
-        }
+            localStorage.setItem("currentUser", JSON.stringify(loginUser));
+          })
+          .catch(() => {
+            handleLogout();
+          });
+      } catch (e) {
+        console.error("Local storage user parsing error:", e);
+        handleLogout();
       }
-    } catch (e) {
-      console.error("Local storage user parsing error:", e);
-      localStorage.removeItem("currentUser");
-      localStorage.removeItem("accessToken");
     }
   }, [handleLogout]);
 
-  const checkTokenExpiration = (token) => {
-    try {
-      if (!token || token.split(".").length !== 3) return true;
-      const base64Url = token.split(".")[1];
-      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-      const payload = JSON.parse(window.atob(base64));
-      return payload.exp * 1000 < Date.now();
-    } catch (e) {
-      return true;
-    }
-  };
-
-  const setupAutoLogout = (token) => {
-    if (autoLogoutTimeoutRef.current) {
-      clearTimeout(autoLogoutTimeoutRef.current);
-    }
-
-    try {
-      if (!token || token.split(".").length !== 3) return;
-      const base64Url = token.split(".")[1];
-      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-      const payload = JSON.parse(window.atob(base64));
-      const remainingTime = payload.exp * 1000 - Date.now();
-
-      if (remainingTime > 0) {
-        autoLogoutTimeoutRef.current = setTimeout(() => {
-          alert("세션이 만료되어 자동으로 로그아웃되었습니다.");
-          handleLogout();
-        }, remainingTime);
-      }
-    } catch (e) {
-      console.error("자동 로그아웃 설정 오류:", e);
-    }
-  };
 
   const handleUpdateCurrentUser = useCallback((updates) => {
     setCurrentUser((prev) => {
@@ -198,26 +164,18 @@ const AppController = () => {
     resetInactivityTimer();
 
     try {
-      const currentToken =
-        localStorage.getItem("accessToken") || currentUser?.token;
       const res = await fetch("/api/users/refresh", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${currentToken}`,
-        },
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem("accessToken", data.token);
-        handleUpdateCurrentUser({ token: data.token });
-        setupAutoLogout(data.token);
+      if (!res.ok) {
+        // 리프레시 실패 시 로그아웃 처리
+        handleLogout();
       }
     } catch (e) {
       console.error("Heartbeat backend sync failed:", e);
     }
-  }, [isLoggedIn, currentUser, resetInactivityTimer, handleUpdateCurrentUser]);
+  }, [isLoggedIn, currentUser, resetInactivityTimer, handleLogout]);
 
   const handleLogin = async (form) => {
     try {
@@ -260,13 +218,12 @@ const AppController = () => {
         return;
       }
 
-      if (res.ok && data?.token) {
+      if (res.ok && data) {
         setLoginCaptchaRequired(false);
         setLoginCaptchaResetKey((prev) => prev + 1);
         setLoginErrorMessage("");
         setAuthMessage("");
 
-        const token = data.token || "";
         const loginUser = {
           userId: data.id || data.userId,
           email: data.email,
@@ -275,18 +232,12 @@ const AppController = () => {
           accountId: data.accountId,
           profileImageUrl: data.profileImageUrl,
           isSocialLogin: !!data.socialLogin,
-          token,
         };
 
         setCurrentUser(loginUser);
         setIsLoggedIn(true);
 
         localStorage.setItem("currentUser", JSON.stringify(loginUser));
-        localStorage.setItem("accessToken", token);
-
-        if (token) {
-          setupAutoLogout(token);
-        }
 
         if (pendingPage) {
           setCurrentPage(pendingPage);
@@ -340,14 +291,13 @@ const AppController = () => {
 
       const loginData = data?.login || data;
 
-      if (loginData?.token) {
+      if (loginData) {
         setLoginCaptchaRequired(false);
         setLoginCaptchaResetKey((prev) => prev + 1);
         setLoginErrorMessage("");
         setAuthMessage("");
         setSocialSignupData(null);
 
-        const token = loginData.token || "";
         const loginUser = {
           userId: loginData.id || loginData.userId,
           email: loginData.email,
@@ -356,18 +306,12 @@ const AppController = () => {
           accountId: loginData.accountId,
           profileImageUrl: loginData.profileImageUrl,
           isSocialLogin: !!loginData.socialLogin,
-          token,
         };
 
         setCurrentUser(loginUser);
         setIsLoggedIn(true);
 
         localStorage.setItem("currentUser", JSON.stringify(loginUser));
-        localStorage.setItem("accessToken", token);
-
-        if (token) {
-          setupAutoLogout(token);
-        }
 
         if (pendingPage) {
           setCurrentPage(pendingPage);
@@ -406,36 +350,26 @@ const AppController = () => {
         return;
       }
 
-      if (!data?.token) {
-        alert("간편회원가입 응답이 올바르지 않습니다.");
-        return;
-      }
+      if (data) {
+        setSocialSignupData(null);
+        setLoginCaptchaRequired(false);
+        setLoginCaptchaResetKey((prev) => prev + 1);
+        setLoginErrorMessage("");
+        setAuthMessage(data.message || "");
 
-      setSocialSignupData(null);
-      setLoginCaptchaRequired(false);
-      setLoginCaptchaResetKey((prev) => prev + 1);
-      setLoginErrorMessage("");
-      setAuthMessage(data.message || "");
+        const loginUser = {
+          userId: data.id || data.userId,
+          email: data.email,
+          nickname: data.nickname,
+          role: data.role === "ADMIN" ? "admin" : "user",
+          accountId: data.accountId,
+          profileImageUrl: data.profileImageUrl,
+          isSocialLogin: !!data.socialLogin,
+        };
 
-      const token = data.token || "";
-      const loginUser = {
-        userId: data.id || data.userId,
-        email: data.email,
-        nickname: data.nickname,
-        role: data.role === "ADMIN" ? "admin" : "user",
-        accountId: data.accountId,
-        profileImageUrl: data.profileImageUrl,
-        isSocialLogin: !!data.socialLogin,
-        token,
-      };
-
-      setCurrentUser(loginUser);
-      setIsLoggedIn(true);
-      localStorage.setItem("currentUser", JSON.stringify(loginUser));
-      localStorage.setItem("accessToken", token);
-
-      if (token) {
-        setupAutoLogout(token);
+        setCurrentUser(loginUser);
+        setIsLoggedIn(true);
+        localStorage.setItem("currentUser", JSON.stringify(loginUser));
       }
 
       if (pendingPage) {
@@ -635,15 +569,10 @@ const AppController = () => {
 
   const handleDeleteCompetition = async (competitionId) => {
   try {
-    const token = localStorage.getItem("accessToken") || currentUser?.token;
-
     const res = await fetch(
       `/api/competitions/${competitionId}`,
       {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       }
     );
 
@@ -665,15 +594,10 @@ const AppController = () => {
 
 const handleToggleCompetitionVisibility = async (competitionId, isPublic) => {
   try {
-    const token = localStorage.getItem("accessToken") || currentUser?.token;
-
     const res = await fetch(
       `/api/competitions/${competitionId}/visibility?isPublic=${isPublic}`,
       {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       }
     );
 

@@ -90,16 +90,11 @@ const FreeBoardPage = ({
       return;
     }
 
-    const token = localStorage.getItem("accessToken") || currentUser?.token;
-
     try {
       setLoadingCommentedPosts(true);
 
       const response = await fetch(
-        "/api/community/boards/free/posts/commented-by-me",
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }
+        "/api/community/boards/free/posts/commented-by-me"
       );
 
       if (response.status === 404) {

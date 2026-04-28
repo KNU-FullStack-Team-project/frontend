@@ -18,11 +18,7 @@ const ContestEditPage = ({ competitionId, currentUser, onBack, onSuccess }) => {
       return;
     }
 
-    fetch(`/api/competitions/${competitionId}`, {
-      headers: {
-        Authorization: `Bearer ${currentUser?.token}`,
-      },
-    })
+    fetch(`/api/competitions/${competitionId}`)
       .then((res) => {
         if (!res.ok) {
           throw new Error("대회 정보를 불러오지 못했습니다.");
@@ -92,7 +88,6 @@ const ContestEditPage = ({ competitionId, currentUser, onBack, onSuccess }) => {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${currentUser?.token}`,
           },
           body: JSON.stringify(payload),
         },

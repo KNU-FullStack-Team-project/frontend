@@ -44,19 +44,8 @@ const OrderHistory = ({ accountId, accountName, currentUser }) => {
     try {
       setLoading(true);
 
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        throw new Error(TEXT.loginTokenMissing);
-      }
-
       const response = await fetch(
-        `/api/orders?accountId=${accountId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        `/api/orders?accountId=${accountId}`
       );
 
       if (!response.ok) throw new Error("Order data fetch failed");
@@ -70,7 +59,7 @@ const OrderHistory = ({ accountId, accountName, currentUser }) => {
     } finally {
       setLoading(false);
     }
-  }, [accountId, currentUser]);
+  }, [accountId]);
 
   useEffect(() => {
     if (accountId) {
@@ -82,19 +71,10 @@ const OrderHistory = ({ accountId, accountName, currentUser }) => {
     if (!window.confirm(TEXT.cancelConfirm)) return;
 
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        throw new Error(TEXT.loginTokenMissing);
-      }
-
       const response = await fetch(
         `/api/orders/${orderId}/cancel?accountId=${accountId}`,
         {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          method: "POST"
         }
       );
 
