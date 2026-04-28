@@ -28,7 +28,6 @@ const formatDateTime = (value) => {
 const AdminPage = ({
   onOpenUserMyPage,
   onOpenUserActivity,
-  onOpenReportList,
   currentUser,
 }) => {
   const [users, setUsers] = useState([]);
@@ -42,6 +41,10 @@ const AdminPage = ({
   const [loginLogLoading, setLoginLogLoading] = useState(false);
   const [loginLogError, setLoginLogError] = useState("");
   const [loginLogSearchKeyword, setLoginLogSearchKeyword] = useState("");
+  const [reports, setReports] = useState([]);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState("");
+  const [reportSearchKeyword, setReportSearchKeyword] = useState("");
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -106,6 +109,37 @@ const AdminPage = ({
     };
 
     loadLoginLogs();
+  }, [activeTab, currentUser?.token]);
+
+  useEffect(() => {
+    if (activeTab !== "reports") {
+      return;
+    }
+
+    const loadReports = async () => {
+      setReportLoading(true);
+      setReportError("");
+
+      try {
+        const response = await fetch("/api/admin/reports", {
+          headers: {
+            Authorization: `Bearer ${currentUser?.token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("신고 목록을 불러오지 못했습니다.");
+        }
+
+        setReports(await response.json());
+      } catch (loadError) {
+        setReportError(loadError.message || "신고 목록을 불러오지 못했습니다.");
+      } finally {
+        setReportLoading(false);
+      }
+    };
+
+    loadReports();
   }, [activeTab, currentUser?.token]);
 
   const handleUserFieldChange = (userId, field, value) => {
@@ -194,6 +228,30 @@ const AdminPage = ({
     );
   }, [loginLogs, loginLogSearchKeyword]);
 
+  const filteredReports = useMemo(() => {
+    const keyword = reportSearchKeyword.trim().toLowerCase();
+
+    if (!keyword) {
+      return reports;
+    }
+
+    return reports.filter((report) =>
+      [
+        report.createdAt,
+        report.reportType,
+        report.postTitle,
+        report.reason,
+        report.detail,
+        report.targetContent,
+        report.reporterNickname,
+        report.reporterEmail,
+        report.reportStatus,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword)),
+    );
+  }, [reports, reportSearchKeyword]);
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -227,8 +285,13 @@ const AdminPage = ({
               </button>
               <button
                 type="button"
-                className="admin-toolbar-button"
-                onClick={() => onOpenReportList && onOpenReportList()}
+                className={`admin-toolbar-button ${
+                  activeTab === "reports" ? "is-active" : ""
+                }`}
+                onClick={() => {
+                  setActiveTab("reports");
+                  setReportSearchKeyword("");
+                }}
               >
                 신고목록
               </button>
@@ -255,7 +318,7 @@ const AdminPage = ({
                   onChange={(event) => setSearchKeyword(event.target.value)}
                 />
               </div>
-            ) : (
+            ) : activeTab === "loginLogs" ? (
               <div className="admin-search-wrap">
                 <input
                   type="text"
@@ -265,6 +328,16 @@ const AdminPage = ({
                   onChange={(event) =>
                     setLoginLogSearchKeyword(event.target.value)
                   }
+                />
+              </div>
+            ) : (
+              <div className="admin-search-wrap">
+                <input
+                  type="text"
+                  className="admin-search-input"
+                  placeholder="제목, 사유, 신고자 검색"
+                  value={reportSearchKeyword}
+                  onChange={(event) => setReportSearchKeyword(event.target.value)}
                 />
               </div>
             )}
@@ -300,6 +373,55 @@ const AdminPage = ({
                       <td>{log.nickname || "-"}</td>
                       <td>{log.loginId || "-"}</td>
                       <td>{log.actionLabel || "-"}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          ) : activeTab === "reports" ? (
+            <table className="stock-table admin-table">
+              <thead>
+                <tr>
+                  <th>시각</th>
+                  <th>구분</th>
+                  <th>게시글</th>
+                  <th>신고 내용</th>
+                  <th>신고자</th>
+                  <th>상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportLoading ? (
+                  <tr>
+                    <td colSpan="6">신고 목록을 불러오는 중입니다.</td>
+                  </tr>
+                ) : reportError ? (
+                  <tr>
+                    <td colSpan="6">{reportError}</td>
+                  </tr>
+                ) : filteredReports.length === 0 ? (
+                  <tr>
+                    <td colSpan="6">조회된 신고가 없습니다.</td>
+                  </tr>
+                ) : (
+                  filteredReports.map((report) => (
+                    <tr key={`${report.reportType}-${report.reportId}`}>
+                      <td>{report.createdAt?.replace("T", " ") || "-"}</td>
+                      <td>{report.reportType === "POST" ? "게시글" : "댓글"}</td>
+                      <td>{report.postTitle || "-"}</td>
+                      <td>
+                        <div>{report.reason || "-"}</div>
+                        <div className="report-detail-text">
+                          {report.detail || report.targetContent || "-"}
+                        </div>
+                      </td>
+                      <td>
+                        <div>{report.reporterNickname || "-"}</div>
+                        <div className="report-sub-text">
+                          {report.reporterEmail || "-"}
+                        </div>
+                      </td>
+                      <td>{report.reportStatus || "-"}</td>
                     </tr>
                   ))
                 )}

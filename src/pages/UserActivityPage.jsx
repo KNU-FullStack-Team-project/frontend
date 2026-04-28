@@ -9,24 +9,30 @@ const POST_ACTIONS = [
   "COMMENT_DELETE",
   "POST_LIKE",
 ];
+const ORDER_ACTIONS = ["ORDER_BUY", "ORDER_SELL"];
+const PROFILE_ACTIONS = ["PROFILE_NICKNAME_UPDATE"];
+const ACCOUNT_ACTIONS = ["ACCOUNT_RESET"];
+const OTHER_ACTION_GROUPS = ["INQUIRY", "REPORT"];
 
 const ACTION_FILTERS = [
   { key: "ALL", label: "전체" },
   { key: "ACCESS", label: "접속" },
+  { key: "ORDER", label: "주문" },
   { key: "POST", label: "게시글" },
-  { key: "INQUIRY", label: "문의" },
-  { key: "REPORT", label: "신고" },
-  { key: "NOTIFICATION", label: "알림" },
+  { key: "OTHER", label: "기타" },
 ];
 
 const matchesFilter = (activity, filter) => {
   if (filter === "ALL") return true;
   if (filter === "ACCESS") return ACCESS_ACTIONS.includes(activity.actionType);
+  if (filter === "ORDER") return ORDER_ACTIONS.includes(activity.actionType);
   if (filter === "POST") return POST_ACTIONS.includes(activity.actionType);
-  if (filter === "INQUIRY") return activity.actionType?.startsWith("INQUIRY");
-  if (filter === "REPORT") return activity.actionType?.startsWith("REPORT");
-  if (filter === "NOTIFICATION") {
-    return activity.actionType?.startsWith("NOTIFICATION");
+  if (filter === "OTHER") {
+    return (
+      PROFILE_ACTIONS.includes(activity.actionType) ||
+      ACCOUNT_ACTIONS.includes(activity.actionType) ||
+      OTHER_ACTION_GROUPS.some((group) => activity.actionType?.startsWith(group))
+    );
   }
   return activity.actionType === filter;
 };
