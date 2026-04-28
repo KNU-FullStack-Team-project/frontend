@@ -77,6 +77,68 @@ const AdminPage = ({
     loadUsers();
   }, [currentUser?.token]);
 
+  useEffect(() => {
+    if (activeTab !== "loginLogs") {
+      return;
+    }
+
+    const loadLoginLogs = async () => {
+      setLoginLogLoading(true);
+      setLoginLogError("");
+
+      try {
+        const response = await fetch("/api/admin/login-logs", {
+          headers: currentUser?.token
+            ? { Authorization: `Bearer ${currentUser.token}` }
+            : undefined,
+        });
+
+        if (!response.ok) {
+          throw new Error("로그인 로그를 불러오지 못했습니다.");
+        }
+
+        setLoginLogs(await response.json());
+      } catch (loadError) {
+        setLoginLogError(loadError.message || "로그인 로그를 불러오지 못했습니다.");
+      } finally {
+        setLoginLogLoading(false);
+      }
+    };
+
+    loadLoginLogs();
+  }, [activeTab, currentUser?.token]);
+
+  useEffect(() => {
+    if (activeTab !== "reports") {
+      return;
+    }
+
+    const loadReports = async () => {
+      setReportLoading(true);
+      setReportError("");
+
+      try {
+        const response = await fetch("/api/admin/reports", {
+          headers: currentUser?.token
+            ? { Authorization: `Bearer ${currentUser.token}` }
+            : undefined,
+        });
+
+        if (!response.ok) {
+          throw new Error("신고 목록을 불러오지 못했습니다.");
+        }
+
+        setReports(await response.json());
+      } catch (loadError) {
+        setReportError(loadError.message || "신고 목록을 불러오지 못했습니다.");
+      } finally {
+        setReportLoading(false);
+      }
+    };
+
+    loadReports();
+  }, [activeTab, currentUser?.token]);
+
   const handleUserFieldChange = (userId, field, value) => {
     setEditedUsers((prev) => ({
       ...prev,
