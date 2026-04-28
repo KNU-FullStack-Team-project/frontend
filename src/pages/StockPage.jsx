@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 
 import Modal from "../common/Modal";
 import StockDetail from "../components/stock/StockDetail";
+import StockCompareView from "../components/stock/StockCompareView";
 
 const StockRow = ({
   stock,
@@ -78,6 +79,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
   const [industries, setIndustries] = useState([]);
   const [selectedIndustry, setSelectedIndustry] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
+  const [isCompareMode, setIsCompareMode] = useState(false);
   const observerTarget = useRef(null);
 
   const handleStockClick = (stock) => {
@@ -426,6 +428,9 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
         </p>
       </div>
 
+      {isCompareMode ? (
+        <StockCompareView onClose={() => setIsCompareMode(false)} />
+      ) : (
       <div className="content-card">
         <div className="section-header">
           <h3>실시간 주식 정보</h3>
@@ -603,16 +608,25 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
             )}
           </div>
 
-          <button
-            className="refresh-btn"
-            onClick={() => {
-              setPage(1);
-              fetchStocks(1, true);
-            }}
-            style={{ margin: 0 }}
-          >
-            새로고침
-          </button>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              className="refresh-btn"
+              onClick={() => setIsCompareMode(true)}
+              style={{ margin: 0, backgroundColor: "#1e40af", color: "#fff", borderColor: "#1e40af" }}
+            >
+              📊 종목 비교
+            </button>
+            <button
+              className="refresh-btn"
+              onClick={() => {
+                setPage(1);
+                fetchStocks(1, true);
+              }}
+              style={{ margin: 0 }}
+            >
+              새로고침
+            </button>
+          </div>
         </div>
 
         <div className="stock-list-container">
@@ -713,6 +727,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
           />
         </Modal>
       </div>
+      )}
     </div>
   );
 };
