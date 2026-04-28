@@ -6,7 +6,8 @@ import AppInput from "../../common/AppInput";
 const cleanNumber = (val) => {
   if (!val) return 0;
   if (typeof val === "number") return val;
-  return parseInt(String(val).replace(/,/g, "")) || 0;
+  // 숫자와 소수점 외의 모든 문자(₩, , 등) 제거
+  return parseInt(String(val).replace(/[^0-9.-]/g, "")) || 0;
 };
 
 // [수정] HTTP 환경에서도 작동하는 UUID 생성 함수
@@ -420,22 +421,6 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
           <div className="chart-container detail-card">
             <div className="section-header">
               <h4 className="section-title">차트</h4>
-              <div className="period-tabs">
-                {[
-                  { code: "1D", label: "일" },
-                  { code: "1W", label: "주" },
-                  { code: "1M", label: "월" },
-                  { code: "1Y", label: "년" },
-                ].map((p) => (
-                  <button
-                    key={p.code}
-                    className={`period-btn ${period === p.code ? "active" : ""}`}
-                    onClick={() => setPeriod(p.code)}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
             </div>
             <div className="indicator-tabs" style={{
               display: 'flex',
@@ -482,8 +467,38 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
                 data={candles}
                 indicators={activeIndicators}
                 height={hasBottomIndicator ? 700 : 500}
+                avgPrice={accountData?.holdings?.find(h => h.stockCode === stock.symbol)?.averageBuyPrice}
               />
             )}
+
+            {/* [수정] 기간 선택 버튼을 차트 아래로 이동 */}
+            <div className="period-tabs" style={{ 
+              marginTop: "15px", 
+              justifyContent: "center",
+              display: "flex",
+              gap: "8px"
+            }}>
+              {[
+                { code: "1D", label: "일" },
+                { code: "1W", label: "주" },
+                { code: "1M", label: "월" },
+                { code: "1Y", label: "년" },
+              ].map((p) => (
+                <button
+                  key={p.code}
+                  className={`period-btn ${period === p.code ? "active" : ""}`}
+                  onClick={() => setPeriod(p.code)}
+                  style={{
+                    padding: "6px 20px",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    fontWeight: "700"
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="trading-section detail-card">

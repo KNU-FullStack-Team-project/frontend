@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 
 import Modal from "../common/Modal";
 import StockDetail from "../components/stock/StockDetail";
+import StockCompareView from "../components/stock/StockCompareView";
 
 const StockRow = ({
   stock,
@@ -75,6 +76,10 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [industries, setIndustries] = useState([]);
+  const [selectedIndustry, setSelectedIndustry] = useState(null);
+  const [selectedType, setSelectedType] = useState(null);
+  const [isCompareMode, setIsCompareMode] = useState(false);
   const observerTarget = useRef(null);
 
   const handleStockClick = (stock) => {
@@ -82,17 +87,19 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
     setIsModalOpen(true);
   };
 
-  const fetchStocks = useCallback(async (pageNum = 1, isReset = false) => {
+  const fetchStocks = useCallback(async (pageNum = 1, isReset = false, industry = null, stockType = null) => {
     try {
       setLoading(true);
+      const industryParam = industry ? `&industry=${encodeURIComponent(industry)}` : "";
+      const typeParam = stockType ? `&stockType=${encodeURIComponent(stockType)}` : "";
       const response = await fetch(
-        `/api/stocks?page=${pageNum}&size=20`,
+        `/api/stocks?page=${pageNum}&size=20${industryParam}${typeParam}`,
       );
       if (!response.ok) throw new Error("Stock list fetch failed");
 
       const data = await response.json();
 
-      if (isReset && pageNum === 1) {
+      if (isReset || pageNum === 1) {
         setStocks(data.content);
       } else {
         setStocks((prev) => {
@@ -118,6 +125,20 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const fetchIndustries = useCallback(async () => {
+    try {
+      const response = await fetch("/api/stocks/industries");
+      if (response.ok) {
+        const data = await response.json();
+        // 숫자로만 된 업종 코드(예: 001, 002 등)는 제외하고 한글/영문 이름만 표시
+        const filteredIndustries = data.filter(industry => isNaN(industry));
+        setIndustries(filteredIndustries);
+      }
+    } catch (err) {
+      console.error("Failed to fetch industries:", err);
     }
   }, []);
 
@@ -217,10 +238,12 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
 
   useEffect(() => {
     // 사용자가 실제로 바뀌었을 때만 리스트와 즐겨찾기를 다시 불러옵니다.
-    // 토큰 갱신 등의 사소한 currentUser 변경으로 인한 무한 루프를 방지합니다.
     if (prevUserEmailRef.current !== user?.email) {
       setPage(1);
-      fetchStocks(1, true);
+      setSelectedIndustry(null);
+      setSelectedType(null);
+      fetchStocks(1, true, null, null);
+      fetchIndustries();
 
       const userId = user?.userId || user?.id;
 
@@ -234,7 +257,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
       }
       prevUserEmailRef.current = user?.email;
     }
-  }, [user?.email, fetchStocks, fetchFavorites]);
+  }, [user?.email, fetchStocks, fetchFavorites, fetchIndustries]);
 
   useEffect(() => {
     if (activeTab === "favorites") {
@@ -268,7 +291,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
         if (entries[0].isIntersecting && hasMore && !loading) {
           const nextPage = page + 1;
           setPage(nextPage);
-          fetchStocks(nextPage, false);
+          fetchStocks(nextPage, false, selectedIndustry, selectedType);
         }
       },
       { threshold: 0.1 },
@@ -295,7 +318,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
     if (hasIncompleteData) {
       const timer = setTimeout(() => {
         // [수정] isReset을 false로 넘겨 기존 목록을 유지하면서 데이터만 보정합니다.
-        fetchStocks(page, false);
+        fetchStocks(page, false, selectedIndustry, selectedType);
       }, 3500); // 3.5초 대기 후 재시도
 
       return () => clearTimeout(timer);
@@ -405,6 +428,9 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
         </p>
       </div>
 
+      {isCompareMode ? (
+        <StockCompareView onClose={() => setIsCompareMode(false)} />
+      ) : (
       <div className="content-card">
         <div className="section-header">
           <h3>실시간 주식 정보</h3>
@@ -466,6 +492,81 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
           </form>
         </div>
 
+        {/* 업종별 필터 버튼 영역 */}
+        {industries.length > 0 && (
+          <div className="industry-filter-container" style={{
+            marginBottom: "20px",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "8px",
+            padding: "10px",
+            backgroundColor: "#f9fafb",
+            borderRadius: "12px",
+            border: "1px solid #f3f4f6"
+          }}>
+            {industries.map((industry) => (
+              <button
+                key={industry}
+                onClick={() => {
+                  setSelectedIndustry(industry);
+                  setPage(1);
+                  fetchStocks(1, true, industry, selectedType);
+                }}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: "20px",
+                  border: selectedIndustry === industry ? "none" : "1px solid #e5e7eb",
+                  backgroundColor: selectedIndustry === industry ? "#4874d4" : "#fff",
+                  color: selectedIndustry === industry ? "#fff" : "#4b5563",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+              >
+                {industry}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* 종목 구분 필터 버튼 영역 (새로 추가) */}
+        <div className="type-filter-container" style={{
+          marginBottom: "20px",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "8px",
+          padding: "10px",
+          backgroundColor: "#f0f4ff",
+          borderRadius: "12px",
+          border: "1px solid #dbeafe"
+        }}>
+          {["전체", "보통주", "우선주"].map((type) => (
+            <button
+              key={type}
+              onClick={() => {
+                const typeValue = type === "전체" ? null : type;
+                setSelectedType(typeValue);
+                setPage(1);
+                fetchStocks(1, true, selectedIndustry, typeValue);
+              }}
+              style={{
+                padding: "6px 14px",
+                borderRadius: "20px",
+                border: (selectedType === type || (type === "전체" && selectedType === null)) ? "none" : "1px solid #d1d5db",
+                backgroundColor: (selectedType === type || (type === "전체" && selectedType === null)) ? "#1e40af" : "#fff",
+                color: (selectedType === type || (type === "전체" && selectedType === null)) ? "#fff" : "#374151",
+                fontSize: "13px",
+                fontWeight: "700",
+                cursor: "pointer",
+                transition: "all 0.2s"
+              }}
+            >
+              {type}
+            </button>
+          ))}
+        </div>
+
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
           <div className="stock-tabs" style={{ marginBottom: 0 }}>
@@ -507,16 +608,25 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
             )}
           </div>
 
-          <button
-            className="refresh-btn"
-            onClick={() => {
-              setPage(1);
-              fetchStocks(1, true);
-            }}
-            style={{ margin: 0 }}
-          >
-            새로고침
-          </button>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              className="refresh-btn"
+              onClick={() => setIsCompareMode(true)}
+              style={{ margin: 0, backgroundColor: "#1e40af", color: "#fff", borderColor: "#1e40af" }}
+            >
+              📊 종목 비교
+            </button>
+            <button
+              className="refresh-btn"
+              onClick={() => {
+                setPage(1);
+                fetchStocks(1, true);
+              }}
+              style={{ margin: 0 }}
+            >
+              새로고침
+            </button>
+          </div>
         </div>
 
         <div className="stock-list-container">
@@ -617,6 +727,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
           />
         </Modal>
       </div>
+      )}
     </div>
   );
 };
