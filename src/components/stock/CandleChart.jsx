@@ -103,6 +103,9 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
     if (containerRef.current) {
       observer.observe(containerRef.current);
     }
+
+    // 데이터가 변경되면 호버 상태 초기화 (TypeError 방지)
+    setHoverIdx(null);
     
     return () => observer.disconnect();
   }, [width, data, indicators]); // indicators 변경 시에도 스크롤 상황 확인
@@ -460,7 +463,7 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
         )}
       </svg>
 
-      {hoverIdx !== null && (
+      {hoverIdx !== null && sortedData[hoverIdx] && (
         <div
           className="chart-tooltip"
           style={{
@@ -478,7 +481,7 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
           }}
         >
           <div style={{ fontWeight: 700, marginBottom: 5 }}>
-            {sortedData[hoverIdx].date.replace(/(\d{4})(\d{2})(\d{2})/, "$1.$2.$3")}
+            {sortedData[hoverIdx].date?.replace(/(\d{4})(\d{2})(\d{2})/, "$1.$2.$3")}
             {sortedData[hoverIdx].time && ` ${sortedData[hoverIdx].time.substring(0, 2)}:${sortedData[hoverIdx].time.substring(2, 4)}`}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', marginBottom: '4px' }}>
@@ -493,9 +496,9 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
             <span>최저</span>
             <span style={{ color: "#3b82f6" }}>{cleanNumber(sortedData[hoverIdx].low).toLocaleString()}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', marginBottom: '4px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', marginBottom: '4px', borderTop: '1px solid #444', marginTop: '4px', paddingTop: '4px' }}>
             <span>종가</span>
-            <span>{cleanNumber(sortedData[hoverIdx].close).toLocaleString()}</span>
+            <span style={{ fontWeight: 800 }}>{cleanNumber(sortedData[hoverIdx].close).toLocaleString()}</span>
           </div>
           {computedIndicators.ma5 && computedIndicators.ma5[hoverIdx] && (
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', color: '#ff3b30' }}>

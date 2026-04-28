@@ -422,9 +422,10 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
               <h4 className="section-title">차트</h4>
               <div className="period-tabs">
                 {[
-                  { code: "1D", label: "일" },
-                  { code: "1W", label: "주" },
-                  { code: "1M", label: "월" },
+                  { code: "1D", label: "분" },
+                  { code: "D", label: "일" },
+                  { code: "W", label: "주" },
+                  { code: "M", label: "월" },
                   { code: "1Y", label: "년" },
                 ].map((p) => (
                   <button
