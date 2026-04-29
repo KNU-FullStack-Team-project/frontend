@@ -3,7 +3,7 @@ import StockCompareChart from "./StockCompareChart";
 
 const COLORS = ["#4874d4", "#f59e0b", "#10b981", "#ef4444"];
 
-const StockCompareView = ({ onClose }) => {
+const StockCompareView = ({ onClose, initialStock }) => {
   const [selectedStocks, setSelectedStocks] = useState([]); // 최대 4개
   const [period, setPeriod] = useState("1M");
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -11,6 +11,13 @@ const StockCompareView = ({ onClose }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [chartData, setChartData] = useState(null);
+
+  // 초기 종목이 넘어온 경우 자동 추가
+  useEffect(() => {
+    if (initialStock && initialStock.symbol && initialStock.name) {
+      setSelectedStocks([{ symbol: initialStock.symbol, name: initialStock.name }]);
+    }
+  }, [initialStock]);
 
   // 종목 검색
   const handleSearch = async (e) => {
@@ -189,7 +196,13 @@ const StockCompareView = ({ onClose }) => {
           </form>
 
           {/* 검색 결과 드롭다운 */}
-          {searchResults && searchResults.length > 0 && (
+          {isSearching && (
+            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", marginTop: "4px", padding: "12px 16px", color: "#6b7280", zIndex: 50 }}>
+              검색 중...
+            </div>
+          )}
+
+          {!isSearching && searchResults && searchResults.length > 0 && (
             <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", marginTop: "4px", maxHeight: "250px", overflowY: "auto", zIndex: 50, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}>
               {searchResults.map(stock => (
                 <div 
@@ -205,7 +218,7 @@ const StockCompareView = ({ onClose }) => {
               ))}
             </div>
           )}
-          {searchResults && searchResults.length === 0 && (
+          {!isSearching && searchResults && searchResults.length === 0 && (
             <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", marginTop: "4px", padding: "12px 16px", color: "#6b7280", zIndex: 50 }}>
               검색 결과가 없습니다.
             </div>

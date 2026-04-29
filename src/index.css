@@ -1445,13 +1445,26 @@ p {
   margin-top: 20px;
 }
 
-.chart-container.detail-card {
-  flex: 1.8; /* 차트 영역을 더 넓게 */
+.chart-and-diagnosis {
+  flex: 1.8;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   min-width: 0;
   padding-right: 32px;
-  border-right: 1px solid var(--border); /* 구분선 역할 */
-  overflow: hidden; /* 영역 이탈 방지 */
+  border-right: 1px solid var(--border);
 }
+
+.chart-container.detail-card {
+  /* flex: 1.8; 이 부분은 이제 부모인 chart-and-diagnosis로 이동함 */
+  width: 100%;
+  min-width: 0;
+  padding-right: 0;
+  border-right: none;
+  overflow: hidden;
+}
+
+
 
 .trading-section.detail-card {
   flex: 1;

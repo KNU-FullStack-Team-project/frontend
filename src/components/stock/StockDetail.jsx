@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import CandleChart from "./CandleChart";
+import StockDiagnosis from "./StockDiagnosis";
 import AppButton from "../../common/AppButton";
 import AppInput from "../../common/AppInput";
 
@@ -26,7 +27,15 @@ const generateUUID = () => {
 const chartCache = new Map();
 const CACHE_DURATION_MS = 60 * 1000; // 1분
 
-const StockDetail = ({ stock, user, onOpenCommunity, onOpenCompare }) => {
+const StockDetail = ({ 
+  stock, 
+  user, 
+  favorites, 
+  toggleFavorite, 
+  openAlertSettings, 
+  onOpenCommunity,
+  onOpenCompare
+}) => {
   const [candles, setCandles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -264,30 +273,62 @@ const StockDetail = ({ stock, user, onOpenCommunity, onOpenCompare }) => {
   return (
     <div className="stock-detail-content">
       <div className="stock-detail-header">
-        <div className="price-section" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+        <div className="price-section" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span className="price-big">
             {cleanNumber(stock.currentPrice).toLocaleString()}원
           </span>
-          <button
-            className="alert-setup-btn"
-            onClick={() => setIsAlertModalOpen(true)}
-            style={{
-              background: '#f3f4f6',
-              border: 'none',
-              borderRadius: '50%',
-              width: '36px',
-              height: '36px',
-              cursor: 'pointer',
-              fontSize: '18px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s'
-            }}
-            title="목표가 알림 설정"
-          >
-            🔔
-          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '10px' }}>
+            <button
+              onClick={(e) => toggleFavorite(e, stock.symbol)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', fontSize: '24px', padding: '4px'
+              }}
+              title="관심종목 등록/해제"
+            >
+              {favorites?.has(stock.symbol) ? "❤️" : "🤍"}
+            </button>
+
+            {favorites?.has(stock.symbol) && (
+              <button
+                onClick={(e) => openAlertSettings(e, stock.symbol)}
+                style={{
+                  background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '50%',
+                  width: '36px', height: '36px', cursor: 'pointer', fontSize: '18px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
+                }}
+                title="AI 진단 알림 설정"
+              >
+                🔔
+              </button>
+            )}
+
+            <button
+              className="alert-setup-btn"
+              onClick={() => setIsAlertModalOpen(true)}
+              style={{
+                background: '#f3f4f6', border: 'none', borderRadius: '50%',
+                width: '36px', height: '36px', cursor: 'pointer', fontSize: '18px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s',
+                marginLeft: '4px'
+              }}
+              title="목표가 알림 설정"
+            >
+              🎯
+            </button>
+
+            <button
+              onClick={onOpenCompare}
+              style={{
+                background: '#1e40af', border: 'none', borderRadius: '20px',
+                padding: '0 12px', height: '36px', cursor: 'pointer', fontSize: '12px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'white', fontWeight: 'bold', marginLeft: '8px'
+              }}
+            >
+              📊 비교
+            </button>
+          </div>
           <div
             className={`price-change ${parseFloat(stock.changeRate || 0) >= 0 ? "up" : "down"
               }`}
@@ -414,25 +455,10 @@ const StockDetail = ({ stock, user, onOpenCommunity, onOpenCompare }) => {
 
       {detailTab === "trade" ? (
         <div className="detail-main-layout">
-          <div className="chart-container detail-card">
+          <div className="chart-and-diagnosis">
+            <div className="chart-container detail-card">
             <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h4 className="section-title" style={{ margin: 0 }}>차트</h4>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  className="refresh-btn"
-                  onClick={() => fetchHistory()}
-                  style={{ padding: '4px 12px', fontSize: '12px' }}
-                >
-                  새로고침
-                </button>
-                <button
-                  className="refresh-btn"
-                  onClick={onOpenCompare}
-                  style={{ padding: '4px 12px', fontSize: '12px', backgroundColor: '#1e40af', color: '#fff', borderColor: '#1e40af' }}
-                >
-                  📊 비교
-                </button>
-              </div>
             </div>
             <div className="indicator-tabs" style={{
               display: 'flex',
@@ -512,6 +538,8 @@ const StockDetail = ({ stock, user, onOpenCommunity, onOpenCompare }) => {
                 </button>
               ))}
             </div>
+            <StockDiagnosis symbol={stock?.symbol || stock?.stockCode} />
+          </div>
           </div>
 
           <div className="trading-section detail-card">

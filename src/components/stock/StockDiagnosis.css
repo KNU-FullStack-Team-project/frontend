@@ -1,0 +1,88 @@
+.diagnosis-container-simple {
+    background: #fff;
+    border: 1px solid #eef2f6;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 12px;
+}
+
+.diagnosis-header-simple {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 12px;
+}
+
+.diagnosis-header-simple .title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #475569;
+}
+
+.diagnosis-header-simple .result-area {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.diagnosis-header-simple .signal {
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.diagnosis-header-simple .score {
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+.diagnosis-list-simple {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.diagnosis-row {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    gap: 10px;
+}
+
+.diagnosis-row .label {
+    width: 95px;
+    font-weight: 700;
+    color: #64748b;
+    background: #f8fafc;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.diagnosis-row .content {
+    flex: 1;
+    color: #334155;
+    font-weight: 500;
+}
+
+.diagnosis-row .score {
+    font-weight: 700;
+    min-width: 25px;
+    text-align: right;
+}
+
+.diagnosis-row .score.plus { color: #ef4444; }
+.diagnosis-row .score.minus { color: #3b82f6; }
+
+/* 상태별 메시지 */
+.diagnosis-container-simple.loading,
+.diagnosis-container-simple.error,
+.diagnosis-container-simple.empty {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+    padding: 20px;
+}
