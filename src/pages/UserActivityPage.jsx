@@ -12,7 +12,7 @@ const POST_ACTIONS = [
 const ORDER_ACTIONS = ["ORDER_BUY", "ORDER_SELL"];
 const PROFILE_ACTIONS = ["PROFILE_NICKNAME_UPDATE"];
 const ACCOUNT_ACTIONS = ["ACCOUNT_RESET"];
-const OTHER_ACTION_GROUPS = ["INQUIRY", "REPORT"];
+const OTHER_ACTION_GROUPS = ["INQUIRY", "REPORT", "SUSPENSION"];
 
 const ACTION_FILTERS = [
   { key: "ALL", label: "전체" },
@@ -76,11 +76,6 @@ const UserActivityPage = ({ currentUser, targetUser, onBack, onOpenPost }) => {
       try {
         const response = await fetch(
           `/api/admin/users/${targetUser.id}/activities`,
-          {
-            headers: {
-              Authorization: `Bearer ${currentUser?.token}`,
-            },
-          },
         );
 
         if (!response.ok) {
@@ -96,7 +91,7 @@ const UserActivityPage = ({ currentUser, targetUser, onBack, onOpenPost }) => {
     };
 
     loadActivities();
-  }, [currentUser?.token, targetUser?.id]);
+  }, [targetUser?.id]);
 
   const filteredActivities = useMemo(
     () => {

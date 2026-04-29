@@ -94,22 +94,22 @@ const CommunityPostWritePage = ({
     if (!isAdmin || form.noticeTarget === "none") {
       return {
         submitUrl: isStockBoard
-          ? `http://localhost:8081/api/community/stocks/${symbol}/posts`
-          : "http://localhost:8081/api/community/boards/free/posts",
+          ? `/api/community/stocks/${symbol}/posts`
+          : "/api/community/boards/free/posts",
         payloadIsNotice: false,
       };
     }
 
     if (form.noticeTarget === "global") {
       return {
-        submitUrl: "http://localhost:8081/api/community/notices",
+        submitUrl: "/api/community/notices",
         payloadIsNotice: true,
       };
     }
 
     if (form.noticeTarget === "free") {
       return {
-        submitUrl: "http://localhost:8081/api/community/boards/free/posts",
+        submitUrl: "/api/community/boards/free/posts",
         payloadIsNotice: true,
       };
     }
@@ -120,30 +120,25 @@ const CommunityPostWritePage = ({
       }
 
       return {
-        submitUrl: `http://localhost:8081/api/community/stocks/${symbol}/posts`,
+        submitUrl: `/api/community/stocks/${symbol}/posts`,
         payloadIsNotice: true,
       };
     }
 
     return {
       submitUrl: isStockBoard
-        ? `http://localhost:8081/api/community/stocks/${symbol}/posts`
-        : "http://localhost:8081/api/community/boards/free/posts",
+        ? `/api/community/stocks/${symbol}/posts`
+        : "/api/community/boards/free/posts",
       payloadIsNotice: false,
     };
   };
 
   const uploadImage = async (file) => {
-    const token = localStorage.getItem("accessToken") || currentUser?.token;
-
     const formData = new FormData();
     formData.append("file", file);
 
     const response = await fetch("/api/community/uploads/images", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
       body: formData,
     });
 
@@ -165,8 +160,6 @@ const CommunityPostWritePage = ({
       return;
     }
 
-    const token = localStorage.getItem("accessToken") || currentUser?.token;
-
     try {
       setUploadingFile(true);
 
@@ -177,9 +170,6 @@ const CommunityPostWritePage = ({
 
         const response = await fetch("/api/community/uploads/files", {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
           body: formData,
         });
 
@@ -222,8 +212,6 @@ const CommunityPostWritePage = ({
       return;
     }
 
-    const token = localStorage.getItem("accessToken") || currentUser?.token;
-
     try {
       setSubmitting(true);
 
@@ -233,7 +221,6 @@ const CommunityPostWritePage = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           title: form.title.trim(),

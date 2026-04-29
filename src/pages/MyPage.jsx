@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import AppButton from "../common/AppButton";
 import OrderHistory from "../components/stock/OrderHistory";
 import PortfolioChart from "../components/stock/PortfolioChart";
+import AssetGrowthChart from "../components/stock/AssetGrowthChart";
 import DashboardSkeleton from "../components/common/DashboardSkeleton";
 
 const TEXT = {
@@ -47,6 +48,8 @@ const TEXT = {
   noHoldings: "보유 중인 종목이 없습니다.",
   shares: "주",
   profitRate: "수익률",
+  assetGrowthTitle: "자산 성장 곡선",
+  assetGrowthDesc: "일일 자산 총액 변동 추이입니다.",
 };
 
 const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
@@ -58,6 +61,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [myCompetitions, setMyCompetitions] = useState([]);
+  const [snapshots, setSnapshots] = useState([]);
 
   const targetEmail = viewedUser?.email || currentUser?.email;
   const isMyOwnPage = !viewedUser || viewedUser.email === currentUser?.email;
@@ -67,24 +71,21 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   const fetchDashboardData = async (accountId) => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-
-      const response = await fetch(
-        `/api/accounts/my/dashboard?email=${targetEmail}&accountId=${accountId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      // 대시보드 데이터 조회
+      const dashResponse = await fetch(
+        `/api/accounts/my/dashboard?email=${targetEmail}&accountId=${accountId}`
       );
 
-      if (response.ok) {
-        const data = await response.json();
+      if (dashResponse.ok) {
+        const data = await dashResponse.json();
         setDashboard(data);
+      }
+
+      // 자산 히스토리(스냅샷) 조회
+      const snapResponse = await fetch(`/api/portfolio/snapshots/${accountId}`);
+      if (snapResponse.ok) {
+        const snapData = await snapResponse.json();
+        setSnapshots(snapData);
       }
     } catch (err) {
       console.error("Dashboard load failed:", err);
@@ -99,25 +100,11 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     }
 
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        setError(TEXT.loginMissing);
-        return;
-      }
-
       const params = new URLSearchParams({ email: targetEmail });
-      const commonHeaders = {
-        Authorization: `Bearer ${token}`,
-      };
 
       const [profileResponse, accountsResponse] = await Promise.all([
-        fetch(`/api/users/profile?${params.toString()}`, {
-          headers: commonHeaders,
-        }),
-        fetch(`/api/accounts/my?${params.toString()}`, {
-          headers: commonHeaders,
-        }),
+        fetch(`/api/users/profile?${params.toString()}`),
+        fetch(`/api/accounts/my?${params.toString()}`),
       ]);
 
       if (!profileResponse.ok || !accountsResponse.ok) {
@@ -152,10 +139,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
       const userId = profileData?.id || currentUser?.userId;
       if (userId) {
         const compResponse = await fetch(
-          `/api/competitions/my?userId=${userId}`,
-          {
-            headers: commonHeaders,
-          }
+          `/api/competitions/my?userId=${userId}`
         );
         if (compResponse.ok) {
           const compData = await compResponse.json();
@@ -190,19 +174,10 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     setResettingAccountId(accountId);
 
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        throw new Error(TEXT.loginMissing);
-      }
-
       const response = await fetch(
         `/api/accounts/${accountId}/reset-cash`,
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         }
       );
 
@@ -528,6 +503,20 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                       </table>
                     </div>
                   </div>
+                </div>
+              </section>
+
+              {/* [이동] 자산 성장 곡선 차트 (자산 현황과 주문 내역 사이) */}
+              <section className="content-card mypage-growth-card" style={{ marginBottom: "24px", marginTop: "24px" }}>
+                <div className="mypage-card-header">
+                  <div>
+                    <p className="mypage-eyebrow">Performance</p>
+                    <h2 className="mypage-title">{TEXT.assetGrowthTitle}</h2>
+                    <p style={{ fontSize: "14px", color: "#6b7280", marginTop: "4px" }}>{TEXT.assetGrowthDesc}</p>
+                  </div>
+                </div>
+                <div style={{ padding: "10px 0" }}>
+                  <AssetGrowthChart data={snapshots} />
                 </div>
               </section>
 

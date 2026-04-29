@@ -8,12 +8,14 @@ const AppButton = ({
   onClick,
   fullWidth = false,
   disabled = false,
+  style = {},
 }) => {
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
+      style={style}
       className={`app-button ${variant} ${size} ${fullWidth ? "full-width" : ""} ${
         disabled ? "disabled" : ""
       }`}

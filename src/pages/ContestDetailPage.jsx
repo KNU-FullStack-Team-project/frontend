@@ -19,11 +19,7 @@ const ContestDetailPage = ({
 
     setLoading(true);
 
-    fetch(`/api/competitions/${competitionId}`, {
-      headers: {
-        Authorization: `Bearer ${currentUser?.token}`,
-      },
-    })
+    fetch(`/api/competitions/${competitionId}`)
       .then((res) => {
         if (!res.ok) {
           throw new Error("대회 상세 정보를 불러오지 못했습니다.");
@@ -39,7 +35,7 @@ const ContestDetailPage = ({
       .finally(() => {
         setLoading(false);
       });
-  }, [competitionId, currentUser]);
+  }, [competitionId]);
 
   useEffect(() => {
     if (!competitionId || !isAdmin) {
@@ -50,12 +46,7 @@ const ContestDetailPage = ({
     setParticipantLoading(true);
 
     fetch(
-      `/api/competitions/${competitionId}/participants`,
-      {
-        headers: {
-          Authorization: `Bearer ${currentUser?.token}`,
-        },
-      },
+      `/api/competitions/${competitionId}/participants`
     )
       .then((res) => {
         if (!res.ok) {
@@ -73,7 +64,7 @@ const ContestDetailPage = ({
       .finally(() => {
         setParticipantLoading(false);
       });
-  }, [competitionId, isAdmin, currentUser]);
+  }, [competitionId, isAdmin]);
 
   const formatStatus = (status) => {
     switch (status) {
@@ -184,8 +175,7 @@ const ContestDetailPage = ({
         `/api/competitions/${competitionId}/join?userId=${currentUser.userId}`,
         {
           method: "POST",
-          headers: { Authorization: `Bearer ${currentUser.token}` },
-        },
+        }
       );
 
       const text = await response.text();

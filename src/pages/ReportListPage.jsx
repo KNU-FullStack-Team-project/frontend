@@ -8,11 +8,7 @@ const ReportListPage = ({ currentUser, onBack }) => {
   useEffect(() => {
     const loadReports = async () => {
       try {
-        const response = await fetch("/api/admin/reports", {
-          headers: {
-            Authorization: `Bearer ${currentUser?.token}`,
-          },
-        });
+        const response = await fetch("/api/admin/reports");
 
         if (!response.ok) {
           throw new Error("신고 목록을 불러오지 못했습니다.");

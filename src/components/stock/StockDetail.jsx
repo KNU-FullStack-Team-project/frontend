@@ -6,14 +6,27 @@ import AppInput from "../../common/AppInput";
 const cleanNumber = (val) => {
   if (!val) return 0;
   if (typeof val === "number") return val;
-  return parseInt(String(val).replace(/,/g, "")) || 0;
+  // 숫자와 소수점 외의 모든 문자(₩, , 등) 제거
+  return parseInt(String(val).replace(/[^0-9.-]/g, "")) || 0;
+};
+
+// [수정] HTTP 환경에서도 작동하는 UUID 생성 함수
+const generateUUID = () => {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 };
 
 // [최적화] 프론트엔드 차트 데이터 캐시 (모달을 닫았다 열어도 1분간 유지)
 const chartCache = new Map();
 const CACHE_DURATION_MS = 60 * 1000; // 1분
 
-const StockDetail = ({ stock, user, onOpenCommunity }) => {
+const StockDetail = ({ stock, user, onOpenCommunity, onOpenCompare }) => {
   const [candles, setCandles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -26,6 +39,7 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [detailTab, setDetailTab] = useState("trade");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [alertTargetPrice, setAlertTargetPrice] = useState(0);
   const [alertDirection, setAlertDirection] = useState("ABOVE"); // ABOVE or BELOW
@@ -55,18 +69,11 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   }, [stock, orderType, targetPrice, alertTargetPrice]);
 
   const handleCreateAlert = async () => {
-    const token = localStorage.getItem("accessToken") || user?.token;
-    if (!user || !token) {
-      alert("로그인이 필요합니다.");
-      return;
-    }
-
     try {
       const response = await fetch(`/api/price-alerts/${user.id || user.userId}`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           stockId: stock.id || stock.stockId || 1, // Ensure various ID field names are handled
@@ -84,72 +91,60 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
     }
   };
 
+  const fetchHistory = React.useCallback(async (signal) => {
+    if (!stock?.symbol) return;
+
+    const cacheKey = `${stock.symbol}:${period}`;
+    const cached = chartCache.get(cacheKey);
+    const now = Date.now();
+
+    // [최적화] 1분 이내의 동일 종목/기간 요청인 경우 캐시 사용
+    if (cached && (now - cached.timestamp < CACHE_DURATION_MS)) {
+      console.log(`[Cache Hit] Using cached chart data for ${cacheKey}`);
+      setCandles(cached.data);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(
+        `/api/stocks/${stock.symbol}/history?period=${period}`,
+        { signal }
+      );
+      if (!response.ok) throw new Error("Failed to fetch history");
+      const data = await response.json();
+
+      // [수정] 데이터가 배열인 경우에만 캐시 및 상태 업데이트
+      if (Array.isArray(data)) {
+        chartCache.set(cacheKey, { data, timestamp: Date.now() });
+        setCandles(data);
+      } else {
+        console.error("Invalid chart data format:", data);
+        setCandles([]);
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error("Chart fetch error:", err);
+        setError("차트 데이터를 불러오는 중 오류가 발생했습니다.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [stock?.symbol, period]);
+
   useEffect(() => {
     const abortController = new AbortController();
-
-    const fetchHistory = async () => {
-      if (!stock?.symbol) return;
-
-      const cacheKey = `${stock.symbol}:${period}`;
-      const cached = chartCache.get(cacheKey);
-      const now = Date.now();
-
-      // [최적화] 1분 이내의 동일 종목/기간 요청인 경우 캐시 사용
-      if (cached && (now - cached.timestamp < CACHE_DURATION_MS)) {
-        console.log(`[Cache Hit] Using cached chart data for ${cacheKey}`);
-        setCandles(cached.data);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const response = await fetch(
-          `/api/stocks/${stock.symbol}/history?period=${period}`,
-          { signal: abortController.signal }
-        );
-        if (!response.ok) throw new Error("Failed to fetch history");
-        const data = await response.json();
-
-        // [수정] 데이터가 배열인 경우에만 캐시 및 상태 업데이트
-        if (Array.isArray(data)) {
-          chartCache.set(cacheKey, { data, timestamp: Date.now() });
-          setCandles(data);
-        } else {
-          console.error("Invalid chart data format:", data);
-          setCandles([]);
-        }
-      } catch (err) {
-        if (err.name === 'AbortError') {
-          console.log('[Abort] Previous chart request cancelled');
-        } else {
-          console.error(err);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHistory();
-
-    return () => {
-      abortController.abort(); // 컴포넌트 언마운트 또는 의존성 변경 시 이전 요청 취소
-    };
-  }, [stock?.symbol, period]); // stock 개체 전체가 아닌 symbol을 의존성으로 설정
+    fetchHistory(abortController.signal);
+    return () => abortController.abort();
+  }, [fetchHistory]);
 
   const fetchUserAccounts = React.useCallback(async () => {
     if (!user?.email) return;
-    const token = localStorage.getItem("accessToken") || user?.token;
-    if (!token) return;
-
     try {
       const response = await fetch(
-        `/api/accounts/my?email=${user.email}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        `/api/accounts/my?email=${user.email}`
       );
       if (response.ok) {
         const data = await response.json();
@@ -166,17 +161,9 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   const fetchAccountData = React.useCallback(async () => {
     if (!user?.email || !selectedAccountId) return;
 
-    const token = localStorage.getItem("accessToken") || user?.token;
-    if (!token) return;
-
     try {
       const response = await fetch(
-        `/api/accounts/my/dashboard?email=${user.email}&accountId=${selectedAccountId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        `/api/accounts/my/dashboard?email=${user.email}&accountId=${selectedAccountId}`
       );
 
       if (response.ok) {
@@ -199,50 +186,14 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
   }, [selectedAccountId, fetchAccountData]);
 
   const handleOrder = async () => {
-    const token = localStorage.getItem("accessToken") || user?.token;
-
-    if (!user || !token) {
-      alert("로그인이 필요합니다.");
-      return;
-    }
-
-    if (!accountData) {
-      alert("계좌 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
-      return;
-    }
-
-    if (!quantity || quantity <= 0) {
-      alert("수량을 입력해주세요.");
-      return;
-    }
-
-    if (orderType === "LIMIT") {
-      const current = cleanNumber(stock.currentPrice);
-      const base = cleanNumber(stock.basePrice) || current;
-      const lower = base * 0.7;
-      const upper = base * 1.3;
-
-      if (targetPrice < lower || targetPrice > upper) {
-        alert(
-          `지정가는 전일 종가 기준 ±30% 이내여야 합니다.\n(가능 범위: ${Math.floor(
-            lower
-          ).toLocaleString()} ~ ${Math.ceil(upper).toLocaleString()})`
-        );
-        return;
-      }
-    }
-
-    if (isSubmitting) return;
-
     try {
       setIsSubmitting(true);
-      const requestId = crypto.randomUUID(); // 고유 요청 ID 생성
+      const requestId = generateUUID(); // [수정] 자체 함수 사용
 
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           accountId: selectedAccountId,
@@ -464,23 +415,23 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
       {detailTab === "trade" ? (
         <div className="detail-main-layout">
           <div className="chart-container detail-card">
-            <div className="section-header">
-              <h4 className="section-title">차트</h4>
-              <div className="period-tabs">
-                {[
-                  { code: "1D", label: "일" },
-                  { code: "1W", label: "주" },
-                  { code: "1M", label: "월" },
-                  { code: "1Y", label: "년" },
-                ].map((p) => (
-                  <button
-                    key={p.code}
-                    className={`period-btn ${period === p.code ? "active" : ""}`}
-                    onClick={() => setPeriod(p.code)}
-                  >
-                    {p.label}
-                  </button>
-                ))}
+            <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 className="section-title" style={{ margin: 0 }}>차트</h4>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className="refresh-btn"
+                  onClick={() => fetchHistory()}
+                  style={{ padding: '4px 12px', fontSize: '12px' }}
+                >
+                  새로고침
+                </button>
+                <button
+                  className="refresh-btn"
+                  onClick={onOpenCompare}
+                  style={{ padding: '4px 12px', fontSize: '12px', backgroundColor: '#1e40af', color: '#fff', borderColor: '#1e40af' }}
+                >
+                  📊 비교
+                </button>
               </div>
             </div>
             <div className="indicator-tabs" style={{
@@ -519,13 +470,48 @@ const StockDetail = ({ stock, user, onOpenCommunity }) => {
               <div className="loading-placeholder">
                 차트 데이터를 불러오는 중...
               </div>
+            ) : error ? (
+              <div className="error-placeholder" style={{ color: '#ef4444', textAlign: 'center', padding: '40px' }}>
+                {error}
+              </div>
             ) : (
               <CandleChart
                 data={candles}
                 indicators={activeIndicators}
                 height={hasBottomIndicator ? 700 : 500}
+                avgPrice={accountData?.holdings?.find(h => h.stockCode === stock.symbol)?.averageBuyPrice}
               />
             )}
+
+            {/* 기간 선택 버튼 (차트 아래로 이동 및 분/일/주/월/년 구성) */}
+            <div className="period-tabs" style={{ 
+              marginTop: "15px", 
+              justifyContent: "center",
+              display: "flex",
+              gap: "8px"
+            }}>
+              {[
+                { code: "1D", label: "분" },
+                { code: "D", label: "일" },
+                { code: "W", label: "주" },
+                { code: "M", label: "월" },
+                { code: "1Y", label: "년" },
+              ].map((p) => (
+                <button
+                  key={p.code}
+                  className={`period-btn ${period === p.code ? "active" : ""}`}
+                  onClick={() => setPeriod(p.code)}
+                  style={{
+                    padding: "6px 20px",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    fontWeight: "700"
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="trading-section detail-card">

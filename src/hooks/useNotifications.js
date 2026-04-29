@@ -7,15 +7,9 @@ const useNotifications = (userId) => {
 
   const fetchNotifications = useCallback(async () => {
     if (!userId) return;
-    const token = localStorage.getItem("accessToken");
     try {
       const res = await fetch(
-        `/api/notifications/${userId}`,
-        {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        },
+        `/api/notifications/${userId}`
       );
       if (!res.ok) throw new Error("Failed to fetch notifications");
       const data = await res.json();
@@ -27,15 +21,9 @@ const useNotifications = (userId) => {
 
   const fetchUnreadCount = useCallback(async () => {
     if (!userId) return;
-    const token = localStorage.getItem("accessToken");
     try {
       const res = await fetch(
-        `/api/notifications/unread-count/${userId}`,
-        {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        },
+        `/api/notifications/unread-count/${userId}`
       );
       if (!res.ok) throw new Error("Failed to fetch unread count");
       const count = await res.json();
@@ -53,20 +41,16 @@ const useNotifications = (userId) => {
     };
     loadInitialData();
 
-    const token = localStorage.getItem("accessToken");
-    if (!token) return;
-
     const sseUrl = `/api/notifications/subscribe/${userId}`;
-
-    const eventSource = new EventSourcePolyfill(sseUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      heartbeatTimeout: 1860000,
-    });
+ 
+     const eventSource = new EventSourcePolyfill(sseUrl, {
+       headers: { "Content-Type": "application/json" },
+       withCredentials: true,
+       heartbeatTimeout: 1860000,
+     });
 
     eventSource.addEventListener("connect", (event) => {
-      console.log("SSE Connected:", event.data);
+      // console.log("SSE Connected:", event.data);
     });
 
     eventSource.addEventListener("notification", (event) => {
@@ -81,16 +65,12 @@ const useNotifications = (userId) => {
   }, [userId]);
 
   const markAsRead = async (notificationId) => {
-    const token = localStorage.getItem("accessToken");
     try {
       await fetch(
         `/api/notifications/${notificationId}/read`,
         {
-          method: "POST",
-          headers: {
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        },
+          method: "POST"
+        }
       );
 
       setNotifications((prev) =>
@@ -103,16 +83,12 @@ const useNotifications = (userId) => {
   };
 
   const markAllAsRead = async () => {
-    const token = localStorage.getItem("accessToken");
     try {
       await fetch(
         `/api/notifications/read-all/${userId}`,
         {
-          method: "POST",
-          headers: {
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        },
+          method: "POST"
+        }
       );
 
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
