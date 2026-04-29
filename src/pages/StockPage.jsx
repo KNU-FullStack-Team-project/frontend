@@ -6,9 +6,9 @@ import StockCompareView from "../components/stock/StockCompareView";
 
 const StockRow = ({
   stock,
-  index,
   favorites,
   toggleFavorite,
+  openAlertSettings,
   handleStockClick,
   getTradingAmountLabel,
 }) => {
@@ -17,13 +17,27 @@ const StockRow = ({
       className="stock-list-item clickable"
       onClick={() => handleStockClick(stock)}
     >
-      <button
-        className={`favorite-btn ${favorites.has(stock.symbol) ? "active" : ""
-          }`}
-        onClick={(e) => toggleFavorite(e, stock.symbol)}
-      >
-        {favorites.has(stock.symbol) ? "❤️" : "🤍"}
-      </button>
+      <div className="favorite-actions" style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+        <button
+          className={`favorite-btn ${favorites.has(stock.symbol) ? "active" : ""}`}
+          onClick={(e) => toggleFavorite(e, stock.symbol)}
+        >
+          {favorites.has(stock.symbol) ? "❤️" : "🤍"}
+        </button>
+        {favorites.has(stock.symbol) && (
+          <button
+            className="alert-settings-btn"
+            onClick={(e) => openAlertSettings(e, stock.symbol)}
+            style={{ 
+              border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px',
+              padding: '4px', borderRadius: '4px', transition: 'background 0.2s'
+            }}
+            title="알림 설정"
+          >
+            🔔
+          </button>
+        )}
+      </div>
 
 
       <div className="stock-name-section">
@@ -80,6 +94,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
   const [selectedIndustry, setSelectedIndustry] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
   const [isCompareMode, setIsCompareMode] = useState(false);
+  const [compareInitialStock, setCompareInitialStock] = useState(null);
   const observerTarget = useRef(null);
 
   const handleStockClick = (stock) => {
@@ -332,69 +347,78 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
     // [수정] 의존성 배열 보완
   }, [stocks, loading, page, fetchStocks, activeTab, searchResults, selectedIndustry, selectedType]);
 
+  const [alertModalOpen, setAlertModalOpen] = useState(false);
+  const [selectedSymbolForAlert, setSelectedSymbolForAlert] = useState(null);
+  const [tempBuyLevel, setTempBuyLevel] = useState("NONE");
+  const [tempSellLevel, setTempSellLevel] = useState("NONE");
+
   const toggleFavorite = async (e, symbol) => {
     e.stopPropagation();
-
     const userId = user?.userId || user?.id;
 
     if (!userId) {
-      const newFavs = new Set(favorites);
-      if (newFavs.has(symbol)) {
-        newFavs.delete(symbol);
-      } else {
-        newFavs.add(symbol);
-      }
-      setFavorites(newFavs);
-      localStorage.setItem(
-        "favoriteStocks",
-        JSON.stringify(Array.from(newFavs)),
-      );
-      alert("로그인이 필요한 기능입니다. (현재는 로컬에만 저장됩니다)");
+      alert("로그인이 필요한 기능입니다.");
       return;
     }
 
-    const isFavorite = favorites.has(symbol);
-    const newFavs = new Set(favorites);
-
-    if (isFavorite) {
+    if (favorites.has(symbol)) {
+      // 즉시 해제
+      const newFavs = new Set(favorites);
       newFavs.delete(symbol);
-    } else {
-      newFavs.add(symbol);
-    }
+      setFavorites(newFavs);
 
-    setFavorites(newFavs);
+      try {
+        await fetch(`/api/favorites/${symbol}?userId=${userId}`, { method: "DELETE" });
+        if (activeTab === "favorites") fetchFavoriteDetails();
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      // 즉시 등록 (알림은 기본 NONE)
+      const newFavs = new Set(favorites);
+      newFavs.add(symbol);
+      setFavorites(newFavs);
+
+      try {
+        await fetch(
+          `/api/favorites/${symbol}?userId=${userId}&buyAlertLevel=NONE&sellAlertLevel=NONE`,
+          { method: "POST" }
+        );
+        if (activeTab === "favorites") fetchFavoriteDetails();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  const openAlertSettings = (e, symbol) => {
+    e.stopPropagation();
+    setSelectedSymbolForAlert(symbol);
+    setTempBuyLevel("NONE"); // 실제 구현 시에는 현재 설정값을 가져오는 API가 있으면 더 좋습니다.
+    setTempSellLevel("NONE");
+    setAlertModalOpen(true);
+  };
+
+  const confirmUpdateAlert = async () => {
+    const symbol = selectedSymbolForAlert;
+    const userId = user?.userId || user?.id;
+    if (!symbol || !userId) return;
+
+    setAlertModalOpen(false);
 
     try {
-      const method = isFavorite ? "DELETE" : "POST";
+      // 기존에 등록된 상태이므로 UPDATE(PUT) 요청을 보냅니다.
       const response = await fetch(
-        `/api/favorites/${symbol}?userId=${userId}`,
-        {
-          method,
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
+        `/api/favorites/${symbol}/alert?userId=${userId}&buyAlertLevel=${tempBuyLevel}&sellAlertLevel=${tempSellLevel}`,
+        { method: "PUT" }
       );
 
-      if (!response.ok) {
-        throw new Error("서버 응답 오류");
-      }
-
-      if (activeTab === "favorites") {
-        fetchFavoriteDetails();
+      if (response.ok) {
+        alert("알림 설정이 저장되었습니다.");
       }
     } catch (err) {
-      console.error("Failed to toggle favorite:", err);
-
-      const revertFavs = new Set(favorites);
-      if (isFavorite) {
-        revertFavs.add(symbol);
-      } else {
-        revertFavs.delete(symbol);
-      }
-      setFavorites(revertFavs);
-
-      alert("관심종목 반영에 실패했습니다. 다시 시도해주세요.");
+      console.error("Failed to update alert:", err);
+      alert("알림 설정 저장에 실패했습니다.");
     }
   };
 
@@ -411,7 +435,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
         return (Number(amount) / 10000).toLocaleString() + "만원";
       }
       return Number(amount).toLocaleString() + "원";
-    } catch (e) {
+    } catch {
       return "0원";
     }
   };
@@ -435,8 +459,15 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
         </p>
       </div>
 
+
       {isCompareMode ? (
-        <StockCompareView onClose={() => setIsCompareMode(false)} />
+        <StockCompareView 
+          initialStock={compareInitialStock} 
+          onClose={() => {
+            setIsCompareMode(false);
+            setCompareInitialStock(null);
+          }} 
+        />
       ) : (
       <div className="content-card">
         <div className="section-header">
@@ -618,7 +649,10 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
           <div style={{ display: "flex", gap: "8px" }}>
             <button
               className="refresh-btn"
-              onClick={() => setIsCompareMode(true)}
+              onClick={() => {
+                setCompareInitialStock(null);
+                setIsCompareMode(true);
+              }}
               style={{ margin: 0, backgroundColor: "#1e40af", color: "#fff", borderColor: "#1e40af" }}
             >
               📊 종목 비교
@@ -690,6 +724,7 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
                 index={index}
                 favorites={favorites}
                 toggleFavorite={toggleFavorite}
+                openAlertSettings={openAlertSettings}
                 handleStockClick={handleStockClick}
                 getTradingAmountLabel={getTradingAmountLabel}
               />
@@ -730,12 +765,78 @@ const StockPage = ({ user, onOpenCommunity, onActivity }) => {
           <StockDetail
             stock={selectedStock}
             user={user}
+            favorites={favorites}
+            toggleFavorite={toggleFavorite}
+            openAlertSettings={openAlertSettings}
             onOpenCommunity={onOpenCommunity}
             onOpenCompare={() => {
+              setCompareInitialStock(selectedStock);
               setIsModalOpen(false);
               setIsCompareMode(true);
             }}
           />
+        </Modal>
+
+        {/* 관심종목 알림 설정 모달 */}
+        <Modal
+          isOpen={alertModalOpen}
+          onClose={() => setAlertModalOpen(false)}
+          title="관심종목 알림 설정"
+        >
+          <div style={{ padding: '24px' }}>
+            <div style={{ marginBottom: '24px' }}>
+              <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#374151', marginBottom: '10px' }}>📉 매수 타이밍 알림</p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {["NONE", "BUY", "STRONG_BUY"].map(lvl => (
+                  <button
+                    key={lvl}
+                    onClick={() => setTempBuyLevel(lvl)}
+                    style={{
+                      flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid',
+                      borderColor: tempBuyLevel === lvl ? '#ef4444' : '#e5e7eb',
+                      background: tempBuyLevel === lvl ? '#fef2f2' : 'white',
+                      color: tempBuyLevel === lvl ? '#ef4444' : '#6b7280',
+                      fontSize: '13px', fontWeight: '600', cursor: 'pointer'
+                    }}
+                  >
+                    {lvl === "NONE" ? "안함" : lvl === "BUY" ? "매수 이상" : "강한 매수"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '28px' }}>
+              <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#374151', marginBottom: '10px' }}>📈 매도 타이밍 알림</p>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {["NONE", "SELL", "STRONG_SELL"].map(lvl => (
+                  <button
+                    key={lvl}
+                    onClick={() => setTempSellLevel(lvl)}
+                    style={{
+                      flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid',
+                      borderColor: tempSellLevel === lvl ? '#2563eb' : '#e5e7eb',
+                      background: tempSellLevel === lvl ? '#eff6ff' : 'white',
+                      color: tempSellLevel === lvl ? '#2563eb' : '#6b7280',
+                      fontSize: '13px', fontWeight: '600', cursor: 'pointer'
+                    }}
+                  >
+                    {lvl === "NONE" ? "안함" : lvl === "SELL" ? "매도 이상" : "강한 매도"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button 
+              onClick={confirmUpdateAlert}
+              style={{ 
+                width: '100%', padding: '14px', borderRadius: '12px', border: 'none', 
+                background: '#111827', color: 'white', fontWeight: 'bold', cursor: 'pointer',
+                fontSize: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+              }}
+            >
+              알림 설정 저장 완료
+            </button>
+          </div>
         </Modal>
       </div>
       )}

@@ -21,12 +21,12 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500, avgPric
     if (!Array.isArray(data)) return [];
     try {
       return [...data].reverse();
-    } catch (e) {
+    } catch {
       return [];
     }
   }, [data]);
 
-  // 보조지표 계산 (Memoized)
+  // 보조지표 계산 (Memoized) - 전체 데이터를 사용하여 선이 끊기지 않게 함
   const computedIndicators = useMemo(() => {
     if (sortedData.length === 0) return {};
     return {
@@ -42,13 +42,14 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500, avgPric
   const margin = { top: 30, right: 70, bottom: 40, left: 10 };
   const candleWidth = 24; 
 
-  // 하단 패널(RSI, MACD) 존재 여부에 따른 레이아웃 계산
-  const hasBottomIndicator = indicators.rsi || indicators.macd;
+  // 레이아웃 고도화: 메인 차트 높이를 가급적 유지
   const bottomPanelCount = (indicators.rsi ? 1 : 0) + (indicators.macd ? 1 : 0);
-  const bottomPanelHeight = 100; // 패널 당 높이 상향 조정 (80 -> 100)
-  const totalBottomHeight = bottomPanelCount * (bottomPanelHeight + 30);
+  const bottomPanelHeight = 110; 
+  const totalBottomHeight = bottomPanelCount * (bottomPanelHeight + 35);
   
-  const mainChartHeight = height - margin.top - margin.bottom - (totalBottomHeight > 0 ? totalBottomHeight : 0);
+  // 지표가 많아지면 전체 높이(height)를 늘려서 메인 차트가 찌그러지지 않게 함
+  const actualHeight = Math.max(height, 400 + totalBottomHeight);
+  const mainChartHeight = actualHeight - margin.top - margin.bottom - (totalBottomHeight > 0 ? totalBottomHeight : 0);
   const volumeHeight = mainChartHeight * 0.15;
 
   const priceRangeData = useMemo(() => {
@@ -427,7 +428,7 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500, avgPric
       onMouseLeave={handleMouseUp}
       style={{
         width: "100%", 
-        height,
+        height: actualHeight,
         overflowX: "hidden",
         cursor: isDragging ? "grabbing" : "grab",
         position: "relative",
@@ -438,7 +439,7 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500, avgPric
         boxSizing: "border-box" 
       }}
     >
-      <svg width={svgWidth} height={height} style={{ overflow: "visible" }}>
+      <svg width={svgWidth} height={actualHeight} style={{ overflow: "visible" }}>
         <defs>
           <linearGradient id="upGradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.8" />
@@ -458,7 +459,7 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500, avgPric
           const idx = sortedData.indexOf(d);
           const x = margin.left + idx * candleWidth;
           return (
-            <text key={i} x={x + candleWidth / 2} y={height - 5} textAnchor="middle" fontSize="10" fill="#9ca3af">
+            <text key={i} x={x + candleWidth / 2} y={actualHeight - 5} textAnchor="middle" fontSize="10" fill="#9ca3af">
               {d.time ? `${d.time.substring(0, 2)}:${d.time.substring(2, 4)}` : `${d.date.substring(4, 6)}.${d.date.substring(6, 8)}`}
             </text>
           );

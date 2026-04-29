@@ -53,7 +53,6 @@ const AppController = () => {
   const [authMessage, setAuthMessage] = useState("");
 
   const inactivityTimerRef = useRef(null);
-  const autoLogoutTimeoutRef = useRef(null);
 
   const handleLogout = useCallback(() => {
     fetch("/api/users/logout", {
@@ -141,9 +140,9 @@ const AppController = () => {
           .catch(() => {
             handleLogout();
           });
-      } catch (e) {
-        console.error("Local storage user parsing error:", e);
-        handleLogout();
+      } catch {
+        console.error("Local storage user parsing error");
+        setTimeout(() => handleLogout(), 0);
       }
     }
   }, [handleLogout]);
@@ -378,7 +377,7 @@ const AppController = () => {
       } else {
         setCurrentPage("home");
       }
-    } catch (error) {
+    } catch {
       alert("간편회원가입 오류");
     }
   };
@@ -433,7 +432,7 @@ const AppController = () => {
       }
 
       alert(data);
-    } catch (error) {
+    } catch {
       alert("회원가입 오류");
     }
   };
@@ -586,7 +585,7 @@ const AppController = () => {
     alert(text || "삭제 처리 완료");
     setSelectedCompetitionId(null);
     return true;
-  } catch (e) {
+  } catch {
     alert("삭제 오류");
     return false;
   }
@@ -610,7 +609,7 @@ const handleToggleCompetitionVisibility = async (competitionId, isPublic) => {
 
     alert(text || "공개 상태 변경 완료");
     return true;
-  } catch (e) {
+  } catch {
     alert("공개 상태 변경 오류");
     return false;
   }
