@@ -5,6 +5,11 @@ import TermsSection from "./agreement/TermsSection";
 import TermsModal from "./agreement/TermsModal";
 import { TERMS_CONTENT } from "./agreement/termsData";
 
+const NICKNAME_MAX_LENGTH = 12;
+const NICKNAME_ALLOWED_PATTERN = /^[A-Za-z0-9가-힣]{1,12}$/;
+const NICKNAME_RULE_MESSAGE =
+  "닉네임은 12자 이하의 한글, 영문, 숫자만 사용할 수 있습니다.";
+
 const SignupForm = ({ onSignup, onSocialSignup, socialSignupData = null }) => {
   const isSocialSignup = !!socialSignupData?.credential;
   const nicknamePlaceholder = socialSignupData?.rejoinCandidate
@@ -123,6 +128,13 @@ const SignupForm = ({ onSignup, onSocialSignup, socialSignupData = null }) => {
     resetEmailFlow();
   };
 
+  const normalizeNicknameInput = (value) =>
+    value.replace(/[^A-Za-z0-9가-힣]/g, "").slice(0, NICKNAME_MAX_LENGTH);
+
+  const handleNicknameChange = (e) => {
+    setNickname(normalizeNicknameInput(e.target.value));
+  };
+
   const handleCheckEmail = async () => {
     if (!email.trim()) {
       setMessage("이메일을 입력해 주세요.");
@@ -235,6 +247,12 @@ const SignupForm = ({ onSignup, onSocialSignup, socialSignupData = null }) => {
 
     if (!nickname.trim()) {
       setMessage("닉네임을 입력해 주세요.");
+      setIsMessageSuccess(false);
+      return;
+    }
+
+    if (!NICKNAME_ALLOWED_PATTERN.test(nickname.trim())) {
+      setMessage(NICKNAME_RULE_MESSAGE);
       setIsMessageSuccess(false);
       return;
     }
@@ -391,8 +409,12 @@ const SignupForm = ({ onSignup, onSocialSignup, socialSignupData = null }) => {
         placeholder={nicknamePlaceholder}
         icon="👤"
         value={nickname}
-        onChange={(e) => setNickname(e.target.value)}
+        onChange={handleNicknameChange}
+        maxLength={NICKNAME_MAX_LENGTH}
       />
+      <p className="helper-text">
+        닉네임은 12자 이하, 띄어쓰기와 특수문자 없이 입력해 주세요.
+      </p>
 
       {!isSocialSignup && (
         <>
