@@ -28,6 +28,7 @@ const formatDateTime = (value) => {
 const AdminPage = ({
   onOpenUserMyPage,
   onOpenUserActivity,
+  onOpenPost,
   currentUser,
 }) => {
   const [users, setUsers] = useState([]);
@@ -452,7 +453,19 @@ const AdminPage = ({
                     <tr key={`${report.reportType}-${report.reportId}`}>
                       <td>{report.createdAt?.replace("T", " ") || "-"}</td>
                       <td>{report.reportType === "POST" ? "게시글" : "댓글"}</td>
-                      <td>{report.postTitle || "-"}</td>
+                      <td>
+                        {report.postId && onOpenPost ? (
+                          <button
+                            type="button"
+                            className="activity-table-link"
+                            onClick={() => onOpenPost(report.postId)}
+                          >
+                            {report.postTitle || `게시글 #${report.postId}`}
+                          </button>
+                        ) : (
+                          report.postTitle || "-"
+                        )}
+                      </td>
                       <td>
                         <div>{report.reason || "-"}</div>
                         <div className="report-detail-text">
