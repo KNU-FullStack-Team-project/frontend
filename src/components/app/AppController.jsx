@@ -231,6 +231,7 @@ const AppController = () => {
           accountId: data.accountId,
           profileImageUrl: data.profileImageUrl,
           isSocialLogin: !!data.socialLogin,
+          token: data.token // 토큰 추가
         };
 
         setCurrentUser(loginUser);

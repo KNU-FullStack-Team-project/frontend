@@ -100,37 +100,55 @@ const StockDetail = ({
     }
   };
 
-  const fetchHistory = React.useCallback(async (signal) => {
+  // [최적화] 현재 진행 중인 요청을 추적하여 중복 호출 방지
+  const pendingRequests = React.useRef(new Map());
+
+  const fetchHistory = React.useCallback(async () => {
     if (!stock?.symbol) return;
 
     const cacheKey = `${stock.symbol}:${period}`;
+    
+    // 1. 이미 완료된 캐시 확인
     const cached = chartCache.get(cacheKey);
     const now = Date.now();
-
-    // [최적화] 1분 이내의 동일 종목/기간 요청인 경우 캐시 사용
     if (cached && (now - cached.timestamp < CACHE_DURATION_MS)) {
-      console.log(`[Cache Hit] Using cached chart data for ${cacheKey}`);
       setCandles(cached.data);
       setLoading(false);
+      return;
+    }
+
+    // 2. 이미 진행 중인 동일한 요청이 있는지 확인 (Race Condition 방지)
+    if (pendingRequests.current.has(cacheKey)) {
+      console.log(`[Pending] Waiting for existing request: ${cacheKey}`);
+      try {
+        const data = await pendingRequests.current.get(cacheKey);
+        setCandles(data);
+      } catch {
+        // 기존 요청 실패 시 처리 생략 (자체적으로 처리됨)
+      }
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(
-        `/api/stocks/${stock.symbol}/history?period=${period}`,
-        { signal }
-      );
-      if (!response.ok) throw new Error("Failed to fetch history");
-      const data = await response.json();
+      
+      // 요청 생성 및 펜딩 맵에 등록 (공유되는 요청은 Abort 신호를 받지 않음)
+      const fetchPromise = fetch(
+        `/api/stocks/${stock.symbol}/history?period=${period}`
+      ).then(async (res) => {
+        if (!res.ok) throw new Error("Failed to fetch history");
+        return res.json();
+      });
 
-      // [수정] 데이터가 배열인 경우에만 캐시 및 상태 업데이트
+      pendingRequests.current.set(cacheKey, fetchPromise);
+
+      const data = await fetchPromise;
+
       if (Array.isArray(data)) {
         chartCache.set(cacheKey, { data, timestamp: Date.now() });
         setCandles(data);
       } else {
-        console.error("Invalid chart data format:", data);
         setCandles([]);
       }
     } catch (err) {
@@ -139,6 +157,7 @@ const StockDetail = ({
         setError("차트 데이터를 불러오는 중 오류가 발생했습니다.");
       }
     } finally {
+      pendingRequests.current.delete(cacheKey);
       setLoading(false);
     }
   }, [stock?.symbol, period]);

@@ -5,21 +5,42 @@ const StockDiagnosis = ({ symbol }) => {
     const [diagnosis, setDiagnosis] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const pendingRequest = React.useRef(null);
 
     useEffect(() => {
         if (!symbol) return;
 
         const fetchDiagnosis = async () => {
+            // 이미 진행 중인 동일한 요청이 있다면 그 결과를 기다림
+            if (pendingRequest.current) {
+                try {
+                    const data = await pendingRequest.current;
+                    if (data) setDiagnosis(data);
+                    return;
+                } catch {
+                    // 기존 요청 실패 시 새로 시도할 수 있도록 진행
+                }
+            }
+
             setLoading(true);
+            setError(null);
             try {
-                const response = await fetch(`http://localhost:8081/api/stocks/${symbol}/diagnosis`);
-                if (!response.ok) throw new Error("데이터 로드 실패");
-                const data = await response.json();
+                const fetchPromise = fetch(`/api/stocks/${symbol}/diagnosis`)
+                    .then(res => {
+                        if (!res.ok) throw new Error("데이터 로드 실패");
+                        return res.json();
+                    });
+                
+                pendingRequest.current = fetchPromise;
+                const data = await fetchPromise;
                 setDiagnosis(data);
             } catch (err) {
-                console.error("진단 정보 로드 실패:", err);
-                setError("진단 정보를 불러올 수 없습니다.");
+                if (err.name !== 'AbortError') {
+                    console.error("진단 정보 로드 실패:", err);
+                    setError("진단 정보를 불러올 수 없습니다.");
+                }
             } finally {
+                pendingRequest.current = null;
                 setLoading(false);
             }
         };
