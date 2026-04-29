@@ -13,6 +13,11 @@ const isStrongPassword = (value) => {
   return hasLetter && hasDigit && hasSpecial;
 };
 
+const NICKNAME_MAX_LENGTH = 12;
+const NICKNAME_ALLOWED_PATTERN = /^[A-Za-z0-9가-힣]{1,12}$/;
+const NICKNAME_RULE_MESSAGE =
+  "닉네임은 12자 이하의 한글, 영문, 숫자만 사용할 수 있습니다.";
+
 const AccountSettingsPage = ({
   currentUser,
   onLogout,
@@ -43,9 +48,11 @@ const AccountSettingsPage = ({
     passwordForm.newPassword.length > 0 &&
     passwordForm.newPassword === passwordForm.confirmPassword;
   const isNicknameChanged = nickname.trim() !== (currentUser?.nickname || "");
+  const isNicknameValid = NICKNAME_ALLOWED_PATTERN.test(nickname.trim());
   const canChangeNickname =
     Boolean(currentUser?.email) &&
     Boolean(nickname.trim()) &&
+    isNicknameValid &&
     isNicknameChanged &&
     !isNicknameDuplicate &&
     !isNicknameSaving;
@@ -104,6 +111,12 @@ const AccountSettingsPage = ({
       return;
     }
 
+    if (!NICKNAME_ALLOWED_PATTERN.test(trimmedNickname)) {
+      setIsNicknameDuplicate(false);
+      setNicknameMessage(NICKNAME_RULE_MESSAGE);
+      return;
+    }
+
     let cancelled = false;
 
     const timer = setTimeout(async () => {
@@ -142,8 +155,11 @@ const AccountSettingsPage = ({
     };
   }, [nickname, currentUser?.email, currentUser?.nickname]);
 
+  const normalizeNicknameInput = (value) =>
+    value.replace(/[^A-Za-z0-9가-힣]/g, "").slice(0, NICKNAME_MAX_LENGTH);
+
   const handleNicknameChange = (event) => {
-    setNickname(event.target.value);
+    setNickname(normalizeNicknameInput(event.target.value));
     if (nicknameMessage !== "이미 사용 중인 닉네임입니다.") {
       setNicknameMessage("");
     }
@@ -159,7 +175,7 @@ const AccountSettingsPage = ({
     event.preventDefault();
 
     if (!canChangeNickname) {
-      setNicknameMessage("닉네임을 다시 확인해 주세요.");
+      setNicknameMessage(isNicknameValid ? "닉네임을 다시 확인해 주세요." : NICKNAME_RULE_MESSAGE);
       return;
     }
 
@@ -401,6 +417,7 @@ const AccountSettingsPage = ({
                       name="nickname"
                       value={nickname}
                       onChange={handleNicknameChange}
+                      maxLength={NICKNAME_MAX_LENGTH}
                       placeholder="새 닉네임"
                       style={{
                         flex: 1,
@@ -433,6 +450,9 @@ const AccountSettingsPage = ({
                       {isNicknameSaving ? "저장 중..." : "변경 적용"}
                     </AppButton>
                   </div>
+                  <p className="helper-text" style={{ marginTop: '10px', maxWidth: '500px' }}>
+                    닉네임은 12자 이하, 띄어쓰기와 특수문자 없이 입력해 주세요.
+                  </p>
 
                   {nicknameMessage ? (
                     <p className="password-form__message" style={{ marginTop: '12px', maxWidth: '500px' }}>{nicknameMessage}</p>

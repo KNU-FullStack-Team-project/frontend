@@ -56,6 +56,10 @@ const CommunityPostDetailPage = ({
 
       const data = await response.json();
       setPostDetail(data);
+
+      if (data?.status !== "DELETED") {
+        increaseViewCount();
+      }
     } catch (error) {
       console.error("게시글 상세 조회 오류:", error);
       setPostDetail(null);
@@ -78,7 +82,6 @@ const CommunityPostDetailPage = ({
 
   useEffect(() => {
     fetchPostDetail();
-    increaseViewCount();
   }, [postId]);
 
   useEffect(() => {
@@ -116,6 +119,8 @@ const CommunityPostDetailPage = ({
     if (!currentUser || !postDetail) return false;
     return currentUser.userId !== postDetail.userId;
   }, [currentUser, postDetail]);
+
+  const isDeletedPost = postDetail?.status === "DELETED";
 
   const boardBadgeText = useMemo(() => {
     if (postDetail?.isNotice) return "공지";
@@ -616,9 +621,10 @@ const CommunityPostDetailPage = ({
             <div style={styles.stockBadgeWrap}>
               <span style={styles.stockBadge}>{boardBadgeText}</span>
               {postDetail.isNotice && <span style={styles.noticeBadge}>공지</span>}
+              {isDeletedPost && <span style={styles.deletedBadge}>삭제된 글</span>}
             </div>
 
-            {canReportPost && !isEditMode && (
+            {canReportPost && !isEditMode && !isDeletedPost && (
               <button
                 type="button"
                 onClick={openPostReportModal}
@@ -731,6 +737,15 @@ const CommunityPostDetailPage = ({
             </>
           ) : (
             <>
+              {isDeletedPost && (
+                <div style={styles.deletedNoticeBox}>
+                  <strong>삭제된 게시글입니다.</strong>
+                  {postDetail.deletedAt && (
+                    <span>삭제일시: {formatDateTime(postDetail.deletedAt)}</span>
+                  )}
+                </div>
+              )}
+
               <h1 style={styles.title}>
                 {postDetail.isNotice && (
                   <span style={styles.noticeTitlePrefix}>[공지] </span>
@@ -1091,6 +1106,27 @@ const styles = {
     color: "#d9480f",
     fontSize: "12px",
     fontWeight: "800",
+  },
+  deletedBadge: {
+    display: "inline-block",
+    padding: "6px 12px",
+    borderRadius: "999px",
+    background: "#fee2e2",
+    color: "#b91c1c",
+    fontSize: "12px",
+    fontWeight: "800",
+  },
+  deletedNoticeBox: {
+    display: "grid",
+    gap: "6px",
+    marginBottom: "16px",
+    padding: "14px 16px",
+    borderRadius: "12px",
+    border: "1px solid #fecaca",
+    background: "#fef2f2",
+    color: "#991b1b",
+    fontSize: "14px",
+    lineHeight: "1.6",
   },
   noticeTitlePrefix: {
     color: "#d9480f",

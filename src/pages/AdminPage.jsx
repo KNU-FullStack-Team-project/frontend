@@ -28,6 +28,7 @@ const formatDateTime = (value) => {
 const AdminPage = ({
   onOpenUserMyPage,
   onOpenUserActivity,
+  onOpenPost,
   currentUser,
 }) => {
   const [users, setUsers] = useState([]);
@@ -63,6 +64,8 @@ const AdminPage = ({
             acc[user.id] = {
               role: user.role || "USER",
               status: user.status || "ACTIVE",
+              suspensionHours: undefined,
+              suspensionReason: "",
             };
             return acc;
           }, {}),
@@ -149,6 +152,49 @@ const AdminPage = ({
     }));
   };
 
+  const handleStatusChange = (user, status) => {
+    if (status !== "SUSPENDED" || user.status === "SUSPENDED") {
+      handleUserFieldChange(user.id, "status", status);
+      return;
+    }
+
+    const input = window.prompt(
+      "정지 기간을 시간 단위로 입력해주세요. 예: 0.1, 1, 24 / 영구정지는 -1",
+      "1",
+    );
+
+    if (input === null) {
+      return;
+    }
+
+    const hours = Number(input);
+    if (!Number.isFinite(hours) || hours === 0 || hours < -1) {
+      alert("정지 기간은 -1 또는 0이 아닌 양수 시간으로 입력해주세요.");
+      return;
+    }
+
+    const reason = window.prompt("밴 사유를 입력해주세요.", "");
+    if (reason === null) {
+      return;
+    }
+
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      alert("밴 사유를 입력해주세요.");
+      return;
+    }
+
+    setEditedUsers((prev) => ({
+      ...prev,
+      [user.id]: {
+        ...prev[user.id],
+        status,
+        suspensionHours: hours,
+        suspensionReason: trimmedReason,
+      },
+    }));
+  };
+
   const handleApplyUser = async (userId) => {
     const nextUser = editedUsers[userId];
     if (!nextUser || savingUserId) {
@@ -184,6 +230,8 @@ const AdminPage = ({
         [userId]: {
           role: savedUser.role || "USER",
           status: savedUser.status || "ACTIVE",
+          suspensionHours: undefined,
+          suspensionReason: "",
         },
       }));
       alert("회원 정보가 저장되었습니다.");
@@ -405,7 +453,19 @@ const AdminPage = ({
                     <tr key={`${report.reportType}-${report.reportId}`}>
                       <td>{report.createdAt?.replace("T", " ") || "-"}</td>
                       <td>{report.reportType === "POST" ? "게시글" : "댓글"}</td>
-                      <td>{report.postTitle || "-"}</td>
+                      <td>
+                        {report.postId && onOpenPost ? (
+                          <button
+                            type="button"
+                            className="activity-table-link"
+                            onClick={() => onOpenPost(report.postId)}
+                          >
+                            {report.postTitle || `게시글 #${report.postId}`}
+                          </button>
+                        ) : (
+                          report.postTitle || "-"
+                        )}
+                      </td>
                       <td>
                         <div>{report.reason || "-"}</div>
                         <div className="report-detail-text">
@@ -449,6 +509,8 @@ const AdminPage = ({
                     const editedUser = editedUsers[user.id] || {
                       role: user.role || "USER",
                       status: user.status || "ACTIVE",
+                      suspensionHours: undefined,
+                      suspensionReason: "",
                     };
                     const isChanged =
                       !isQuitUser &&
@@ -504,11 +566,7 @@ const AdminPage = ({
                             value={isQuitUser ? "QUIT" : editedUser.status}
                             disabled={isQuitUser}
                             onChange={(event) =>
-                              handleUserFieldChange(
-                                user.id,
-                                "status",
-                                event.target.value,
-                              )
+                              handleStatusChange(user, event.target.value)
                             }
                             style={{
                               padding: "4px 8px",
@@ -531,6 +589,34 @@ const AdminPage = ({
                               ))
                             )}
                           </select>
+                          {user.status === "SUSPENDED" ? (
+                            <>
+                              <div className="report-sub-text">
+                                {user.suspendedUntil
+                                  ? `해제 예정: ${formatDateTime(user.suspendedUntil)}`
+                                  : "영구 정지"}
+                              </div>
+                              {user.suspensionReason ? (
+                                <div className="report-sub-text">
+                                  사유: {user.suspensionReason}
+                                </div>
+                              ) : null}
+                            </>
+                          ) : null}
+                          {editedUser.status === "SUSPENDED" &&
+                          editedUser.suspensionHours ? (
+                            <div className="report-sub-text">
+                              {editedUser.suspensionHours === -1
+                                ? "설정: 영구 정지"
+                                : `설정: ${editedUser.suspensionHours}시간 정지`}
+                            </div>
+                          ) : null}
+                          {editedUser.status === "SUSPENDED" &&
+                          editedUser.suspensionReason ? (
+                            <div className="report-sub-text">
+                              설정 사유: {editedUser.suspensionReason}
+                            </div>
+                          ) : null}
                         </td>
                         <td>{user.accountCount ?? 0}</td>
                         <td>

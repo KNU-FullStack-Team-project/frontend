@@ -851,6 +851,11 @@ const handleToggleCompetitionVisibility = async (competitionId, isPublic) => {
               setSelectedActivityUser(user);
               setCurrentPage("userActivity");
             }}
+            onOpenPost={(postId) => {
+              setSelectedCommunityPostId(postId);
+              setSelectedCommunityBoardType("free");
+              setCurrentPage("communityPostDetail");
+            }}
           />
         );
 
