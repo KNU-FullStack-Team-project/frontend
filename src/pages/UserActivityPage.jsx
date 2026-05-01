@@ -271,12 +271,7 @@ const UserActivityPage = ({
 
       try {
         const response = await fetch(
-          `/api/admin/users/${targetUser.id}/activities`,
-          {
-            headers: currentUser?.token
-              ? { Authorization: `Bearer ${currentUser.token}` }
-              : undefined,
-          },
+          `/api/admin/users/${targetUser.id}/activities`
         );
 
         if (!response.ok) {
@@ -292,7 +287,7 @@ const UserActivityPage = ({
     };
 
     loadActivities();
-  }, [currentUser?.token, targetUser?.id]);
+  }, [targetUser?.id]);
 
   useEffect(() => {
     if (!isAdminTarget) {
@@ -307,11 +302,7 @@ const UserActivityPage = ({
       setAdminLogError("");
 
       try {
-        const response = await fetch("/api/admin/action-logs", {
-          headers: currentUser?.token
-            ? { Authorization: `Bearer ${currentUser.token}` }
-            : undefined,
-        });
+        const response = await fetch("/api/admin/action-logs");
 
         if (!response.ok) {
           throw new Error("관리자 기록을 불러오지 못했습니다.");
@@ -326,7 +317,7 @@ const UserActivityPage = ({
     };
 
     loadAdminLogs();
-  }, [currentUser?.token, isAdminTarget, targetUser?.id]);
+  }, [isAdminTarget, targetUser?.id]);
 
   const filteredActivities = useMemo(() => {
     const keyword = activitySearchKeyword.trim().toLowerCase();

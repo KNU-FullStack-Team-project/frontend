@@ -78,7 +78,7 @@ const AdminPage = ({
     };
 
     loadUsers();
-  }, [currentUser?.token]);
+  }, []);
 
   useEffect(() => {
     if (activeTab !== "loginLogs") {
@@ -90,11 +90,7 @@ const AdminPage = ({
       setLoginLogError("");
 
       try {
-        const response = await fetch("/api/admin/login-logs", {
-          headers: currentUser?.token
-            ? { Authorization: `Bearer ${currentUser.token}` }
-            : undefined,
-        });
+        const response = await fetch("/api/admin/login-logs");
 
         if (!response.ok) {
           throw new Error("로그인 로그를 불러오지 못했습니다.");
@@ -109,7 +105,7 @@ const AdminPage = ({
     };
 
     loadLoginLogs();
-  }, [activeTab, currentUser?.token]);
+  }, [activeTab]);
 
   useEffect(() => {
     if (activeTab !== "reports") {
@@ -121,11 +117,7 @@ const AdminPage = ({
       setReportError("");
 
       try {
-        const response = await fetch("/api/admin/reports", {
-          headers: currentUser?.token
-            ? { Authorization: `Bearer ${currentUser.token}` }
-            : undefined,
-        });
+        const response = await fetch("/api/admin/reports");
 
         if (!response.ok) {
           throw new Error("신고 목록을 불러오지 못했습니다.");
@@ -140,7 +132,7 @@ const AdminPage = ({
     };
 
     loadReports();
-  }, [activeTab, currentUser?.token]);
+  }, [activeTab]);
 
   const handleUserFieldChange = (userId, field, value) => {
     setEditedUsers((prev) => ({
@@ -210,7 +202,6 @@ const AdminPage = ({
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${currentUser?.token}`,
           },
           body: JSON.stringify(nextUser),
         },

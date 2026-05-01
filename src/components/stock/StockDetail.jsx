@@ -184,7 +184,7 @@ const StockDetail = ({
     } catch (err) {
       console.error("Failed to fetch user accounts:", err);
     }
-  }, [user?.email, user?.token, selectedAccountId]);
+  }, [user?.email, selectedAccountId]);
 
   const fetchAccountData = React.useCallback(async () => {
     if (!user?.email || !selectedAccountId) return;

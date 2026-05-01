@@ -235,8 +235,7 @@ const AppController = () => {
           role: data.role === "ADMIN" ? "admin" : "user",
           accountId: data.accountId,
           profileImageUrl: data.profileImageUrl,
-          isSocialLogin: !!data.socialLogin,
-          token: data.token // 토큰 추가
+          isSocialLogin: !!data.socialLogin
         };
 
         setCurrentUser(loginUser);
@@ -310,7 +309,7 @@ const AppController = () => {
           role: loginData.role === "ADMIN" ? "admin" : "user",
           accountId: loginData.accountId,
           profileImageUrl: loginData.profileImageUrl,
-          isSocialLogin: !!loginData.socialLogin,
+          isSocialLogin: !!loginData.socialLogin
         };
 
         setCurrentUser(loginUser);
@@ -369,7 +368,7 @@ const AppController = () => {
           role: data.role === "ADMIN" ? "admin" : "user",
           accountId: data.accountId,
           profileImageUrl: data.profileImageUrl,
-          isSocialLogin: !!data.socialLogin,
+          isSocialLogin: !!data.socialLogin
         };
 
         setCurrentUser(loginUser);

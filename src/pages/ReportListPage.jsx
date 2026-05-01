@@ -23,7 +23,7 @@ const ReportListPage = ({ currentUser, onBack }) => {
     };
 
     loadReports();
-  }, [currentUser?.token]);
+  }, []);
 
   return (
     <div className="content-card">

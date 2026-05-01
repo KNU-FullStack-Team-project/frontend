@@ -5,7 +5,6 @@ const useNotifications = (user) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const userId = user?.id || user?.userId;
-  const token = user?.token;
 
   const fetchNotifications = useCallback(async () => {
     if (!userId) return;
@@ -43,7 +42,7 @@ const useNotifications = (user) => {
     };
     loadInitialData();
 
-    const sseUrl = `/api/notifications/subscribe/${userId}${token ? `?token=${token}` : ""}`;
+    const sseUrl = `/api/notifications/subscribe/${userId}`;
  
      const eventSource = new EventSourcePolyfill(sseUrl, {
        withCredentials: true,
