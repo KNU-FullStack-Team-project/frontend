@@ -4,10 +4,11 @@ import * as Indicators from "../../utils/IndicatorUtils";
 const cleanNumber = (val) => {
   if (!val) return 0;
   if (typeof val === "number") return val;
-  return parseInt(String(val).replace(/,/g, "")) || 0;
+  // 숫자와 소수점 외의 모든 문자(₩, , 등) 제거
+  return parseInt(String(val).replace(/[^0-9.-]/g, "")) || 0;
 };
 
-const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
+const CandleChart = ({ data, indicators = {}, width = 800, height = 500, avgPrice = null }) => {
   const [hoverIdx, setHoverIdx] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -20,12 +21,12 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
     if (!Array.isArray(data)) return [];
     try {
       return [...data].reverse();
-    } catch (e) {
+    } catch {
       return [];
     }
   }, [data]);
 
-  // 보조지표 계산 (Memoized)
+  // 보조지표 계산 (Memoized) - 전체 데이터를 사용하여 선이 끊기지 않게 함
   const computedIndicators = useMemo(() => {
     if (sortedData.length === 0) return {};
     return {
@@ -41,13 +42,14 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
   const margin = { top: 30, right: 70, bottom: 40, left: 10 };
   const candleWidth = 24; 
 
-  // 하단 패널(RSI, MACD) 존재 여부에 따른 레이아웃 계산
-  const hasBottomIndicator = indicators.rsi || indicators.macd;
+  // 레이아웃 고도화: 메인 차트 높이를 가급적 유지
   const bottomPanelCount = (indicators.rsi ? 1 : 0) + (indicators.macd ? 1 : 0);
-  const bottomPanelHeight = 100; // 패널 당 높이 상향 조정 (80 -> 100)
-  const totalBottomHeight = bottomPanelCount * (bottomPanelHeight + 30);
+  const bottomPanelHeight = 110; 
+  const totalBottomHeight = bottomPanelCount * (bottomPanelHeight + 35);
   
-  const mainChartHeight = height - margin.top - margin.bottom - (totalBottomHeight > 0 ? totalBottomHeight : 0);
+  // 지표가 많아지면 전체 높이(height)를 늘려서 메인 차트가 찌그러지지 않게 함
+  const actualHeight = Math.max(height, 400 + totalBottomHeight);
+  const mainChartHeight = actualHeight - margin.top - margin.bottom - (totalBottomHeight > 0 ? totalBottomHeight : 0);
   const volumeHeight = mainChartHeight * 0.15;
 
   const priceRangeData = useMemo(() => {
@@ -103,6 +105,9 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
     if (containerRef.current) {
       observer.observe(containerRef.current);
     }
+
+    // 데이터가 변경되면 호버 상태 초기화 (TypeError 방지)
+    setHoverIdx(null);
     
     return () => observer.disconnect();
   }, [width, data, indicators]); // indicators 변경 시에도 스크롤 상황 확인
@@ -168,6 +173,30 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
         strokeWidth="1"
         strokeDasharray="2,2"
       />
+
+      {/* 평단가 라인 추가 */}
+      {avgPrice && avgPrice > 0 && (
+        <>
+          <line
+            x1={margin.left}
+            y1={getY(cleanNumber(avgPrice))}
+            x2={svgWidth - margin.right}
+            y2={getY(cleanNumber(avgPrice))}
+            stroke="#10b981"
+            strokeWidth="1.5"
+            strokeDasharray="5,5"
+          />
+          <text 
+            x={scrollLeftState + 15} 
+            y={getY(cleanNumber(avgPrice)) - 5} 
+            fill="#10b981" 
+            fontSize="10" 
+            fontWeight="700"
+          >
+            내 평단가: {cleanNumber(avgPrice).toLocaleString()}
+          </text>
+        </>
+      )}
 
       {/* 볼린저 밴드 영역 채우기 */}
       {indicators.bb && computedIndicators.bb && (
@@ -399,7 +428,7 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
       onMouseLeave={handleMouseUp}
       style={{
         width: "100%", 
-        height,
+        height: actualHeight,
         overflowX: "hidden",
         cursor: isDragging ? "grabbing" : "grab",
         position: "relative",
@@ -410,7 +439,7 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
         boxSizing: "border-box" 
       }}
     >
-      <svg width={svgWidth} height={height} style={{ overflow: "visible" }}>
+      <svg width={svgWidth} height={actualHeight} style={{ overflow: "visible" }}>
         <defs>
           <linearGradient id="upGradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.8" />
@@ -430,7 +459,7 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
           const idx = sortedData.indexOf(d);
           const x = margin.left + idx * candleWidth;
           return (
-            <text key={i} x={x + candleWidth / 2} y={height - 5} textAnchor="middle" fontSize="10" fill="#9ca3af">
+            <text key={i} x={x + candleWidth / 2} y={actualHeight - 5} textAnchor="middle" fontSize="10" fill="#9ca3af">
               {d.time ? `${d.time.substring(0, 2)}:${d.time.substring(2, 4)}` : `${d.date.substring(4, 6)}.${d.date.substring(6, 8)}`}
             </text>
           );
@@ -460,7 +489,7 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
         )}
       </svg>
 
-      {hoverIdx !== null && (
+      {hoverIdx !== null && sortedData[hoverIdx] && (
         <div
           className="chart-tooltip"
           style={{
@@ -478,7 +507,7 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
           }}
         >
           <div style={{ fontWeight: 700, marginBottom: 5 }}>
-            {sortedData[hoverIdx].date.replace(/(\d{4})(\d{2})(\d{2})/, "$1.$2.$3")}
+            {sortedData[hoverIdx].date?.replace(/(\d{4})(\d{2})(\d{2})/, "$1.$2.$3")}
             {sortedData[hoverIdx].time && ` ${sortedData[hoverIdx].time.substring(0, 2)}:${sortedData[hoverIdx].time.substring(2, 4)}`}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', marginBottom: '4px' }}>
@@ -493,10 +522,16 @@ const CandleChart = ({ data, indicators = {}, width = 800, height = 500 }) => {
             <span>최저</span>
             <span style={{ color: "#3b82f6" }}>{cleanNumber(sortedData[hoverIdx].low).toLocaleString()}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', marginBottom: '4px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', marginBottom: '4px', borderTop: '1px solid #444', marginTop: '4px', paddingTop: '4px' }}>
             <span>종가</span>
-            <span>{cleanNumber(sortedData[hoverIdx].close).toLocaleString()}</span>
+            <span style={{ fontWeight: 800 }}>{cleanNumber(sortedData[hoverIdx].close).toLocaleString()}</span>
           </div>
+          {avgPrice && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', marginBottom: '4px', color: '#10b981' }}>
+              <span>내 평단가</span>
+              <span style={{ fontWeight: 800 }}>{cleanNumber(avgPrice).toLocaleString()}</span>
+            </div>
+          )}
           {computedIndicators.ma5 && computedIndicators.ma5[hoverIdx] && (
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px', color: '#ff3b30' }}>
               <span>MA5</span>

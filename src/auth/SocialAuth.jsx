@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { FcGoogle } from "react-icons/fc";
 
 const GOOGLE_SCRIPT_ID = "google-identity-services";
 const GOOGLE_SCRIPT_SRC = "https://accounts.google.com/gsi/client";
@@ -105,10 +106,7 @@ const SocialAuth = ({ onGoogleLogin }) => {
 
         {!isReady && !errorMessage && (
           <button type="button" className="google-button" disabled>
-            <img
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/smartlock/icon_google.svg"
-              alt="Google"
-            />
+            <FcGoogle size={20} style={{ marginRight: '8px' }} />
             <span>Google 로그인 준비 중...</span>
           </button>
         )}

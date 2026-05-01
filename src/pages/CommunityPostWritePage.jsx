@@ -94,22 +94,22 @@ const CommunityPostWritePage = ({
     if (!isAdmin || noticeTarget === "none") {
       return {
         submitUrl: isStockBoard
-          ? `http://localhost:8081/api/community/stocks/${symbol}/posts`
-          : "http://localhost:8081/api/community/boards/free/posts",
+          ? `/api/community/stocks/${symbol}/posts`
+          : "/api/community/boards/free/posts",
         payloadIsNotice: false,
       };
     }
 
     if (noticeTarget === "global") {
       return {
-        submitUrl: "http://localhost:8081/api/community/notices",
+        submitUrl: "/api/community/notices",
         payloadIsNotice: true,
       };
     }
 
     if (noticeTarget === "free") {
       return {
-        submitUrl: "http://localhost:8081/api/community/boards/free/posts",
+        submitUrl: "/api/community/boards/free/posts",
         payloadIsNotice: true,
       };
     }
@@ -120,15 +120,15 @@ const CommunityPostWritePage = ({
       }
 
       return {
-        submitUrl: `http://localhost:8081/api/community/stocks/${symbol}/posts`,
+        submitUrl: `/api/community/stocks/${symbol}/posts`,
         payloadIsNotice: true,
       };
     }
 
     return {
       submitUrl: isStockBoard
-        ? `http://localhost:8081/api/community/stocks/${symbol}/posts`
-        : "http://localhost:8081/api/community/boards/free/posts",
+        ? `/api/community/stocks/${symbol}/posts`
+        : "/api/community/boards/free/posts",
       payloadIsNotice: false,
     };
   };
@@ -149,9 +149,6 @@ const CommunityPostWritePage = ({
 
     const response = await fetch("/api/community/uploads/images", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
       body: formData,
     });
 
@@ -269,7 +266,6 @@ const CommunityPostWritePage = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           title: data.title.trim(),

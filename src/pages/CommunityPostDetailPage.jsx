@@ -12,6 +12,7 @@ const REPORT_REASON_OPTIONS = [
 
 const CommunityPostDetailPage = ({
   postId,
+  updateCompareLog,
   currentUser,
   isLoggedIn,
   boardType = "stock",
@@ -49,11 +50,9 @@ const CommunityPostDetailPage = ({
     try {
       setLoading(true);
 
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      const response = await fetch(`/api/community/posts/${postId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const response = await fetch(
+        `/api/community/posts/${postId}`
+      );
 
       if (!response.ok) {
         throw new Error("게시글 상세 정보를 불러오지 못했습니다.");
@@ -61,6 +60,10 @@ const CommunityPostDetailPage = ({
 
       const data = await response.json();
       setPostDetail(data);
+
+      if (data?.status !== "DELETED") {
+        increaseViewCount();
+      }
     } catch (error) {
       console.error("게시글 상세 조회 오류:", error);
       setPostDetail(null);
@@ -83,7 +86,6 @@ const CommunityPostDetailPage = ({
 
   useEffect(() => {
     fetchPostDetail();
-    increaseViewCount();
   }, [postId]);
 
   useEffect(() => {
@@ -141,6 +143,8 @@ const CommunityPostDetailPage = ({
     return currentUser.userId !== postDetail.userId;
   }, [currentUser, postDetail]);
 
+  const isDeletedPost = postDetail?.status === "DELETED";
+
   const boardBadgeText = useMemo(() => {
     if (postDetail?.isNotice) return "공지";
     if (boardType === "free") return "자유게시판";
@@ -163,6 +167,27 @@ const CommunityPostDetailPage = ({
 
   const toPlainText = (html) =>
     (html || "").replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").trim();
+
+  const parseLogDetail = (detail) => {
+    if (!detail) return {};
+
+    return detail.split("; ").reduce((acc, part) => {
+      const [key, ...rest] = part.split("=");
+      if (!key) return acc;
+      acc[key.trim()] = rest.join("=").trim();
+      return acc;
+    }, {});
+  };
+
+  const formatNoticeValue = (value) => (value === "true" ? "공지" : "일반");
+
+  const updateCompareValues = updateCompareLog
+    ? parseLogDetail(updateCompareLog.detail)
+    : null;
+  const hasNoticeChange =
+    !!updateCompareValues?.beforeIsNotice &&
+    !!updateCompareValues?.afterIsNotice &&
+    updateCompareValues.beforeIsNotice !== updateCompareValues.afterIsNotice;
 
   const openPostReportModal = () => {
     if (!isLoggedIn || !currentUser?.userId) {
@@ -246,19 +271,12 @@ const CommunityPostDetailPage = ({
     try {
       setIsLiking(true);
 
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
-      const response = await fetch(`/api/community/posts/${postId}/like`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `/api/community/posts/${postId}/like`,
+        {
+          method: "POST",
+        }
+      );
 
       const text = await response.text();
 
@@ -303,19 +321,12 @@ const CommunityPostDetailPage = ({
     try {
       setIsDisliking(true);
 
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
-      const response = await fetch(`/api/community/posts/${postId}/dislike`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `/api/community/posts/${postId}/dislike`,
+        {
+          method: "POST",
+        }
+      );
 
       const text = await response.text();
 
@@ -351,13 +362,6 @@ const CommunityPostDetailPage = ({
     try {
       setIsSubmittingReport(true);
 
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
       const url =
         reportTarget.type === "post"
           ? `/api/community/posts/${reportTarget.targetId}/report`
@@ -367,7 +371,6 @@ const CommunityPostDetailPage = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           reason: reportForm.reason,
@@ -408,24 +411,18 @@ const CommunityPostDetailPage = ({
     }
 
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
-      const response = await fetch(`/api/community/posts/${postId}/comments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          content: commentContent.trim(),
-          parentCommentId: null,
-        }),
-      });
+      const response = await fetch(
+        `/api/community/posts/${postId}/comments`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            content: commentContent.trim(),
+          }),
+        }
+      );
 
       const text = await response.text();
 
@@ -530,15 +527,11 @@ const CommunityPostDetailPage = ({
   };
 
   const uploadImage = async (file) => {
-    const token = localStorage.getItem("accessToken") || currentUser?.token;
     const formData = new FormData();
     formData.append("file", file);
 
     const response = await fetch("/api/community/uploads/images", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
       body: formData,
     });
 
@@ -559,7 +552,6 @@ const CommunityPostDetailPage = ({
     try {
       setUploadingFile(true);
 
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
       const uploadedResults = [];
 
       for (const file of files) {
@@ -568,9 +560,6 @@ const CommunityPostDetailPage = ({
 
         const response = await fetch("/api/community/uploads/files", {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
           body: formData,
         });
 
@@ -609,26 +598,21 @@ const CommunityPostDetailPage = ({
     }
 
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
-      const response = await fetch(`/api/community/posts/${postId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          title: editForm.title.trim(),
-          content: editForm.content,
-          isNotice: editForm.isNotice,
-          attachmentIds: editAttachedFiles.map((file) => file.attachmentId),
-        }),
-      });
+      const response = await fetch(
+        `/api/community/posts/${postId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: editForm.title.trim(),
+            content: editForm.content,
+            isNotice: editForm.isNotice,
+            attachmentIds: editAttachedFiles.map((file) => file.attachmentId),
+          }),
+        }
+      );
 
       const text = await response.text();
 
@@ -650,19 +634,12 @@ const CommunityPostDetailPage = ({
     if (!window.confirm("게시글을 삭제하시겠습니까?")) return;
 
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
-      const response = await fetch(`/api/community/posts/${postId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `/api/community/posts/${postId}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       const text = await response.text();
 
@@ -683,19 +660,12 @@ const CommunityPostDetailPage = ({
     if (!window.confirm("댓글을 삭제하시겠습니까?")) return;
 
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
-      const response = await fetch(`/api/community/comments/${commentId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `/api/community/comments/${commentId}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       const text = await response.text();
 
@@ -842,10 +812,15 @@ const CommunityPostDetailPage = ({
             <div style={styles.stockBadgeWrap}>
               <span style={styles.stockBadge}>{boardBadgeText}</span>
               {postDetail.isNotice && <span style={styles.noticeBadge}>공지</span>}
+              {isDeletedPost && <span style={styles.deletedBadge}>삭제된 글</span>}
             </div>
 
-            {canReportPost && !isEditMode && (
-              <button type="button" onClick={openPostReportModal} style={styles.reportButtonTop}>
+            {canReportPost && !isEditMode && !isDeletedPost && (
+              <button
+                type="button"
+                onClick={openPostReportModal}
+                style={styles.reportButtonTop}
+              >
                 신고
               </button>
             )}
@@ -946,6 +921,15 @@ const CommunityPostDetailPage = ({
             </>
           ) : (
             <>
+              {isDeletedPost && (
+                <div style={styles.deletedNoticeBox}>
+                  <strong>삭제된 게시글입니다.</strong>
+                  {postDetail.deletedAt && (
+                    <span>삭제일시: {formatDateTime(postDetail.deletedAt)}</span>
+                  )}
+                </div>
+              )}
+
               <h1 style={styles.title}>
                 {postDetail.isNotice && <span style={styles.noticeTitlePrefix}>[공지] </span>}
                 {postDetail.title}
@@ -974,11 +958,51 @@ const CommunityPostDetailPage = ({
                 </div>
               )}
 
-              <div
-                className="ql-editor community-post-content"
-                style={styles.contentBox}
-                dangerouslySetInnerHTML={{ __html: postDetail.content || "" }}
-              />
+              {updateCompareValues ? (
+                <section style={styles.updateCompareBox}>
+                  <div style={styles.updateCompareHeader}>
+                    <strong>게시글 수정 전후 비교</strong>
+                    <span style={styles.updateCompareMeta}>
+                      {formatDateTime(updateCompareLog.occurredAt)}
+                    </span>
+                  </div>
+
+                  {hasNoticeChange ? (
+                    <div style={styles.updateCompareNoticeChange}>
+                      공지 변경: {formatNoticeValue(updateCompareValues.beforeIsNotice)} -&gt;{" "}
+                      {formatNoticeValue(updateCompareValues.afterIsNotice)}
+                    </div>
+                  ) : null}
+
+                  <article style={styles.updateComparePanel}>
+                    <div style={styles.updateComparePanelHeader}>
+                      <strong>이전 내용</strong>
+                    </div>
+                    <h2 style={styles.updateCompareTitle}>
+                      {updateCompareValues.beforeTitle || "-"}
+                    </h2>
+                    <p style={styles.updateCompareText}>
+                      {updateCompareValues.beforeContent || "-"}
+                    </p>
+                  </article>
+
+                  <article style={styles.updateComparePanel}>
+                    <div style={styles.updateComparePanelHeader}>
+                      <strong>현재 내용</strong>
+                    </div>
+                    <h2 style={styles.updateCompareTitle}>{postDetail.title || "-"}</h2>
+                    <div
+                      style={styles.updateCompareCurrentContent}
+                      dangerouslySetInnerHTML={{ __html: postDetail.content || "" }}
+                    />
+                  </article>
+                </section>
+              ) : (
+                <div
+                  style={styles.contentBox}
+                  dangerouslySetInnerHTML={{ __html: postDetail.content || "" }}
+                />
+              )}
 
               {Array.isArray(postDetail.attachments) && postDetail.attachments.length > 0 && (
                 <div style={styles.attachSectionView}>
@@ -1265,6 +1289,27 @@ const styles = {
     fontSize: "12px",
     fontWeight: "800",
   },
+  deletedBadge: {
+    display: "inline-block",
+    padding: "6px 12px",
+    borderRadius: "999px",
+    background: "#fee2e2",
+    color: "#b91c1c",
+    fontSize: "12px",
+    fontWeight: "800",
+  },
+  deletedNoticeBox: {
+    display: "grid",
+    gap: "6px",
+    marginBottom: "16px",
+    padding: "14px 16px",
+    borderRadius: "12px",
+    border: "1px solid #fecaca",
+    background: "#fef2f2",
+    color: "#991b1b",
+    fontSize: "14px",
+    lineHeight: "1.6",
+  },
   noticeTitlePrefix: {
     color: "#d9480f",
     fontWeight: "800",
@@ -1455,6 +1500,73 @@ const styles = {
     minHeight: "180px",
     textAlign: "left",
     wordBreak: "break-word",
+  },
+  updateCompareBox: {
+    borderTop: "1px solid #f1f3f5",
+    paddingTop: "20px",
+    display: "grid",
+    gap: "14px",
+  },
+  updateCompareHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    fontSize: "15px",
+  },
+  updateComparePanel: {
+    border: "1px solid #e5e7eb",
+    borderRadius: "12px",
+    padding: "16px",
+    background: "#fff",
+  },
+  updateCompareNoticeChange: {
+    border: "1px solid #bfdbfe",
+    borderRadius: "10px",
+    padding: "10px 12px",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    fontSize: "13px",
+    fontWeight: "700",
+  },
+  updateComparePanelHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "10px",
+  },
+  updateCompareMeta: {
+    color: "#6b7280",
+    fontSize: "12px",
+    fontWeight: "600",
+  },
+  updateCompareTitle: {
+    margin: "0 0 12px",
+    fontSize: "18px",
+    lineHeight: "1.4",
+    color: "#111827",
+    wordBreak: "break-word",
+  },
+  updateCompareText: {
+    margin: 0,
+    minHeight: "120px",
+    whiteSpace: "pre-wrap",
+    fontSize: "15px",
+    lineHeight: "1.8",
+    color: "#111827",
+    wordBreak: "break-word",
+  },
+  updateCompareCurrentContent: {
+    minHeight: "120px",
+    fontSize: "15px",
+    lineHeight: "1.8",
+    color: "#111827",
+    wordBreak: "break-word",
+  },
+  contentImage: {
+    maxWidth: "100%",
+    borderRadius: "12px",
   },
   attachSection: {
     border: "1px solid #e5e7eb",

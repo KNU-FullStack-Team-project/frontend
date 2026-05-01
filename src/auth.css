@@ -936,6 +936,13 @@ input {
   gap: 10px;
 }
 
+.activity-filter-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
 .activity-filter-chip {
   border: 1px solid #cbd5e1;
   background: #fff;
@@ -952,6 +959,10 @@ input {
   background: #0f172a;
   color: #fff;
   border-color: #0f172a;
+}
+
+.activity-search-wrap {
+  flex: 0 1 320px;
 }
 
 .activity-empty-state {
@@ -1041,6 +1052,25 @@ input {
   margin: 0;
   color: #475569;
   line-height: 1.6;
+}
+
+.activity-table td {
+  vertical-align: middle;
+}
+
+.activity-table-link {
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.activity-table-link:hover {
+  text-decoration: underline;
 }
 
 .activity-link-hint {
