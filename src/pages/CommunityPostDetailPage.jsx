@@ -48,11 +48,8 @@ const CommunityPostDetailPage = ({
 
     try {
       setLoading(true);
-
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
       const response = await fetch(`/api/community/posts/${postId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -75,6 +72,7 @@ const CommunityPostDetailPage = ({
     try {
       await fetch(`/api/community/posts/${postId}/view`, {
         method: "POST",
+        credentials: "include",
       });
     } catch (error) {
       console.error("조회수 증가 오류:", error);
@@ -245,19 +243,9 @@ const CommunityPostDetailPage = ({
 
     try {
       setIsLiking(true);
-
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
-      const response = await fetch(`/api/community/posts/${postId}/like`, {
+const response = await fetch(`/api/community/posts/${postId}/like`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
       });
 
       const text = await response.text();
@@ -302,19 +290,9 @@ const CommunityPostDetailPage = ({
 
     try {
       setIsDisliking(true);
-
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
-      const response = await fetch(`/api/community/posts/${postId}/dislike`, {
+const response = await fetch(`/api/community/posts/${postId}/dislike`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
       });
 
       const text = await response.text();
@@ -350,24 +328,16 @@ const CommunityPostDetailPage = ({
 
     try {
       setIsSubmittingReport(true);
-
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
-      const url =
+const url =
         reportTarget.type === "post"
           ? `/api/community/posts/${reportTarget.targetId}/report`
           : `/api/community/comments/${reportTarget.targetId}/report`;
 
       const response = await fetch(url, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           reason: reportForm.reason,
@@ -408,18 +378,11 @@ const CommunityPostDetailPage = ({
     }
 
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
-      const response = await fetch(`/api/community/posts/${postId}/comments`, {
+const response = await fetch(`/api/community/posts/${postId}/comments`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           content: commentContent.trim(),
@@ -465,18 +428,11 @@ const CommunityPostDetailPage = ({
     }
 
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
-      const response = await fetch(`/api/community/posts/${postId}/comments`, {
+const response = await fetch(`/api/community/posts/${postId}/comments`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           content: replyContent.trim(),
@@ -530,15 +486,12 @@ const CommunityPostDetailPage = ({
   };
 
   const uploadImage = async (file) => {
-    const token = localStorage.getItem("accessToken") || currentUser?.token;
     const formData = new FormData();
     formData.append("file", file);
 
     const response = await fetch("/api/community/uploads/images", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
       body: formData,
     });
 
@@ -558,8 +511,6 @@ const CommunityPostDetailPage = ({
 
     try {
       setUploadingFile(true);
-
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
       const uploadedResults = [];
 
       for (const file of files) {
@@ -568,9 +519,7 @@ const CommunityPostDetailPage = ({
 
         const response = await fetch("/api/community/uploads/files", {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          credentials: "include",
           body: formData,
         });
 
@@ -609,18 +558,11 @@ const CommunityPostDetailPage = ({
     }
 
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
-      const response = await fetch(`/api/community/posts/${postId}`, {
+const response = await fetch(`/api/community/posts/${postId}`, {
         method: "PUT",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           title: editForm.title.trim(),
@@ -650,18 +592,9 @@ const CommunityPostDetailPage = ({
     if (!window.confirm("게시글을 삭제하시겠습니까?")) return;
 
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
-      const response = await fetch(`/api/community/posts/${postId}`, {
+const response = await fetch(`/api/community/posts/${postId}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
       });
 
       const text = await response.text();
@@ -683,18 +616,9 @@ const CommunityPostDetailPage = ({
     if (!window.confirm("댓글을 삭제하시겠습니까?")) return;
 
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
-      const response = await fetch(`/api/community/comments/${commentId}`, {
+const response = await fetch(`/api/community/comments/${commentId}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
       });
 
       const text = await response.text();
