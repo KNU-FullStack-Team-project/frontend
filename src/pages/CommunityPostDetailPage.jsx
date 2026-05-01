@@ -44,15 +44,25 @@ const CommunityPostDetailPage = ({
   });
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
+  const getAuthHeaders = () =>
+    currentUser?.token
+      ? { Authorization: `Bearer ${currentUser.token}` }
+      : {};
+
+  const getJsonHeaders = () => ({
+    "Content-Type": "application/json",
+    ...getAuthHeaders(),
+  });
+
   const fetchPostDetail = async () => {
     if (!postId) return;
 
     try {
       setLoading(true);
 
-      const response = await fetch(
-        `/api/community/posts/${postId}`
-      );
+      const response = await fetch(`/api/community/posts/${postId}`, {
+        headers: getAuthHeaders(),
+      });
 
       if (!response.ok) {
         throw new Error("게시글 상세 정보를 불러오지 못했습니다.");
@@ -78,6 +88,7 @@ const CommunityPostDetailPage = ({
     try {
       await fetch(`/api/community/posts/${postId}/view`, {
         method: "POST",
+        headers: getAuthHeaders(),
       });
     } catch (error) {
       console.error("조회수 증가 오류:", error);
@@ -271,12 +282,10 @@ const CommunityPostDetailPage = ({
     try {
       setIsLiking(true);
 
-      const response = await fetch(
-        `/api/community/posts/${postId}/like`,
-        {
-          method: "POST",
-        }
-      );
+      const response = await fetch(`/api/community/posts/${postId}/like`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
 
       const text = await response.text();
 
@@ -321,12 +330,10 @@ const CommunityPostDetailPage = ({
     try {
       setIsDisliking(true);
 
-      const response = await fetch(
-        `/api/community/posts/${postId}/dislike`,
-        {
-          method: "POST",
-        }
-      );
+      const response = await fetch(`/api/community/posts/${postId}/dislike`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
 
       const text = await response.text();
 
@@ -369,9 +376,7 @@ const CommunityPostDetailPage = ({
 
       const response = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: getJsonHeaders(),
         body: JSON.stringify({
           reason: reportForm.reason,
           detail: reportForm.detail.trim(),
@@ -411,18 +416,14 @@ const CommunityPostDetailPage = ({
     }
 
     try {
-      const response = await fetch(
-        `/api/community/posts/${postId}/comments`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            content: commentContent.trim(),
-          }),
-        }
-      );
+      const response = await fetch(`/api/community/posts/${postId}/comments`, {
+        method: "POST",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({
+          content: commentContent.trim(),
+          parentCommentId: null,
+        }),
+      });
 
       const text = await response.text();
 
@@ -462,19 +463,9 @@ const CommunityPostDetailPage = ({
     }
 
     try {
-      const token = localStorage.getItem("accessToken") || currentUser?.token;
-
-      if (!token) {
-        alert("로그인 토큰이 없습니다.");
-        return;
-      }
-
       const response = await fetch(`/api/community/posts/${postId}/comments`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: getJsonHeaders(),
         body: JSON.stringify({
           content: replyContent.trim(),
           parentCommentId,
@@ -532,6 +523,7 @@ const CommunityPostDetailPage = ({
 
     const response = await fetch("/api/community/uploads/images", {
       method: "POST",
+      headers: getAuthHeaders(),
       body: formData,
     });
 
@@ -560,6 +552,7 @@ const CommunityPostDetailPage = ({
 
         const response = await fetch("/api/community/uploads/files", {
           method: "POST",
+          headers: getAuthHeaders(),
           body: formData,
         });
 
@@ -598,21 +591,16 @@ const CommunityPostDetailPage = ({
     }
 
     try {
-      const response = await fetch(
-        `/api/community/posts/${postId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title: editForm.title.trim(),
-            content: editForm.content,
-            isNotice: editForm.isNotice,
-            attachmentIds: editAttachedFiles.map((file) => file.attachmentId),
-          }),
-        }
-      );
+      const response = await fetch(`/api/community/posts/${postId}`, {
+        method: "PUT",
+        headers: getJsonHeaders(),
+        body: JSON.stringify({
+          title: editForm.title.trim(),
+          content: editForm.content,
+          isNotice: editForm.isNotice,
+          attachmentIds: editAttachedFiles.map((file) => file.attachmentId),
+        }),
+      });
 
       const text = await response.text();
 
@@ -634,12 +622,10 @@ const CommunityPostDetailPage = ({
     if (!window.confirm("게시글을 삭제하시겠습니까?")) return;
 
     try {
-      const response = await fetch(
-        `/api/community/posts/${postId}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const response = await fetch(`/api/community/posts/${postId}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
 
       const text = await response.text();
 
@@ -660,12 +646,10 @@ const CommunityPostDetailPage = ({
     if (!window.confirm("댓글을 삭제하시겠습니까?")) return;
 
     try {
-      const response = await fetch(
-        `/api/community/comments/${commentId}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const response = await fetch(`/api/community/comments/${commentId}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
 
       const text = await response.text();
 

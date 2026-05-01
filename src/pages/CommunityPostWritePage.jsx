@@ -22,6 +22,16 @@ const CommunityPostWritePage = ({
   const isAdmin = currentUser?.role === "admin";
   const isStockBoard = boardType === "stock";
 
+  const getAuthHeaders = () =>
+    currentUser?.token
+      ? { Authorization: `Bearer ${currentUser.token}` }
+      : {};
+
+  const getJsonHeaders = () => ({
+    "Content-Type": "application/json",
+    ...getAuthHeaders(),
+  });
+
   const {
     register,
     handleSubmit,
@@ -85,12 +95,7 @@ const CommunityPostWritePage = ({
 
     fetchStockInfo();
   }, [symbol, isStockBoard]);
-
-  const getToken = () => {
-    return localStorage.getItem("accessToken") || currentUser?.token;
-  };
-
-  const getSubmitConfig = () => {
+const getSubmitConfig = () => {
     if (!isAdmin || noticeTarget === "none") {
       return {
         submitUrl: isStockBoard
@@ -137,18 +142,12 @@ const CommunityPostWritePage = ({
     if (!isLoggedIn || !currentUser?.userId) {
       throw new Error("로그인 후 이미지를 업로드할 수 있습니다.");
     }
-
-    const token = getToken();
-
-    if (!token) {
-      throw new Error("로그인 토큰이 없습니다.");
-    }
-
     const formData = new FormData();
     formData.append("file", file);
 
     const response = await fetch("/api/community/uploads/images", {
       method: "POST",
+      headers: getAuthHeaders(),
       body: formData,
     });
 
@@ -164,21 +163,12 @@ const CommunityPostWritePage = ({
     if (!isLoggedIn || !currentUser?.userId) {
       throw new Error("로그인 후 파일을 첨부할 수 있습니다.");
     }
-
-    const token = getToken();
-
-    if (!token) {
-      throw new Error("로그인 토큰이 없습니다.");
-    }
-
     const formData = new FormData();
     formData.append("file", file);
 
     const response = await fetch("/api/community/uploads/files", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: getAuthHeaders(),
       body: formData,
     });
 
@@ -249,14 +239,6 @@ const CommunityPostWritePage = ({
       toast.error("내용을 입력해주세요.");
       return;
     }
-
-    const token = getToken();
-
-    if (!token) {
-      toast.error("로그인 토큰이 없습니다.");
-      return;
-    }
-
     try {
       setSubmitting(true);
 
@@ -264,9 +246,7 @@ const CommunityPostWritePage = ({
 
       const response = await fetch(submitUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: getJsonHeaders(),
         body: JSON.stringify({
           title: data.title.trim(),
           content: data.content,
