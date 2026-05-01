@@ -128,11 +128,8 @@ const SignupForm = ({ onSignup, onSocialSignup, socialSignupData = null }) => {
     resetEmailFlow();
   };
 
-  const normalizeNicknameInput = (value) =>
-    value.replace(/[^A-Za-z0-9가-힣]/g, "").slice(0, NICKNAME_MAX_LENGTH);
-
   const handleNicknameChange = (e) => {
-    setNickname(normalizeNicknameInput(e.target.value));
+    setNickname(e.target.value);
   };
 
   const handleCheckEmail = async () => {
@@ -245,13 +242,15 @@ const SignupForm = ({ onSignup, onSocialSignup, socialSignupData = null }) => {
   const handleSignup = async (e) => {
     e.preventDefault();
 
-    if (!nickname.trim()) {
+    const trimmedNickname = nickname.trim();
+
+    if (!trimmedNickname) {
       setMessage("닉네임을 입력해 주세요.");
       setIsMessageSuccess(false);
       return;
     }
 
-    if (!NICKNAME_ALLOWED_PATTERN.test(nickname.trim())) {
+    if (!NICKNAME_ALLOWED_PATTERN.test(trimmedNickname)) {
       setMessage(NICKNAME_RULE_MESSAGE);
       setIsMessageSuccess(false);
       return;
@@ -295,7 +294,7 @@ const SignupForm = ({ onSignup, onSocialSignup, socialSignupData = null }) => {
       if (isSocialSignup) {
         await onSocialSignup({
           credential: socialSignupData.credential,
-          nickname: nickname.trim(),
+          nickname: trimmedNickname,
           marketingConsent,
         });
         return;
@@ -304,7 +303,7 @@ const SignupForm = ({ onSignup, onSocialSignup, socialSignupData = null }) => {
       await onSignup({
         email: email.trim(),
         password,
-        nickname: nickname.trim(),
+        nickname: trimmedNickname,
         marketingConsent,
       });
     } catch (error) {
@@ -410,7 +409,6 @@ const SignupForm = ({ onSignup, onSocialSignup, socialSignupData = null }) => {
         icon="👤"
         value={nickname}
         onChange={handleNicknameChange}
-        maxLength={NICKNAME_MAX_LENGTH}
       />
       <p className="helper-text">
         닉네임은 12자 이하, 띄어쓰기와 특수문자 없이 입력해 주세요.

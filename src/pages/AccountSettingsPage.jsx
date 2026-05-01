@@ -33,6 +33,7 @@ const AccountSettingsPage = ({
   const [nicknameMessage, setNicknameMessage] = useState("");
   const [isNicknameDuplicate, setIsNicknameDuplicate] = useState(false);
   const [isNicknameSaving, setIsNicknameSaving] = useState(false);
+  const [isNicknameComposing, setIsNicknameComposing] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -64,7 +65,7 @@ const AccountSettingsPage = ({
     !isPasswordSaving;
 
   useEffect(() => {
-    if (!currentUser?.email) {
+    if (!currentUser?.email || isNicknameComposing) {
       return;
     }
 
@@ -153,16 +154,22 @@ const AccountSettingsPage = ({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [nickname, currentUser?.email, currentUser?.nickname]);
-
-  const normalizeNicknameInput = (value) =>
-    value.replace(/[^A-Za-z0-9가-힣]/g, "").slice(0, NICKNAME_MAX_LENGTH);
+  }, [nickname, currentUser?.email, currentUser?.nickname, isNicknameComposing]);
 
   const handleNicknameChange = (event) => {
-    setNickname(normalizeNicknameInput(event.target.value));
+    setNickname(event.target.value);
     if (nicknameMessage !== "이미 사용 중인 닉네임입니다.") {
       setNicknameMessage("");
     }
+  };
+
+  const handleNicknameCompositionStart = () => {
+    setIsNicknameComposing(true);
+  };
+
+  const handleNicknameCompositionEnd = (event) => {
+    setIsNicknameComposing(false);
+    setNickname(event.currentTarget.value);
   };
 
   const handlePasswordFieldChange = (event) => {
@@ -417,7 +424,8 @@ const AccountSettingsPage = ({
                       name="nickname"
                       value={nickname}
                       onChange={handleNicknameChange}
-                      maxLength={NICKNAME_MAX_LENGTH}
+                      onCompositionStart={handleNicknameCompositionStart}
+                      onCompositionEnd={handleNicknameCompositionEnd}
                       placeholder="새 닉네임"
                       style={{
                         flex: 1,

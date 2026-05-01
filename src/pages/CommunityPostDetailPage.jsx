@@ -12,6 +12,7 @@ const REPORT_REASON_OPTIONS = [
 
 const CommunityPostDetailPage = ({
   postId,
+  updateCompareLog,
   currentUser,
   isLoggedIn,
   boardType = "stock",
@@ -144,6 +145,27 @@ const CommunityPostDetailPage = ({
 
   const toPlainText = (html) =>
     (html || "").replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").trim();
+
+  const parseLogDetail = (detail) => {
+    if (!detail) return {};
+
+    return detail.split("; ").reduce((acc, part) => {
+      const [key, ...rest] = part.split("=");
+      if (!key) return acc;
+      acc[key.trim()] = rest.join("=").trim();
+      return acc;
+    }, {});
+  };
+
+  const formatNoticeValue = (value) => (value === "true" ? "공지" : "일반");
+
+  const updateCompareValues = updateCompareLog
+    ? parseLogDetail(updateCompareLog.detail)
+    : null;
+  const hasNoticeChange =
+    !!updateCompareValues?.beforeIsNotice &&
+    !!updateCompareValues?.afterIsNotice &&
+    updateCompareValues.beforeIsNotice !== updateCompareValues.afterIsNotice;
 
   const openPostReportModal = () => {
     if (!isLoggedIn || !currentUser?.userId) {
@@ -784,10 +806,51 @@ const CommunityPostDetailPage = ({
                 </div>
               )}
 
-              <div
-                style={styles.contentBox}
-                dangerouslySetInnerHTML={{ __html: postDetail.content || "" }}
-              />
+              {updateCompareValues ? (
+                <section style={styles.updateCompareBox}>
+                  <div style={styles.updateCompareHeader}>
+                    <strong>게시글 수정 전후 비교</strong>
+                    <span style={styles.updateCompareMeta}>
+                      {formatDateTime(updateCompareLog.occurredAt)}
+                    </span>
+                  </div>
+
+                  {hasNoticeChange ? (
+                    <div style={styles.updateCompareNoticeChange}>
+                      공지 변경: {formatNoticeValue(updateCompareValues.beforeIsNotice)} -&gt;{" "}
+                      {formatNoticeValue(updateCompareValues.afterIsNotice)}
+                    </div>
+                  ) : null}
+
+                  <article style={styles.updateComparePanel}>
+                    <div style={styles.updateComparePanelHeader}>
+                      <strong>이전 내용</strong>
+                    </div>
+                    <h2 style={styles.updateCompareTitle}>
+                      {updateCompareValues.beforeTitle || "-"}
+                    </h2>
+                    <p style={styles.updateCompareText}>
+                      {updateCompareValues.beforeContent || "-"}
+                    </p>
+                  </article>
+
+                  <article style={styles.updateComparePanel}>
+                    <div style={styles.updateComparePanelHeader}>
+                      <strong>현재 내용</strong>
+                    </div>
+                    <h2 style={styles.updateCompareTitle}>{postDetail.title || "-"}</h2>
+                    <div
+                      style={styles.updateCompareCurrentContent}
+                      dangerouslySetInnerHTML={{ __html: postDetail.content || "" }}
+                    />
+                  </article>
+                </section>
+              ) : (
+                <div
+                  style={styles.contentBox}
+                  dangerouslySetInnerHTML={{ __html: postDetail.content || "" }}
+                />
+              )}
 
               {Array.isArray(postDetail.attachments) && postDetail.attachments.length > 0 && (
                 <div style={styles.attachSectionView}>
@@ -1361,6 +1424,69 @@ const styles = {
     color: "#111827",
     minHeight: "180px",
     textAlign: "left",
+    wordBreak: "break-word",
+  },
+  updateCompareBox: {
+    borderTop: "1px solid #f1f3f5",
+    paddingTop: "20px",
+    display: "grid",
+    gap: "14px",
+  },
+  updateCompareHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    fontSize: "15px",
+  },
+  updateComparePanel: {
+    border: "1px solid #e5e7eb",
+    borderRadius: "12px",
+    padding: "16px",
+    background: "#fff",
+  },
+  updateCompareNoticeChange: {
+    border: "1px solid #bfdbfe",
+    borderRadius: "10px",
+    padding: "10px 12px",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    fontSize: "13px",
+    fontWeight: "700",
+  },
+  updateComparePanelHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "10px",
+  },
+  updateCompareMeta: {
+    color: "#6b7280",
+    fontSize: "12px",
+    fontWeight: "600",
+  },
+  updateCompareTitle: {
+    margin: "0 0 12px",
+    fontSize: "18px",
+    lineHeight: "1.4",
+    color: "#111827",
+    wordBreak: "break-word",
+  },
+  updateCompareText: {
+    margin: 0,
+    minHeight: "120px",
+    whiteSpace: "pre-wrap",
+    fontSize: "15px",
+    lineHeight: "1.8",
+    color: "#111827",
+    wordBreak: "break-word",
+  },
+  updateCompareCurrentContent: {
+    minHeight: "120px",
+    fontSize: "15px",
+    lineHeight: "1.8",
+    color: "#111827",
     wordBreak: "break-word",
   },
   contentImage: {
