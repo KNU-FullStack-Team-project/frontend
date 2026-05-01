@@ -27,7 +27,7 @@ const TopNav = ({
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
   
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(
-    currentUser?.id || currentUser?.userId
+    currentUser
   );
 
   const { unreadInquiryCount, refreshInquiryCount } = useInquiryCount(currentUser);

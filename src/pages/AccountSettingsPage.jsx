@@ -13,6 +13,11 @@ const isStrongPassword = (value) => {
   return hasLetter && hasDigit && hasSpecial;
 };
 
+const NICKNAME_MAX_LENGTH = 12;
+const NICKNAME_ALLOWED_PATTERN = /^[A-Za-z0-9가-힣]{1,12}$/;
+const NICKNAME_RULE_MESSAGE =
+  "닉네임은 12자 이하의 한글, 영문, 숫자만 사용할 수 있습니다.";
+
 const AccountSettingsPage = ({
   currentUser,
   onLogout,
@@ -28,6 +33,7 @@ const AccountSettingsPage = ({
   const [nicknameMessage, setNicknameMessage] = useState("");
   const [isNicknameDuplicate, setIsNicknameDuplicate] = useState(false);
   const [isNicknameSaving, setIsNicknameSaving] = useState(false);
+  const [isNicknameComposing, setIsNicknameComposing] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -43,9 +49,11 @@ const AccountSettingsPage = ({
     passwordForm.newPassword.length > 0 &&
     passwordForm.newPassword === passwordForm.confirmPassword;
   const isNicknameChanged = nickname.trim() !== (currentUser?.nickname || "");
+  const isNicknameValid = NICKNAME_ALLOWED_PATTERN.test(nickname.trim());
   const canChangeNickname =
     Boolean(currentUser?.email) &&
     Boolean(nickname.trim()) &&
+    isNicknameValid &&
     isNicknameChanged &&
     !isNicknameDuplicate &&
     !isNicknameSaving;
@@ -57,7 +65,7 @@ const AccountSettingsPage = ({
     !isPasswordSaving;
 
   useEffect(() => {
-    if (!currentUser?.email) {
+    if (!currentUser?.email || isNicknameComposing) {
       return;
     }
 
@@ -65,8 +73,7 @@ const AccountSettingsPage = ({
       try {
         const params = new URLSearchParams({ email: currentUser.email });
         const response = await fetch(
-          `/api/users/profile?${params.toString()}`,
-          { headers: { Authorization: `Bearer ${currentUser.token}` } },
+          `/api/users/profile?${params.toString()}`
         );
 
         if (!response.ok) {
@@ -86,7 +93,7 @@ const AccountSettingsPage = ({
     };
 
     loadProfile();
-  }, [currentUser?.email, currentUser?.token, onUpdateCurrentUser]);
+  }, [currentUser?.email, onUpdateCurrentUser]);
 
   useEffect(() => {
     setNickname(currentUser?.nickname || "");
@@ -105,6 +112,12 @@ const AccountSettingsPage = ({
       return;
     }
 
+    if (!NICKNAME_ALLOWED_PATTERN.test(trimmedNickname)) {
+      setIsNicknameDuplicate(false);
+      setNicknameMessage(NICKNAME_RULE_MESSAGE);
+      return;
+    }
+
     let cancelled = false;
 
     const timer = setTimeout(async () => {
@@ -114,8 +127,7 @@ const AccountSettingsPage = ({
           email: currentUser.email,
         });
         const response = await fetch(
-          `/api/users/check-nickname?${params.toString()}`,
-          { headers: { Authorization: `Bearer ${currentUser.token}` } },
+          `/api/users/check-nickname?${params.toString()}`
         );
 
         const message = await response.text();
@@ -142,13 +154,22 @@ const AccountSettingsPage = ({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [nickname, currentUser?.email, currentUser?.nickname, currentUser?.token]);
+  }, [nickname, currentUser?.email, currentUser?.nickname, isNicknameComposing]);
 
   const handleNicknameChange = (event) => {
     setNickname(event.target.value);
     if (nicknameMessage !== "이미 사용 중인 닉네임입니다.") {
       setNicknameMessage("");
     }
+  };
+
+  const handleNicknameCompositionStart = () => {
+    setIsNicknameComposing(true);
+  };
+
+  const handleNicknameCompositionEnd = (event) => {
+    setIsNicknameComposing(false);
+    setNickname(event.currentTarget.value);
   };
 
   const handlePasswordFieldChange = (event) => {
@@ -161,7 +182,7 @@ const AccountSettingsPage = ({
     event.preventDefault();
 
     if (!canChangeNickname) {
-      setNicknameMessage("닉네임을 다시 확인해 주세요.");
+      setNicknameMessage(isNicknameValid ? "닉네임을 다시 확인해 주세요." : NICKNAME_RULE_MESSAGE);
       return;
     }
 
@@ -174,7 +195,6 @@ const AccountSettingsPage = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${currentUser.token}`,
           },
           body: JSON.stringify({
             email: currentUser.email,
@@ -233,7 +253,6 @@ const AccountSettingsPage = ({
         `/api/users/profile-image?${params.toString()}`,
         {
           method: "POST",
-          headers: { Authorization: `Bearer ${currentUser.token}` },
           body: formData,
         },
       );
@@ -271,7 +290,6 @@ const AccountSettingsPage = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${currentUser.token}`,
           },
           body: JSON.stringify({
             email: currentUser.email,
@@ -320,7 +338,6 @@ const AccountSettingsPage = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${currentUser.token}`,
         },
         body: JSON.stringify({
           email: currentUser.email,
@@ -343,167 +360,262 @@ const AccountSettingsPage = ({
   };
 
   return (
-    <div className="mypage-container">
-      <div className="content-card">
-        <div className="section-header">
-          <div>
-            <h3>회원정보수정</h3>
-          </div>
-
-          <AppButton type="button" variant="outline" onClick={onBackToMyPage}>
-            마이페이지로 돌아가기
+    <div style={styles.page}>
+      <div style={styles.hero}>
+        <div style={styles.heroBadge}>PROFILE SETTINGS</div>
+        <h1 style={styles.heroTitle}>회원 정보 수정</h1>
+        <p style={styles.heroText}>
+          프로필 정보와 보안 설정을 한눈에 관리하고 업데이트하세요.
+        </p>
+        <div style={{ marginTop: '20px' }}>
+          <AppButton type="button" variant="outline" onClick={onBackToMyPage} style={{ borderColor: 'rgba(255,255,255,0.5)', color: 'white' }}>
+            ← 마이페이지로 돌아가기
           </AppButton>
         </div>
       </div>
 
-      <div className="content-card">
-        <div className="section-header">
-          <div>
-            <h3>프로필 사진</h3>
+      <div className="settings-grid-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'stretch' }}>
+        {/* 왼쪽: 프로필 사진 + 닉네임 합치기 */}
+        <div className="settings-left-column" style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="content-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', margin: 0, padding: '32px' }}>
+            <div className="section-header" style={{ textAlign: 'left', alignItems: 'flex-start', marginBottom: '32px', paddingBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '22px', fontWeight: '800' }}>프로필 설정</h3>
+              <p className="mypage-subtext" style={{ margin: '8px 0 0' }}>프로필 사진과 닉네임을 변경하세요.</p>
+            </div>
+
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '40px', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="profile-image-editor" style={{ width: '100%', maxWidth: '500px', padding: '30px', background: '#f8fafc', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
+                <div className="profile-image-preview is-large" style={{ margin: '0 auto 24px' }}>
+                  {profileImageUrl ? (
+                    <img
+                      src={`${profileImageUrl}`}
+                      alt="프로필 사진"
+                    />
+                  ) : (
+                    <span>{currentUser?.nickname?.[0] || "U"}</span>
+                  )}
+                </div>
+
+                <div className="profile-image-actions" style={{ display: 'flex', justifyContent: 'center' }}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    onChange={handleProfileImageChange}
+                    style={{ display: "none" }}
+                  />
+                  <AppButton
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isProfileUploading}
+                    style={{ padding: '12px 24px' }}
+                  >
+                    {isProfileUploading ? "업로드 중..." : "프로필 사진 변경"}
+                  </AppButton>
+                </div>
+              </div>
+
+              <div className="nickname-editor-section" style={{ width: '100%', maxWidth: '500px' }}>
+                <form onSubmit={handleNicknameSubmit} style={{ textAlign: 'left' }}>
+                  <span style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px', display: 'block' }}>새 닉네임</span>
+                  <div style={{ display: 'flex', gap: '12px', maxWidth: '500px', alignItems: 'stretch' }}>
+                    <input
+                      type="text"
+                      name="nickname"
+                      value={nickname}
+                      onChange={handleNicknameChange}
+                      onCompositionStart={handleNicknameCompositionStart}
+                      onCompositionEnd={handleNicknameCompositionEnd}
+                      placeholder="새 닉네임"
+                      style={{
+                        flex: 1,
+                        height: '52px',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '12px',
+                        padding: '0 16px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        background: '#f8fafc',
+                        boxSizing: 'border-box',
+                        margin: 0
+                      }}
+                    />
+                    <AppButton
+                      type="submit"
+                      disabled={!canChangeNickname}
+                      style={{
+                        height: '52px',
+                        whiteSpace: 'nowrap',
+                        padding: '0 24px',
+                        boxSizing: 'border-box',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: 0,
+                        transform: 'translateY(1px)'
+                      }}
+                    >
+                      {isNicknameSaving ? "저장 중..." : "변경 적용"}
+                    </AppButton>
+                  </div>
+                  <p className="helper-text" style={{ marginTop: '10px', maxWidth: '500px' }}>
+                    닉네임은 12자 이하, 띄어쓰기와 특수문자 없이 입력해 주세요.
+                  </p>
+
+                  {nicknameMessage ? (
+                    <p className="password-form__message" style={{ marginTop: '12px', maxWidth: '500px' }}>{nicknameMessage}</p>
+                  ) : null}
+                </form>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="profile-image-editor">
-          <div className="profile-image-preview">
-            {profileImageUrl ? (
-              <img
-                src={`${profileImageUrl}`}
-                alt="프로필 사진"
-              />
-            ) : (
-              <span>{currentUser?.nickname?.[0] || "U"}</span>
-            )}
-          </div>
+        {/* 오른쪽: 비밀번호 변경 */}
+        {!isSocialLogin && (
+          <div className="settings-right-column" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="content-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', margin: 0, padding: '32px' }}>
+              <div className="section-header" style={{ textAlign: 'left', alignItems: 'flex-start', marginBottom: '32px', paddingBottom: '20px' }}>
+                <h3 style={{ margin: 0, fontSize: '22px', fontWeight: '800' }}>비밀번호 변경</h3>
+                <p className="mypage-subtext" style={{ margin: '4px 0 0' }}>계정 보호를 위해 비밀번호를 관리하세요.</p>
+              </div>
 
-          <div className="profile-image-actions">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/jpg"
-              onChange={handleProfileImageChange}
-              style={{ display: "none" }}
-            />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <form className="password-form" onSubmit={handlePasswordSubmit} style={{
+                  width: '100%',
+                  maxWidth: '400px',
+                  margin: '0',
+                  textAlign: 'left',
+                  alignItems: 'flex-start',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%', alignItems: 'flex-start' }}>
+                    <label className="password-form__field" style={{ width: '100%', alignItems: 'flex-start', textAlign: 'left' }}>
+                      <span style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px', display: 'block', textAlign: 'left' }}>현재 비밀번호</span>
+                      <input
+                        type="password"
+                        name="currentPassword"
+                        value={passwordForm.currentPassword}
+                        onChange={handlePasswordFieldChange}
+                        placeholder="현재 비밀번호"
+                        style={{ height: '52px', width: '100%', maxWidth: '400px', margin: 0 }}
+                      />
+                    </label>
+
+                    <label className="password-form__field" style={{ width: '100%', alignItems: 'flex-start', textAlign: 'left' }}>
+                      <span style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px', display: 'block', textAlign: 'left' }}>새 비밀번호</span>
+                      <input
+                        type="password"
+                        name="newPassword"
+                        value={passwordForm.newPassword}
+                        onChange={handlePasswordFieldChange}
+                        placeholder="8자 이상, 영문/숫자/특수문자 포함"
+                        style={{ height: '52px', width: '100%', maxWidth: '400px', margin: 0 }}
+                      />
+                    </label>
+
+                    <label className="password-form__field" style={{ width: '100%', alignItems: 'flex-start', textAlign: 'left' }}>
+                      <span style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px', display: 'block', textAlign: 'left' }}>새 비밀번호 확인</span>
+                      <input
+                        type="password"
+                        name="confirmPassword"
+                        value={passwordForm.confirmPassword}
+                        onChange={handlePasswordFieldChange}
+                        placeholder="새 비밀번호 확인"
+                        style={{ height: '52px', width: '100%', maxWidth: '400px', margin: 0 }}
+                      />
+                    </label>
+                  </div>
+
+                  <div style={{ width: '100%', textAlign: 'left' }}>
+                    <p className="password-form__hint" style={{ marginTop: '20px', color: '#94a3b8', textAlign: 'left', marginLeft: 0 }}>
+                      • 8자 이상, 영문, 숫자, 특수문자 포함
+                    </p>
+
+                    {passwordMessage ? (
+                      <p className="password-form__message" style={{ marginTop: '16px', maxWidth: '400px' }}>{passwordMessage}</p>
+                    ) : null}
+
+                    <div className="password-form__actions" style={{ marginTop: '24px', justifyContent: 'flex-start' }}>
+                      <AppButton type="submit" disabled={!canChangePassword} style={{ height: '52px', padding: '0 32px' }}>
+                        {isPasswordSaving ? "저장 중..." : "비밀번호 변경 완료"}
+                      </AppButton>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="content-card" style={{ marginTop: '30px', borderTop: '1px solid #fee2e2' }}>
+        <div className="section-header" style={{ marginBottom: 0, paddingBottom: 0, borderBottom: 'none' }}>
+          <div>
+            <h3 style={{ color: '#ef4444', margin: 0 }}>회원 탈퇴</h3>
+            <p className="mypage-subtext" style={{ margin: 0 }}>탈퇴 시 모든 정보가 삭제되며 복구할 수 없습니다.</p>
+          </div>
+          <div className="password-form__actions">
             <AppButton
               type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isProfileUploading}
+              variant="danger"
+              onClick={handleWithdraw}
+              disabled={isWithdrawSaving}
             >
-              {isProfileUploading ? "업로드 중..." : "프로필 사진 변경"}
+              {isWithdrawSaving ? "처리 중..." : "회원탈퇴"}
             </AppButton>
           </div>
-        </div>
-      </div>
-
-      <div className="content-card">
-        <div className="section-header">
-          <div>
-            <h3>닉네임 변경</h3>
-          </div>
-        </div>
-
-        <form className="password-form" onSubmit={handleNicknameSubmit}>
-          <label className="password-form__field">
-            <span>새 닉네임</span>
-            <input
-              type="text"
-              name="nickname"
-              value={nickname}
-              onChange={handleNicknameChange}
-              placeholder="새 닉네임"
-            />
-          </label>
-
-          {nicknameMessage ? (
-            <p className="password-form__message">{nicknameMessage}</p>
-          ) : null}
-
-          <div className="password-form__actions">
-            <AppButton type="submit" disabled={!canChangeNickname}>
-              {isNicknameSaving ? "저장 중..." : "닉네임 변경"}
-            </AppButton>
-          </div>
-        </form>
-      </div>
-
-      {!isSocialLogin && (
-        <div className="content-card">
-          <div className="section-header">
-            <div>
-              <h3>비밀번호 변경</h3>
-            </div>
-          </div>
-
-          <form className="password-form" onSubmit={handlePasswordSubmit}>
-            <label className="password-form__field">
-              <span>현재 비밀번호</span>
-              <input
-                type="password"
-                name="currentPassword"
-                value={passwordForm.currentPassword}
-                onChange={handlePasswordFieldChange}
-                placeholder="현재 비밀번호"
-              />
-            </label>
-
-            <label className="password-form__field">
-              <span>새 비밀번호</span>
-              <input
-                type="password"
-                name="newPassword"
-                value={passwordForm.newPassword}
-                onChange={handlePasswordFieldChange}
-                placeholder="8자 이상, 영문/숫자/특수문자 포함"
-              />
-            </label>
-
-            <label className="password-form__field">
-              <span>새 비밀번호 확인</span>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={passwordForm.confirmPassword}
-                onChange={handlePasswordFieldChange}
-                placeholder="새 비밀번호 확인"
-              />
-            </label>
-
-            <p className="password-form__hint">
-              8자 이상, 영문, 숫자, 특수문자를 각각 1개 이상 포함해야 합니다.
-            </p>
-
-            {passwordMessage ? (
-              <p className="password-form__message">{passwordMessage}</p>
-            ) : null}
-
-            <div className="password-form__actions">
-              <AppButton type="submit" disabled={!canChangePassword}>
-                {isPasswordSaving ? "저장 중..." : "비밀번호 변경"}
-              </AppButton>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div className="content-card">
-        <div className="section-header">
-          <div>
-            <h3>회원탈퇴</h3>
-          </div>
-        </div>
-
-        <div className="password-form__actions">
-          <AppButton
-            type="button"
-            variant="danger"
-            onClick={handleWithdraw}
-            disabled={isWithdrawSaving}
-          >
-            {isWithdrawSaving ? "처리 중..." : "회원탈퇴"}
-          </AppButton>
         </div>
       </div>
     </div>
   );
+};
+
+const styles = {
+  page: {
+    maxWidth: "1440px",
+    margin: "0 auto",
+    padding: "28px 20px 56px",
+  },
+  hero: {
+    background: "linear-gradient(135deg, #4874d4, #c6d2e7)",
+    border: "none",
+    borderRadius: "24px",
+    padding: "50px 30px",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.1)",
+    marginBottom: "20px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    textAlign: "center",
+    position: "relative",
+    color: "white",
+  },
+  heroBadge: {
+    display: "inline-block",
+    padding: "6px 14px",
+    borderRadius: "999px",
+    background: "rgba(255, 255, 255, 0.2)",
+    color: "#fff",
+    fontSize: "12px",
+    fontWeight: "800",
+    marginBottom: "12px",
+    backdropFilter: "blur(4px)",
+  },
+  heroTitle: {
+    margin: "0 0 10px",
+    fontSize: "36px",
+    fontWeight: "800",
+    color: "#fff",
+  },
+  heroText: {
+    margin: 0,
+    fontSize: "15px",
+    color: "rgba(255, 255, 255, 0.9)",
+    lineHeight: "1.6",
+    maxWidth: "800px",
+  },
 };
 
 export default AccountSettingsPage;
