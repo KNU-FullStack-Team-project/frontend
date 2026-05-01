@@ -81,8 +81,17 @@ const CommunityQuillEditor = ({
     "image",
   ];
 
+  const handleWrapperClick = () => {
+    const editor = quillRef.current?.getEditor();
+    if (editor && !editor.hasFocus()) {
+      editor.focus();
+      const length = editor.getLength();
+      if (length <= 1) editor.setSelection(0);
+    }
+  };
+
   return (
-    <div style={styles.editorWrap}>
+    <div style={styles.editorWrap} onClick={handleWrapperClick}>
       <ReactQuill
         ref={quillRef}
         theme="snow"
@@ -91,9 +100,7 @@ const CommunityQuillEditor = ({
         modules={modules}
         formats={formats}
         placeholder={placeholder}
-        style={{
-          minHeight,
-        }}
+        className="community-quill-editor"
       />
     </div>
   );
@@ -105,6 +112,7 @@ const styles = {
     borderRadius: "16px",
     overflow: "hidden",
     background: "#fff",
+    cursor: "text", // 클릭 가능함을 시각적으로 표시
   },
 };
 

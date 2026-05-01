@@ -1817,3 +1817,29 @@ p {
   height: auto;
   border-radius: 12px;
 }
+/* Quill Editor 커스터마이징 */
+.community-quill-editor .ql-container.ql-snow {
+  border: none !important;
+  height: auto !important;
+}
+
+.community-quill-editor .ql-editor {
+  min-height: 400px; /* 에디터 입력 영역 확대 */
+  font-size: 16px;
+  line-height: 1.6;
+  padding: 24px !important;
+}
+
+.community-quill-editor .ql-editor.ql-blank::before {
+  left: 24px !important;
+  top: 24px !important;
+  font-style: normal !important;
+  color: #9ca3af !important;
+}
+
+.community-quill-editor .ql-toolbar.ql-snow {
+  border: none !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding: 12px 16px !important;
+  background: #f9fafb;
+}
