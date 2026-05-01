@@ -120,12 +120,12 @@ const getSubmitConfig = () => {
       };
     }
 
-    return {
-      submitUrl: isStockBoard
-        ? `http://localhost:8081/api/community/stocks/${symbol}/posts`
-        : "http://localhost:8081/api/community/boards/free/posts",
-      payloadIsNotice: false,
-    };
+   return {
+  submitUrl: isStockBoard
+    ? `/api/community/stocks/${symbol}/posts`
+    : `/api/community/boards/free/posts`,
+  payloadIsNotice: false,
+};
   };
 
   const uploadImage = async (file) => {
