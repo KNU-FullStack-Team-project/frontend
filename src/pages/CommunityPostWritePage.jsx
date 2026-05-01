@@ -184,7 +184,13 @@ const getSubmitConfig = () => {
         uploadedResults.push(uploaded);
       }
 
-      setAttachedFiles((prev) => [...prev, ...uploadedResults]);
+      setAttachedFiles((prev) => {
+        // 중복 업로드 방지 (ID 기준 필터링)
+        const newFiles = uploadedResults.filter(
+          (uploaded) => !prev.some((f) => f.attachmentId === uploaded.attachmentId)
+        );
+        return [...prev, ...newFiles];
+      });
       toast.success(`${uploadedResults.length}개 파일이 첨부되었습니다.`);
     } catch (error) {
       console.error(error);
@@ -420,7 +426,10 @@ const getSubmitConfig = () => {
 
             <button
               type="button"
-              onClick={open}
+              onClick={(e) => {
+                e.stopPropagation(); // 상위 div로의 이벤트 전파 차단
+                open();
+              }}
               style={styles.attachButton}
               disabled={uploadingFile}
             >
