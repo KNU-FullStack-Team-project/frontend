@@ -28,18 +28,22 @@ const CommunityQuillEditor = ({
 
       try {
         const uploaded = await onUploadImage(file);
-
-        if (!uploaded?.fileUrl) {
-          throw new Error("이미지 URL을 받아오지 못했습니다.");
-        }
+        if (!uploaded?.fileUrl) throw new Error("이미지 URL을 받아오지 못했습니다.");
 
         const editor = quillRef.current?.getEditor();
-        const range = editor?.getSelection(true);
-
         if (editor) {
-          const insertIndex = range?.index ?? editor.getLength();
-          editor.insertEmbed(insertIndex, "image", uploaded.fileUrl);
-          editor.setSelection(insertIndex + 1);
+          // getSelection(true)는 에디터에 포커스를 주면서 현재 선택 영역을 가져옵니다.
+          const range = editor.getSelection(true);
+          const insertIndex = range ? range.index : editor.getLength();
+
+          // 이미지 삽입
+          editor.insertEmbed(insertIndex, "image", uploaded.fileUrl, "user");
+          
+          // 삽입 후 커서 이동을 비동기로 처리하여 브라우저의 addRange 오류 방지
+          setTimeout(() => {
+            const nextIndex = Math.min(insertIndex + 1, editor.getLength());
+            editor.setSelection(nextIndex, 0, "user");
+          }, 0);
         }
       } catch (error) {
         console.error(error);
@@ -81,12 +85,18 @@ const CommunityQuillEditor = ({
     "image",
   ];
 
-  const handleWrapperClick = () => {
+  const handleWrapperClick = (e) => {
+    // 클릭된 요소가 실제 텍스트 입력창이 아닐 때만(예: 박스 하단 빈 공간) 강제 포커스 실행
+    if (e.target.closest(".ql-editor")) return;
+
     const editor = quillRef.current?.getEditor();
     if (editor && !editor.hasFocus()) {
       editor.focus();
       const length = editor.getLength();
-      if (length <= 1) editor.setSelection(0);
+      // 내용이 아예 없을 때만 맨 앞으로, 내용이 있으면 마지막 위치 유지
+      if (length <= 1) {
+        setTimeout(() => editor.setSelection(0), 0);
+      }
     }
   };
 
