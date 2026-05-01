@@ -1,7 +1,13 @@
 import AppController from "./components/app/AppController";
+import { Toaster } from "react-hot-toast";
 
 function App() {
-  return <AppController />;
+  return (
+    <>
+      <Toaster position="top-center" />
+      <AppController />
+    </>
+  );
 }
 
 export default App;

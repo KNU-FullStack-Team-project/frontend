@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import RichTextEditor from "../components/community/RichTextEditor";
+import CommunityQuillEditor from "../components/community/CommunityQuillEditor";
 
 const REPORT_REASON_OPTIONS = [
   { value: "ABUSE", label: "욕설/비방" },
@@ -20,6 +20,9 @@ const CommunityPostDetailPage = ({
   const [postDetail, setPostDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [commentContent, setCommentContent] = useState("");
+
+  const [replyTargetId, setReplyTargetId] = useState(null);
+  const [replyContent, setReplyContent] = useState("");
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -48,12 +51,9 @@ const CommunityPostDetailPage = ({
 
       const token = localStorage.getItem("accessToken") || currentUser?.token;
 
-      const response = await fetch(
-        `/api/community/posts/${postId}`,
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }
-      );
+      const response = await fetch(`/api/community/posts/${postId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
 
       if (!response.ok) {
         throw new Error("게시글 상세 정보를 불러오지 못했습니다.");
@@ -95,6 +95,25 @@ const CommunityPostDetailPage = ({
       });
       setEditAttachedFiles(postDetail.attachments || []);
     }
+  }, [postDetail]);
+
+  const parentComments = useMemo(() => {
+    if (!Array.isArray(postDetail?.comments)) return [];
+    return postDetail.comments.filter((comment) => !comment.parentCommentId);
+  }, [postDetail]);
+
+  const repliesByParentId = useMemo(() => {
+    if (!Array.isArray(postDetail?.comments)) return {};
+
+    return postDetail.comments.reduce((acc, comment) => {
+      if (comment.parentCommentId) {
+        if (!acc[comment.parentCommentId]) {
+          acc[comment.parentCommentId] = [];
+        }
+        acc[comment.parentCommentId].push(comment);
+      }
+      return acc;
+    }, {});
   }, [postDetail]);
 
   const canManagePost = useMemo(() => {
@@ -234,15 +253,12 @@ const CommunityPostDetailPage = ({
         return;
       }
 
-      const response = await fetch(
-        `/api/community/posts/${postId}/like`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/community/posts/${postId}/like`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const text = await response.text();
 
@@ -294,15 +310,12 @@ const CommunityPostDetailPage = ({
         return;
       }
 
-      const response = await fetch(
-        `/api/community/posts/${postId}/dislike`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/community/posts/${postId}/dislike`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const text = await response.text();
 
@@ -402,19 +415,17 @@ const CommunityPostDetailPage = ({
         return;
       }
 
-      const response = await fetch(
-        `/api/community/posts/${postId}/comments`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            content: commentContent.trim(),
-          }),
-        }
-      );
+      const response = await fetch(`/api/community/posts/${postId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          content: commentContent.trim(),
+          parentCommentId: null,
+        }),
+      });
 
       const text = await response.text();
 
@@ -429,6 +440,64 @@ const CommunityPostDetailPage = ({
     } catch (error) {
       console.error("댓글 작성 오류:", error);
       alert("댓글 작성 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleOpenReplyForm = (commentId) => {
+    if (!isLoggedIn || !currentUser?.userId) {
+      alert("로그인 후 답글을 작성할 수 있습니다.");
+      return;
+    }
+
+    setReplyTargetId((prev) => (prev === commentId ? null : commentId));
+    setReplyContent("");
+  };
+
+  const handleSubmitReply = async (parentCommentId) => {
+    if (!isLoggedIn || !currentUser?.userId) {
+      alert("로그인 후 답글을 작성할 수 있습니다.");
+      return;
+    }
+
+    if (!replyContent.trim()) {
+      alert("답글 내용을 입력해주세요.");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("accessToken") || currentUser?.token;
+
+      if (!token) {
+        alert("로그인 토큰이 없습니다.");
+        return;
+      }
+
+      const response = await fetch(`/api/community/posts/${postId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          content: replyContent.trim(),
+          parentCommentId,
+        }),
+      });
+
+      const text = await response.text();
+
+      if (!response.ok) {
+        alert(text || "답글 작성에 실패했습니다.");
+        return;
+      }
+
+      alert("답글이 작성되었습니다.");
+      setReplyTargetId(null);
+      setReplyContent("");
+      fetchPostDetail();
+    } catch (error) {
+      console.error("답글 작성 오류:", error);
+      alert("답글 작성 중 오류가 발생했습니다.");
     }
   };
 
@@ -523,7 +592,9 @@ const CommunityPostDetailPage = ({
   };
 
   const handleRemoveAttachedFile = (attachmentId) => {
-    setEditAttachedFiles((prev) => prev.filter((file) => file.attachmentId !== attachmentId));
+    setEditAttachedFiles((prev) =>
+      prev.filter((file) => file.attachmentId !== attachmentId)
+    );
   };
 
   const handleUpdatePost = async () => {
@@ -545,22 +616,19 @@ const CommunityPostDetailPage = ({
         return;
       }
 
-      const response = await fetch(
-        `/api/community/posts/${postId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            title: editForm.title.trim(),
-            content: editForm.content,
-            isNotice: editForm.isNotice,
-            attachmentIds: editAttachedFiles.map((file) => file.attachmentId),
-          }),
-        }
-      );
+      const response = await fetch(`/api/community/posts/${postId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: editForm.title.trim(),
+          content: editForm.content,
+          isNotice: editForm.isNotice,
+          attachmentIds: editAttachedFiles.map((file) => file.attachmentId),
+        }),
+      });
 
       const text = await response.text();
 
@@ -589,15 +657,12 @@ const CommunityPostDetailPage = ({
         return;
       }
 
-      const response = await fetch(
-        `/api/community/posts/${postId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/community/posts/${postId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const text = await response.text();
 
@@ -625,15 +690,12 @@ const CommunityPostDetailPage = ({
         return;
       }
 
-      const response = await fetch(
-        `/api/community/comments/${commentId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/community/comments/${commentId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const text = await response.text();
 
@@ -649,6 +711,93 @@ const CommunityPostDetailPage = ({
       alert("댓글 삭제 중 오류가 발생했습니다.");
     }
   };
+
+  const renderCommentItem = (comment, isReply = false) => (
+    <div
+      key={comment.commentId}
+      style={{
+        ...styles.commentItem,
+        ...(isReply ? styles.replyItem : {}),
+      }}
+    >
+      <div style={styles.commentTop}>
+        <span style={styles.nickname}>
+          {isReply && <span style={styles.replyMark}>↳ </span>}
+          {comment.nickname}
+          {comment.userId === postDetail.userId && (
+            <span style={styles.authorBadge}>(작성자)</span>
+          )}
+        </span>
+
+        <div style={styles.commentTopRight}>
+          <span style={styles.commentDate}>{formatDateTime(comment.createdAt)}</span>
+
+          {!isReply && (
+            <button
+              type="button"
+              onClick={() => handleOpenReplyForm(comment.commentId)}
+              style={styles.replyButton}
+            >
+              답글
+            </button>
+          )}
+
+          {canReportComment(comment.userId) && (
+            <button
+              type="button"
+              onClick={() => openCommentReportModal(comment)}
+              style={styles.commentReportButton}
+            >
+              신고
+            </button>
+          )}
+
+          {canDeleteComment(comment.userId) && (
+            <button
+              type="button"
+              onClick={() => handleDeleteComment(comment.commentId)}
+              style={styles.commentDeleteButton}
+            >
+              삭제
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div style={styles.commentContent}>{comment.content}</div>
+
+      {!isReply && replyTargetId === comment.commentId && (
+        <div style={styles.replyWriteBox}>
+          <textarea
+            value={replyContent}
+            onChange={(e) => setReplyContent(e.target.value)}
+            placeholder={`${comment.nickname}님에게 답글 작성`}
+            style={styles.replyInput}
+          />
+
+          <div style={styles.replyActionRow}>
+            <button
+              type="button"
+              onClick={() => handleSubmitReply(comment.commentId)}
+              style={styles.replySubmitButton}
+            >
+              답글 등록
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setReplyTargetId(null);
+                setReplyContent("");
+              }}
+              style={styles.replyCancelButton}
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   if (!postId) {
     return (
@@ -696,11 +845,7 @@ const CommunityPostDetailPage = ({
             </div>
 
             {canReportPost && !isEditMode && (
-              <button
-                type="button"
-                onClick={openPostReportModal}
-                style={styles.reportButtonTop}
-              >
+              <button type="button" onClick={openPostReportModal} style={styles.reportButtonTop}>
                 신고
               </button>
             )}
@@ -741,7 +886,7 @@ const CommunityPostDetailPage = ({
                 <span>비추천 {postDetail.dislikeCount ?? 0}</span>
               </div>
 
-              <RichTextEditor
+              <CommunityQuillEditor
                 value={editForm.content}
                 onChange={(html) =>
                   setEditForm((prev) => ({
@@ -750,6 +895,7 @@ const CommunityPostDetailPage = ({
                   }))
                 }
                 onUploadImage={uploadImage}
+                placeholder="내용을 수정하세요."
                 minHeight={320}
               />
 
@@ -789,18 +935,10 @@ const CommunityPostDetailPage = ({
 
               {canManagePost && (
                 <div style={styles.actionRow}>
-                  <button
-                    type="button"
-                    onClick={handleUpdatePost}
-                    style={styles.actionButton}
-                  >
+                  <button type="button" onClick={handleUpdatePost} style={styles.actionButton}>
                     저장
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleCancelEdit}
-                    style={styles.subActionButton}
-                  >
+                  <button type="button" onClick={handleCancelEdit} style={styles.subActionButton}>
                     취소
                   </button>
                 </div>
@@ -809,9 +947,7 @@ const CommunityPostDetailPage = ({
           ) : (
             <>
               <h1 style={styles.title}>
-                {postDetail.isNotice && (
-                  <span style={styles.noticeTitlePrefix}>[공지] </span>
-                )}
+                {postDetail.isNotice && <span style={styles.noticeTitlePrefix}>[공지] </span>}
                 {postDetail.title}
               </h1>
 
@@ -829,24 +965,17 @@ const CommunityPostDetailPage = ({
 
               {canManagePost && (
                 <div style={styles.actionRow}>
-                  <button
-                    type="button"
-                    onClick={handleStartEdit}
-                    style={styles.actionButton}
-                  >
+                  <button type="button" onClick={handleStartEdit} style={styles.actionButton}>
                     수정
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleDeletePost}
-                    style={styles.deleteButton}
-                  >
+                  <button type="button" onClick={handleDeletePost} style={styles.deleteButton}>
                     삭제
                   </button>
                 </div>
               )}
 
               <div
+                className="ql-editor community-post-content"
                 style={styles.contentBox}
                 dangerouslySetInnerHTML={{ __html: postDetail.content || "" }}
               />
@@ -892,7 +1021,9 @@ const CommunityPostDetailPage = ({
                       ...styles.voteButton,
                       ...styles.likeVoteButton,
                       ...(postDetail.myVoteType === "LIKE" ? styles.likeVoteButtonSelected : {}),
-                      ...((postDetail.votedByCurrentUser || postDetail.likedByCurrentUser || isMyPost)
+                      ...((postDetail.votedByCurrentUser ||
+                        postDetail.likedByCurrentUser ||
+                        isMyPost)
                         ? styles.voteButtonDisabled
                         : {}),
                     }}
@@ -902,8 +1033,8 @@ const CommunityPostDetailPage = ({
                       {isMyPost
                         ? "내 글 추천 불가"
                         : postDetail.myVoteType === "LIKE"
-                          ? "추천 완료"
-                          : "추천"}
+                        ? "추천 완료"
+                        : "추천"}
                     </span>
                     <span style={styles.voteCount}>{postDetail.likeCount ?? 0}</span>
                   </button>
@@ -922,8 +1053,12 @@ const CommunityPostDetailPage = ({
                     style={{
                       ...styles.voteButton,
                       ...styles.dislikeVoteButton,
-                      ...(postDetail.myVoteType === "DISLIKE" ? styles.dislikeVoteButtonSelected : {}),
-                      ...((postDetail.votedByCurrentUser || postDetail.likedByCurrentUser || isMyPost)
+                      ...(postDetail.myVoteType === "DISLIKE"
+                        ? styles.dislikeVoteButtonSelected
+                        : {}),
+                      ...((postDetail.votedByCurrentUser ||
+                        postDetail.likedByCurrentUser ||
+                        isMyPost)
                         ? styles.voteButtonDisabled
                         : {}),
                     }}
@@ -933,8 +1068,8 @@ const CommunityPostDetailPage = ({
                       {isMyPost
                         ? "내 글 비추천 불가"
                         : postDetail.myVoteType === "DISLIKE"
-                          ? "비추천 완료"
-                          : "비추천"}
+                        ? "비추천 완료"
+                        : "비추천"}
                     </span>
                     <span style={styles.voteCount}>{postDetail.dislikeCount ?? 0}</span>
                   </button>
@@ -959,11 +1094,7 @@ const CommunityPostDetailPage = ({
             style={styles.commentInput}
           />
           <div style={styles.writeActionRow}>
-            <button
-              type="button"
-              onClick={handleSubmitComment}
-              style={styles.writeButton}
-            >
+            <button type="button" onClick={handleSubmitComment} style={styles.writeButton}>
               댓글 등록
             </button>
           </div>
@@ -972,51 +1103,20 @@ const CommunityPostDetailPage = ({
         <div style={styles.commentListCard}>
           <div style={styles.listTitleRow}>
             <h3 style={styles.sectionTitle}>댓글 목록</h3>
-            <span style={styles.postCount}>
-              총 {postDetail.comments?.length ?? 0}개
-            </span>
+            <span style={styles.postCount}>총 {postDetail.comments?.length ?? 0}개</span>
           </div>
 
           {!Array.isArray(postDetail.comments) || postDetail.comments.length === 0 ? (
             <div style={styles.emptyInner}>아직 댓글이 없습니다.</div>
           ) : (
             <div style={styles.commentList}>
-              {postDetail.comments.map((comment) => (
-                <div key={comment.commentId} style={styles.commentItem}>
-                  <div style={styles.commentTop}>
-                    <span style={styles.nickname}>
-                      {comment.nickname}
-                      {comment.userId === postDetail.userId && (
-                        <span style={styles.authorBadge}>(작성자)</span>
-                      )}
-                    </span>
-                    <div style={styles.commentTopRight}>
-                      <span style={styles.commentDate}>
-                        {formatDateTime(comment.createdAt)}
-                      </span>
+              {parentComments.map((comment) => (
+                <div key={comment.commentId} style={styles.commentThread}>
+                  {renderCommentItem(comment, false)}
 
-                      {canReportComment(comment.userId) && (
-                        <button
-                          type="button"
-                          onClick={() => openCommentReportModal(comment)}
-                          style={styles.commentReportButton}
-                        >
-                          신고
-                        </button>
-                      )}
-
-                      {canDeleteComment(comment.userId) && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteComment(comment.commentId)}
-                          style={styles.commentDeleteButton}
-                        >
-                          삭제
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div style={styles.commentContent}>{comment.content}</div>
+                  {(repliesByParentId[comment.commentId] || []).map((reply) =>
+                    renderCommentItem(reply, true)
+                  )}
                 </div>
               ))}
             </div>
@@ -1029,11 +1129,7 @@ const CommunityPostDetailPage = ({
           <div style={styles.modalCard}>
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>신고하기</h3>
-              <button
-                type="button"
-                onClick={closeReportModal}
-                style={styles.modalCloseButton}
-              >
+              <button type="button" onClick={closeReportModal} style={styles.modalCloseButton}>
                 ✕
               </button>
             </div>
@@ -1219,19 +1315,9 @@ const styles = {
     fontWeight: "800",
     color: "#d9480f",
   },
-  topActionRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "12px",
-    marginBottom: "16px",
-    flexWrap: "wrap",
-  },
-  likeRow: {
-    display: "flex",
-    justifyContent: "flex-start",
-    gap: "8px",
-    flexWrap: "wrap",
+  replyMark: {
+    color: "#6b7280",
+    fontWeight: "900",
   },
   votePanel: {
     margin: "38px auto 28px",
@@ -1324,40 +1410,6 @@ const styles = {
     fontSize: "12px",
     flexShrink: 0,
   },
-  likeButton: {
-    padding: "10px 16px",
-    borderRadius: "10px",
-    border: "none",
-    background: "#2563eb",
-    color: "#fff",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "13px",
-  },
-  dislikeButton: {
-    padding: "10px 16px",
-    borderRadius: "10px",
-    border: "1px solid #d1d5db",
-    background: "#f1f3f5",
-    color: "#495057",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "13px",
-  },
-  likeButtonDisabled: {
-    background: "#94a3b8",
-    cursor: "not-allowed",
-  },
-  reportButton: {
-    padding: "10px 16px",
-    borderRadius: "10px",
-    border: "1px solid #fed7aa",
-    background: "#fff7ed",
-    color: "#c2410c",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "13px",
-  },
   actionRow: {
     display: "flex",
     gap: "8px",
@@ -1403,10 +1455,6 @@ const styles = {
     minHeight: "180px",
     textAlign: "left",
     wordBreak: "break-word",
-  },
-  contentImage: {
-    maxWidth: "100%",
-    borderRadius: "12px",
   },
   attachSection: {
     border: "1px solid #e5e7eb",
@@ -1583,11 +1631,20 @@ const styles = {
     display: "grid",
     gap: "12px",
   },
+  commentThread: {
+    display: "grid",
+    gap: "8px",
+  },
   commentItem: {
     border: "1px solid #e5e7eb",
     borderRadius: "14px",
     padding: "14px 16px",
     background: "#fff",
+  },
+  replyItem: {
+    marginLeft: "36px",
+    background: "#f8fafc",
+    borderColor: "#e2e8f0",
   },
   commentTop: {
     display: "flex",
@@ -1606,6 +1663,16 @@ const styles = {
   commentDate: {
     fontSize: "12px",
     color: "#6b7280",
+  },
+  replyButton: {
+    border: "1px solid #dbeafe",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    borderRadius: "8px",
+    padding: "6px 10px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "700",
   },
   commentDeleteButton: {
     border: "none",
@@ -1634,6 +1701,50 @@ const styles = {
     textAlign: "left",
     whiteSpace: "pre-wrap",
     wordBreak: "break-word",
+  },
+  replyWriteBox: {
+    marginTop: "12px",
+    padding: "12px",
+    borderRadius: "12px",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+  },
+  replyInput: {
+    width: "100%",
+    minHeight: "80px",
+    borderRadius: "10px",
+    border: "1px solid #d1d5db",
+    padding: "12px",
+    fontSize: "13px",
+    resize: "vertical",
+    outline: "none",
+    fontFamily: "inherit",
+  },
+  replyActionRow: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "8px",
+    marginTop: "8px",
+  },
+  replySubmitButton: {
+    padding: "8px 12px",
+    borderRadius: "8px",
+    border: "none",
+    background: "#111827",
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "700",
+  },
+  replyCancelButton: {
+    padding: "8px 12px",
+    borderRadius: "8px",
+    border: "1px solid #d1d5db",
+    background: "#fff",
+    color: "#374151",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "700",
   },
   modalOverlay: {
     position: "fixed",
