@@ -5,15 +5,8 @@ const useInquiryCount = (user) => {
 
   const fetchInquiryCount = useCallback(async () => {
     if (!user) return;
-    const token = localStorage.getItem("accessToken");
-    if (!token) return;
-
     try {
-      const res = await fetch("/api/inquiries/unread-count", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await fetch("/api/inquiries/unread-count");
       if (res.ok) {
         const count = await res.json();
         setUnreadInquiryCount(count);

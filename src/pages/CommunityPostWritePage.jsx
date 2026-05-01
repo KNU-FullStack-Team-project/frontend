@@ -22,6 +22,16 @@ const CommunityPostWritePage = ({
   const isAdmin = currentUser?.role === "admin";
   const isStockBoard = boardType === "stock";
 
+  const getAuthHeaders = () =>
+    currentUser?.token
+      ? { Authorization: `Bearer ${currentUser.token}` }
+      : {};
+
+  const getJsonHeaders = () => ({
+    "Content-Type": "application/json",
+    ...getAuthHeaders(),
+  });
+
   const {
     register,
     handleSubmit,
@@ -89,22 +99,22 @@ const getSubmitConfig = () => {
     if (!isAdmin || noticeTarget === "none") {
       return {
         submitUrl: isStockBoard
-          ? `http://localhost:8081/api/community/stocks/${symbol}/posts`
-          : "http://localhost:8081/api/community/boards/free/posts",
+          ? `/api/community/stocks/${symbol}/posts`
+          : "/api/community/boards/free/posts",
         payloadIsNotice: false,
       };
     }
 
     if (noticeTarget === "global") {
       return {
-        submitUrl: "http://localhost:8081/api/community/notices",
+        submitUrl: "/api/community/notices",
         payloadIsNotice: true,
       };
     }
 
     if (noticeTarget === "free") {
       return {
-        submitUrl: "http://localhost:8081/api/community/boards/free/posts",
+        submitUrl: "/api/community/boards/free/posts",
         payloadIsNotice: true,
       };
     }
@@ -115,15 +125,15 @@ const getSubmitConfig = () => {
       }
 
       return {
-        submitUrl: `http://localhost:8081/api/community/stocks/${symbol}/posts`,
+        submitUrl: `/api/community/stocks/${symbol}/posts`,
         payloadIsNotice: true,
       };
     }
 
     return {
       submitUrl: isStockBoard
-        ? `http://localhost:8081/api/community/stocks/${symbol}/posts`
-        : "http://localhost:8081/api/community/boards/free/posts",
+        ? `/api/community/stocks/${symbol}/posts`
+        : "/api/community/boards/free/posts",
       payloadIsNotice: false,
     };
   };
@@ -137,7 +147,7 @@ const getSubmitConfig = () => {
 
     const response = await fetch("/api/community/uploads/images", {
       method: "POST",
-      credentials: "include",
+      headers: getAuthHeaders(),
       body: formData,
     });
 
@@ -158,7 +168,7 @@ const getSubmitConfig = () => {
 
     const response = await fetch("/api/community/uploads/files", {
       method: "POST",
-      credentials: "include",
+      headers: getAuthHeaders(),
       body: formData,
     });
 
@@ -236,10 +246,7 @@ const getSubmitConfig = () => {
 
       const response = await fetch(submitUrl, {
         method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: getJsonHeaders(),
         body: JSON.stringify({
           title: data.title.trim(),
           content: data.content,

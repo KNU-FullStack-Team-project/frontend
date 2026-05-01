@@ -25,11 +25,7 @@ const ContestPage = ({
   const fetchCompetitions = () => {
     setLoading(true);
 
-    fetch("/api/competitions", {
-      headers: {
-        Authorization: `Bearer ${currentUser?.token}`,
-      },
-    })
+    fetch("/api/competitions")
       .then((res) => {
         if (!res.ok) {
           throw new Error("대회 목록을 불러오지 못했습니다.");
@@ -58,12 +54,7 @@ const ContestPage = ({
     }
 
     fetch(
-      `/api/competitions/my?userId=${currentUser.userId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${currentUser?.token}`,
-        },
-      },
+      `/api/competitions/my?userId=${currentUser.userId}`
     )
       .then((res) => {
         if (!res.ok) {

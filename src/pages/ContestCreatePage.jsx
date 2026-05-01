@@ -48,7 +48,6 @@ const ContestCreatePage = ({ currentUser, onBack, onSuccess }) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${currentUser?.token}`,
           },
           body: JSON.stringify(payload),
         },

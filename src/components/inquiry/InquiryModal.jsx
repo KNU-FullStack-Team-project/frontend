@@ -14,7 +14,13 @@ const CATEGORIES = [
   "기타"
 ];
 
-const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount }) => {
+const InquiryModal = ({
+  isOpen,
+  onClose,
+  isAdmin = false,
+  refreshInquiryCount,
+  initialInquiryId = null,
+}) => {
   const [viewMode, setViewMode] = useState("list"); // "list", "write", "detail"
   const [inquiries, setInquiries] = useState([]);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
@@ -31,12 +37,8 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
   // 문의 읽음 처리 API 호출
   const markAsRead = async (inquiryId) => {
     try {
-      const token = localStorage.getItem("accessToken");
       const response = await fetch(`/api/inquiries/${inquiryId}/read`, {
-        method: "POST",
-        headers: {
-          "Authorization": token ? `Bearer ${token}` : ""
-        }
+        method: "POST"
       });
       if (response.ok) {
         if (refreshInquiryCount) refreshInquiryCount();
@@ -50,20 +52,21 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
   const fetchInquiries = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("accessToken");
-      // 관리자인 경우 전체 목록, 일반 사용자인 경우 본인 목록 호출
-      const url = isAdmin
-        ? "/api/inquiries/all"
-        : "/api/inquiries/my";
-
-      const response = await fetch(url, {
-        headers: {
-          "Authorization": token ? `Bearer ${token}` : ""
-        }
-      });
+      const url = isAdmin ? "/api/inquiries/all" : "/api/inquiries/my";
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setInquiries(data);
+        if (initialInquiryId) {
+          const initialInquiry = data.find(
+            (item) => String(item.inquiryId) === String(initialInquiryId),
+          );
+          if (initialInquiry) {
+            setSelectedInquiry(initialInquiry);
+            setReplyContent(initialInquiry.answer || "");
+            setViewMode("detail");
+          }
+        }
       }
     } catch (error) {
       console.error("Failed to fetch inquiries:", error);
@@ -78,7 +81,7 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
       setViewMode("list");
       fetchInquiries();
     }
-  }, [isOpen, isAdmin]);
+  }, [isOpen, isAdmin, initialInquiryId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,12 +92,10 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
 
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem("accessToken");
       const response = await fetch("/api/inquiries", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": token ? `Bearer ${token}` : ""
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ category, title, content }),
       });
@@ -125,12 +126,10 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
 
     setIsReplying(true);
     try {
-      const token = localStorage.getItem("accessToken");
       const response = await fetch(`/api/inquiries/${selectedInquiry.inquiryId}/reply`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": token ? `Bearer ${token}` : ""
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ answer: replyContent }),
       });
@@ -394,8 +393,15 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
     );
   };
 
+  const modalTitle =
+    viewMode === "list"
+      ? isAdmin ? "문의 관리" : "나의 문의 센터"
+      : viewMode === "detail"
+        ? "문의 상세"
+        : "1:1 문의 작성";
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={viewMode === "list" ? "나의 문의 센터" : "1:1 문의 작성"}>
+    <Modal isOpen={isOpen} onClose={onClose} title={modalTitle}>
       {renderContent()}
     </Modal>
   );
