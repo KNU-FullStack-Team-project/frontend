@@ -20,6 +20,7 @@ import NoticeBoardPage from "../../pages/NoticeBoardPage";
 
 import CommunityPostDetailPage from "../../pages/CommunityPostDetailPage";
 import CommunityPostWritePage from "../../pages/CommunityPostWritePage";
+import InquiryModal from "../inquiry/InquiryModal";
 
 import TopNav from "../../layout/TopNav";
 
@@ -44,6 +45,8 @@ const AppController = () => {
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(null);
   const [selectedCommunitySymbol, setSelectedCommunitySymbol] = useState(null);
   const [selectedCommunityPostId, setSelectedCommunityPostId] = useState(null);
+  const [selectedCommunityPostUpdateLog, setSelectedCommunityPostUpdateLog] = useState(null);
+  const [selectedInquiryLogId, setSelectedInquiryLogId] = useState(null);
   const [selectedCommunityBoardType, setSelectedCommunityBoardType] = useState("free");
   const [authMode, setAuthMode] = useState("login");
   const [socialSignupData, setSocialSignupData] = useState(null);
@@ -68,6 +71,8 @@ const AppController = () => {
     setSelectedActivityUser(null);
     setSelectedCommunitySymbol(null);
     setSelectedCommunityPostId(null);
+    setSelectedCommunityPostUpdateLog(null);
+    setSelectedInquiryLogId(null);
     setSelectedCommunityBoardType("free");
     setLoginCaptchaRequired(false);
     setLoginErrorMessage("");
@@ -626,8 +631,9 @@ const handleToggleCompetitionVisibility = async (competitionId, isPublic) => {
     setCurrentPage("freeBoard");
   };
 
-  const handleOpenCommunityPostDetail = (postId) => {
+  const handleOpenCommunityPostDetail = (postId, updateLog = null) => {
     setSelectedCommunityPostId(postId);
+    setSelectedCommunityPostUpdateLog(updateLog);
     setCurrentPage("communityPostDetail");
   };
 
@@ -644,6 +650,7 @@ const handleToggleCompetitionVisibility = async (competitionId, isPublic) => {
       setCurrentPage("freeBoard");
     }
     setSelectedCommunityPostId(null);
+    setSelectedCommunityPostUpdateLog(null);
   };
 
   const handleOpenCommunityWritePage = () => {
@@ -799,6 +806,7 @@ const handleToggleCompetitionVisibility = async (competitionId, isPublic) => {
         return (
           <CommunityPostDetailPage
             postId={selectedCommunityPostId}
+            updateCompareLog={selectedCommunityPostUpdateLog}
             currentUser={currentUser}
             isLoggedIn={isLoggedIn}
             boardType={selectedCommunityBoardType || "free"}
@@ -851,11 +859,13 @@ const handleToggleCompetitionVisibility = async (competitionId, isPublic) => {
               setSelectedActivityUser(user);
               setCurrentPage("userActivity");
             }}
-            onOpenPost={(postId) => {
+            onOpenPost={(postId, updateLog = null) => {
               setSelectedCommunityPostId(postId);
+              setSelectedCommunityPostUpdateLog(updateLog);
               setSelectedCommunityBoardType("free");
               setCurrentPage("communityPostDetail");
             }}
+            onOpenInquiry={(inquiryId) => setSelectedInquiryLogId(inquiryId)}
           />
         );
 
@@ -865,11 +875,13 @@ const handleToggleCompetitionVisibility = async (competitionId, isPublic) => {
             currentUser={currentUser}
             targetUser={selectedActivityUser}
             onBack={() => setCurrentPage("admin")}
-            onOpenPost={(postId) => {
+            onOpenPost={(postId, updateLog = null) => {
               setSelectedCommunityPostId(postId);
+              setSelectedCommunityPostUpdateLog(updateLog);
               setSelectedCommunityBoardType("free");
               setCurrentPage("communityPostDetail");
             }}
+            onOpenInquiry={(inquiryId) => setSelectedInquiryLogId(inquiryId)}
           />
         );
 
@@ -910,6 +922,12 @@ const handleToggleCompetitionVisibility = async (competitionId, isPublic) => {
           {renderPage()}
         </div>
       </main>
+      <InquiryModal
+        isOpen={selectedInquiryLogId != null}
+        onClose={() => setSelectedInquiryLogId(null)}
+        isAdmin={true}
+        initialInquiryId={selectedInquiryLogId}
+      />
     </div>
   );
 };

@@ -14,7 +14,13 @@ const CATEGORIES = [
   "기타"
 ];
 
-const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount }) => {
+const InquiryModal = ({
+  isOpen,
+  onClose,
+  isAdmin = false,
+  refreshInquiryCount,
+  initialInquiryId = null,
+}) => {
   const [viewMode, setViewMode] = useState("list"); // "list", "write", "detail"
   const [inquiries, setInquiries] = useState([]);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
@@ -51,6 +57,16 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
       if (response.ok) {
         const data = await response.json();
         setInquiries(data);
+        if (initialInquiryId) {
+          const initialInquiry = data.find(
+            (item) => String(item.inquiryId) === String(initialInquiryId),
+          );
+          if (initialInquiry) {
+            setSelectedInquiry(initialInquiry);
+            setReplyContent(initialInquiry.answer || "");
+            setViewMode("detail");
+          }
+        }
       }
     } catch (error) {
       console.error("Failed to fetch inquiries:", error);
@@ -65,7 +81,7 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
       setViewMode("list");
       fetchInquiries();
     }
-  }, [isOpen, isAdmin]);
+  }, [isOpen, isAdmin, initialInquiryId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -377,8 +393,15 @@ const InquiryModal = ({ isOpen, onClose, isAdmin = false, refreshInquiryCount })
     );
   };
 
+  const modalTitle =
+    viewMode === "list"
+      ? isAdmin ? "문의 관리" : "나의 문의 센터"
+      : viewMode === "detail"
+        ? "문의 상세"
+        : "1:1 문의 작성";
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={viewMode === "list" ? "나의 문의 센터" : "1:1 문의 작성"}>
+    <Modal isOpen={isOpen} onClose={onClose} title={modalTitle}>
       {renderContent()}
     </Modal>
   );
