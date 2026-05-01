@@ -1791,3 +1791,29 @@ p {
   border-radius: 4px;
   color: #4b5563;
 }
+
+.community-post-content {
+  white-space: normal;
+}
+
+.community-post-content p {
+  margin: 0 0 12px;
+  min-height: 1.5em;
+}
+
+.community-post-content p:has(br) {
+  min-height: 1.5em;
+  margin-bottom: 12px;
+}
+
+.community-post-content ul,
+.community-post-content ol {
+  padding-left: 24px;
+  margin: 12px 0;
+}
+
+.community-post-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+}

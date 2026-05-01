@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import RichTextEditor from "../components/community/RichTextEditor";
+import { useForm } from "react-hook-form";
+import { useDropzone } from "react-dropzone";
+import toast from "react-hot-toast";
+import CommunityQuillEditor from "../components/community/CommunityQuillEditor";
 
 const CommunityPostWritePage = ({
   boardType = "stock",
@@ -13,18 +16,27 @@ const CommunityPostWritePage = ({
   const [loading, setLoading] = useState(boardType === "stock");
   const [submitting, setSubmitting] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
-
-  const [form, setForm] = useState({
-    title: "",
-    content: "",
-    isNotice: false,
-    noticeTarget: "none", // none | global | free | stock
-  });
-
+  const [noticeTarget, setNoticeTarget] = useState("none");
   const [attachedFiles, setAttachedFiles] = useState([]);
 
   const isAdmin = currentUser?.role === "admin";
   const isStockBoard = boardType === "stock";
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      title: "",
+      content: "",
+    },
+  });
+
+  const title = watch("title");
+  const content = watch("content");
 
   const pageTitle = isStockBoard
     ? `${stockInfo?.name || stockInfo?.stockName || symbol} 게시글 작성`
@@ -35,11 +47,13 @@ const CommunityPostWritePage = ({
     : "자유롭게 글을 작성하고 다른 사용자와 의견을 나눠보세요.";
 
   const plainContent = useMemo(() => {
-    return (form.content || "")
+    return (content || "")
       .replace(/<[^>]*>/g, " ")
       .replace(/&nbsp;/g, " ")
       .trim();
-  }, [form.content]);
+  }, [content]);
+
+  const contentLength = plainContent.length;
 
   useEffect(() => {
     if (!isStockBoard) {
@@ -55,7 +69,9 @@ const CommunityPostWritePage = ({
         setLoading(true);
         const response = await fetch(`/api/stocks/${symbol}`);
 
-        if (!response.ok) throw new Error("종목 정보를 불러오지 못했습니다.");
+        if (!response.ok) {
+          throw new Error("종목 정보를 불러오지 못했습니다.");
+        }
 
         const data = await response.json();
         setStockInfo(data);
@@ -70,28 +86,12 @@ const CommunityPostWritePage = ({
     fetchStockInfo();
   }, [symbol, isStockBoard]);
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const handleNoticeTargetChange = (target) => {
-    setForm((prev) => {
-      const nextTarget = prev.noticeTarget === target ? "none" : target;
-      return {
-        ...prev,
-        noticeTarget: nextTarget,
-        isNotice: nextTarget !== "none",
-      };
-    });
+  const getToken = () => {
+    return localStorage.getItem("accessToken") || currentUser?.token;
   };
 
   const getSubmitConfig = () => {
-    if (!isAdmin || form.noticeTarget === "none") {
+    if (!isAdmin || noticeTarget === "none") {
       return {
         submitUrl: isStockBoard
           ? `/api/community/stocks/${symbol}/posts`
@@ -100,21 +100,21 @@ const CommunityPostWritePage = ({
       };
     }
 
-    if (form.noticeTarget === "global") {
+    if (noticeTarget === "global") {
       return {
         submitUrl: "/api/community/notices",
         payloadIsNotice: true,
       };
     }
 
-    if (form.noticeTarget === "free") {
+    if (noticeTarget === "free") {
       return {
         submitUrl: "/api/community/boards/free/posts",
         payloadIsNotice: true,
       };
     }
 
-    if (form.noticeTarget === "stock") {
+    if (noticeTarget === "stock") {
       if (!symbol) {
         throw new Error("종목게시판 공지는 종목 게시판에서만 작성할 수 있습니다.");
       }
@@ -134,6 +134,16 @@ const CommunityPostWritePage = ({
   };
 
   const uploadImage = async (file) => {
+    if (!isLoggedIn || !currentUser?.userId) {
+      throw new Error("로그인 후 이미지를 업로드할 수 있습니다.");
+    }
+
+    const token = getToken();
+
+    if (!token) {
+      throw new Error("로그인 토큰이 없습니다.");
+    }
+
     const formData = new FormData();
     formData.append("file", file);
 
@@ -150,45 +160,69 @@ const CommunityPostWritePage = ({
     return response.json();
   };
 
-  const handleAttachFiles = async (e) => {
-    const files = Array.from(e.target.files || []);
-    e.target.value = "";
-
-    if (!files.length) return;
+  const uploadOneFile = async (file) => {
     if (!isLoggedIn || !currentUser?.userId) {
-      alert("로그인 후 파일을 첨부할 수 있습니다.");
-      return;
+      throw new Error("로그인 후 파일을 첨부할 수 있습니다.");
     }
+
+    const token = getToken();
+
+    if (!token) {
+      throw new Error("로그인 토큰이 없습니다.");
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch("/api/community/uploads/files", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || `${file.name} 업로드 실패`);
+    }
+
+    return response.json();
+  };
+
+  const handleUploadFiles = async (files) => {
+    const selectedFiles = Array.from(files || []);
+    if (!selectedFiles.length) return;
 
     try {
       setUploadingFile(true);
 
       const uploadedResults = [];
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append("file", file);
 
-        const response = await fetch("/api/community/uploads/files", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const text = await response.text();
-          throw new Error(text || `${file.name} 업로드 실패`);
-        }
-
-        uploadedResults.push(await response.json());
+      for (const file of selectedFiles) {
+        const uploaded = await uploadOneFile(file);
+        uploadedResults.push(uploaded);
       }
 
       setAttachedFiles((prev) => [...prev, ...uploadedResults]);
+      toast.success(`${uploadedResults.length}개 파일이 첨부되었습니다.`);
     } catch (error) {
       console.error(error);
-      alert(error.message || "파일 업로드 중 오류가 발생했습니다.");
+      toast.error(error.message || "파일 업로드 중 오류가 발생했습니다.");
     } finally {
       setUploadingFile(false);
     }
   };
+
+  const onDrop = async (acceptedFiles) => {
+    await handleUploadFiles(acceptedFiles);
+  };
+
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+    onDrop,
+    noClick: true,
+    multiple: true,
+  });
 
   const handleRemoveAttachedFile = (attachmentId) => {
     setAttachedFiles((prev) =>
@@ -196,19 +230,30 @@ const CommunityPostWritePage = ({
     );
   };
 
-  const handleSubmit = async () => {
+  const handleNoticeTargetChange = (target) => {
+    setNoticeTarget((prev) => (prev === target ? "none" : target));
+  };
+
+  const onSubmit = async (data) => {
     if (!isLoggedIn || !currentUser?.userId) {
-      alert("로그인 후 글을 작성할 수 있습니다.");
+      toast.error("로그인 후 글을 작성할 수 있습니다.");
       return;
     }
 
-    if (!form.title.trim()) {
-      alert("제목을 입력해주세요.");
+    if (!data.title?.trim()) {
+      toast.error("제목을 입력해주세요.");
       return;
     }
 
     if (!plainContent) {
-      alert("내용을 입력해주세요.");
+      toast.error("내용을 입력해주세요.");
+      return;
+    }
+
+    const token = getToken();
+
+    if (!token) {
+      toast.error("로그인 토큰이 없습니다.");
       return;
     }
 
@@ -223,8 +268,8 @@ const CommunityPostWritePage = ({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title: form.title.trim(),
-          content: form.content,
+          title: data.title.trim(),
+          content: data.content,
           isNotice: payloadIsNotice,
           attachmentIds: attachedFiles.map((file) => file.attachmentId),
         }),
@@ -233,27 +278,39 @@ const CommunityPostWritePage = ({
       const text = await response.text();
 
       if (!response.ok) {
-        alert(text || "게시글 작성에 실패했습니다.");
+        toast.error(text || "게시글 작성에 실패했습니다.");
         return;
       }
 
-      alert("게시글 작성 완료");
+      toast.success("게시글 작성 완료");
       onSuccess?.();
-    } catch (e) {
-      console.error(e);
-      alert(e.message || "게시글 작성 중 오류가 발생했습니다.");
+    } catch (error) {
+      console.error(error);
+      toast.error(error.message || "게시글 작성 중 오류가 발생했습니다.");
     } finally {
       setSubmitting(false);
     }
   };
 
+  const formatFileSize = (size) => {
+    const bytes = Number(size || 0);
+
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
   if (loading) {
-    return <div style={{ padding: 40 }}>로딩중...</div>;
+    return (
+      <section style={styles.page}>
+        <div style={styles.loadingCard}>로딩중...</div>
+      </section>
+    );
   }
 
   return (
     <section style={styles.page}>
-      <button onClick={onBack} style={styles.backButton}>
+      <button type="button" onClick={onBack} style={styles.backButton}>
         ← 목록으로
       </button>
 
@@ -263,7 +320,7 @@ const CommunityPostWritePage = ({
         <p style={styles.desc}>{pageDesc}</p>
 
         <div style={styles.tip}>
-          글꼴, 색상, 크기, 정렬, 이미지, 파일 첨부를 사용할 수 있습니다.
+          글꼴, 글크기, 굵기, 색상, 정렬, 링크, 이미지, 파일 첨부를 사용할 수 있습니다.
         </div>
 
         {isStockBoard && (
@@ -278,23 +335,40 @@ const CommunityPostWritePage = ({
         )}
       </div>
 
-      <div style={styles.formCard}>
-        <input
-          name="title"
-          value={form.title}
-          onChange={handleChange}
-          placeholder="제목 입력"
-          style={styles.titleInput}
-        />
+      <form onSubmit={handleSubmit(onSubmit)} style={styles.formCard}>
+        <div>
+          <input
+            {...register("title", {
+              required: "제목을 입력해주세요.",
+              maxLength: {
+                value: 200,
+                message: "제목은 200자 이하로 입력해주세요.",
+              },
+            })}
+            placeholder="제목 입력"
+            style={{
+              ...styles.titleInput,
+              ...(errors.title ? styles.inputError : {}),
+            }}
+          />
+
+          <div style={styles.titleMeta}>
+            <span style={errors.title ? styles.errorText : styles.helperText}>
+              {errors.title?.message || "제목은 최대 200자까지 입력할 수 있습니다."}
+            </span>
+            <span style={styles.helperText}>{title?.length || 0}/200</span>
+          </div>
+        </div>
 
         {isAdmin && (
           <div style={styles.noticeBox}>
             <div style={styles.noticeTitle}>관리자 공지 등록</div>
+
             <div style={styles.noticeOptionRow}>
               <label style={styles.noticeOption}>
                 <input
                   type="checkbox"
-                  checked={form.noticeTarget === "global"}
+                  checked={noticeTarget === "global"}
                   onChange={() => handleNoticeTargetChange("global")}
                 />
                 전역공지
@@ -303,7 +377,7 @@ const CommunityPostWritePage = ({
               <label style={styles.noticeOption}>
                 <input
                   type="checkbox"
-                  checked={form.noticeTarget === "free"}
+                  checked={noticeTarget === "free"}
                   onChange={() => handleNoticeTargetChange("free")}
                 />
                 자유게시판공지
@@ -317,7 +391,7 @@ const CommunityPostWritePage = ({
               >
                 <input
                   type="checkbox"
-                  checked={form.noticeTarget === "stock"}
+                  checked={noticeTarget === "stock"}
                   onChange={() => handleNoticeTargetChange("stock")}
                   disabled={!symbol}
                 />
@@ -331,62 +405,95 @@ const CommunityPostWritePage = ({
           </div>
         )}
 
-        <RichTextEditor
-          value={form.content}
-          onChange={(html) =>
-            setForm((prev) => ({
-              ...prev,
-              content: html,
-            }))
-          }
-          onUploadImage={uploadImage}
-          minHeight={360}
-          placeholder="내용을 입력하세요. 이미지도 본문 안에 삽입할 수 있습니다."
-        />
+        <div>
+          <CommunityQuillEditor
+            value={content || ""}
+            onChange={(html) =>
+              setValue("content", html, {
+                shouldValidate: true,
+                shouldDirty: true,
+              })
+            }
+            onUploadImage={uploadImage}
+            placeholder="내용을 입력하세요. 이미지도 본문 안에 삽입할 수 있습니다."
+            minHeight={360}
+          />
 
-        <div style={styles.attachSection}>
-          <div style={styles.attachHeader}>
-            <strong>파일 첨부</strong>
-            <label style={styles.attachButton}>
-              파일 선택
-              <input
-                type="file"
-                multiple
-                onChange={handleAttachFiles}
-                style={{ display: "none" }}
-              />
-            </label>
+          <div style={styles.editorMeta}>
+            <span style={styles.helperText}>본문 {contentLength}자</span>
+            <span style={styles.helperText}>
+              글꼴, 글크기, 굵기, 정렬, 링크, 이미지 삽입 가능
+            </span>
           </div>
-
-          {uploadingFile && <div style={styles.helperText}>파일 업로드 중...</div>}
-
-          {attachedFiles.length > 0 && (
-            <div style={styles.fileList}>
-              {attachedFiles.map((file) => (
-                <div key={file.attachmentId} style={styles.fileItem}>
-                  <span style={styles.fileName}>{file.originalName}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveAttachedFile(file.attachmentId)}
-                    style={styles.removeFileButton}
-                  >
-                    제거
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
+        <div
+          {...getRootProps()}
+          style={{
+            ...styles.dropzone,
+            ...(isDragActive ? styles.dropzoneActive : {}),
+          }}
+        >
+          <input {...getInputProps()} />
+
+          <div style={styles.dropzoneContent}>
+            <div style={styles.dropzoneTitle}>
+              {isDragActive ? "여기에 파일을 놓으세요" : "파일 첨부"}
+            </div>
+
+            <div style={styles.dropzoneText}>
+              파일을 드래그하거나 버튼을 눌러 첨부할 수 있습니다.
+            </div>
+
+            <button
+              type="button"
+              onClick={open}
+              style={styles.attachButton}
+              disabled={uploadingFile}
+            >
+              {uploadingFile ? "업로드 중..." : "파일 선택"}
+            </button>
+          </div>
+        </div>
+
+        {attachedFiles.length > 0 && (
+          <div style={styles.fileList}>
+            {attachedFiles.map((file) => (
+              <div key={file.attachmentId} style={styles.fileItem}>
+                <div style={styles.fileInfo}>
+                  <span style={styles.fileIcon}>
+                    {file.fileType === "IMAGE" ? "🖼️" : "📎"}
+                  </span>
+                  <div style={styles.fileTextBox}>
+                    <span style={styles.fileName}>{file.originalName}</span>
+                    <span style={styles.fileSize}>
+                      {formatFileSize(file.fileSize)}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleRemoveAttachedFile(file.attachmentId)}
+                  style={styles.removeFileButton}
+                >
+                  제거
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div style={styles.btnRow}>
-          <button onClick={onBack} style={styles.cancel}>
+          <button type="button" onClick={onBack} style={styles.cancel}>
             취소
           </button>
-          <button onClick={handleSubmit} style={styles.submit} disabled={submitting}>
+
+          <button type="submit" style={styles.submit} disabled={submitting}>
             {submitting ? "등록 중..." : "등록"}
           </button>
         </div>
-      </div>
+      </form>
     </section>
   );
 };
@@ -398,11 +505,22 @@ const styles = {
     padding: 30,
     background: "#f8fafc",
   },
+  loadingCard: {
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 18,
+    padding: 40,
+    textAlign: "center",
+    color: "#6b7280",
+    fontWeight: 700,
+  },
   backButton: {
     marginBottom: 10,
     border: "none",
     background: "none",
     cursor: "pointer",
+    color: "#374151",
+    fontWeight: 700,
   },
   headerCard: {
     background: "linear-gradient(135deg, #4874d4, #c6d2e7)",
@@ -446,7 +564,7 @@ const styles = {
     marginTop: 8,
     fontSize: 13,
     color: "#fef3c7",
-    opacity: 0.9,
+    opacity: 0.95,
   },
   stockBox: {
     position: "absolute",
@@ -460,14 +578,26 @@ const styles = {
     borderRadius: 20,
     display: "grid",
     gap: 16,
+    boxShadow: "0 10px 24px rgba(15, 23, 42, 0.05)",
   },
   titleInput: {
     width: "100%",
     height: 50,
-    padding: 12,
+    padding: "0 14px",
     borderRadius: 12,
     border: "1px solid #ddd",
     fontSize: 16,
+    outline: "none",
+  },
+  inputError: {
+    borderColor: "#ef4444",
+    background: "#fff5f5",
+  },
+  titleMeta: {
+    marginTop: 8,
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 12,
   },
   noticeBox: {
     background: "#fff7ed",
@@ -502,18 +632,41 @@ const styles = {
     fontSize: 12,
     color: "#9a3412",
   },
-  attachSection: {
-    border: "1px solid #e5e7eb",
-    borderRadius: 14,
-    padding: 16,
-    background: "#fafafa",
-  },
-  attachHeader: {
+  editorMeta: {
+    marginTop: 8,
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
     gap: 12,
-    marginBottom: 10,
+    flexWrap: "wrap",
+  },
+  dropzone: {
+    border: "1.5px dashed #cbd5e1",
+    borderRadius: 16,
+    background: "#f8fafc",
+    padding: 18,
+    transition: "all 0.15s ease",
+  },
+  dropzoneActive: {
+    borderColor: "#4c6ef5",
+    background: "#eef2ff",
+  },
+  dropzoneContent: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 14,
+    flexWrap: "wrap",
+  },
+  dropzoneTitle: {
+    fontSize: 15,
+    fontWeight: 900,
+    color: "#111827",
+  },
+  dropzoneText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#6b7280",
+    minWidth: 220,
   },
   attachButton: {
     display: "inline-flex",
@@ -522,6 +675,7 @@ const styles = {
     height: 38,
     padding: "0 14px",
     borderRadius: 10,
+    border: "none",
     background: "#111827",
     color: "#fff",
     cursor: "pointer",
@@ -529,13 +683,18 @@ const styles = {
     fontWeight: 700,
   },
   helperText: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#6b7280",
+    fontWeight: 600,
+  },
+  errorText: {
+    fontSize: 12,
+    color: "#ef4444",
+    fontWeight: 700,
   },
   fileList: {
     display: "grid",
     gap: 10,
-    marginTop: 10,
   },
   fileItem: {
     display: "flex",
@@ -544,8 +703,22 @@ const styles = {
     gap: 12,
     background: "#fff",
     border: "1px solid #e5e7eb",
-    borderRadius: 10,
-    padding: "10px 12px",
+    borderRadius: 12,
+    padding: "12px 14px",
+  },
+  fileInfo: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    minWidth: 0,
+  },
+  fileIcon: {
+    fontSize: 20,
+  },
+  fileTextBox: {
+    display: "grid",
+    gap: 2,
+    minWidth: 0,
   },
   fileName: {
     fontSize: 14,
@@ -553,6 +726,12 @@ const styles = {
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
+    fontWeight: 700,
+  },
+  fileSize: {
+    fontSize: 12,
+    color: "#9ca3af",
+    fontWeight: 600,
   },
   removeFileButton: {
     border: "none",
