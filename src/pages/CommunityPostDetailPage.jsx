@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import CommunityQuillEditor from "../components/community/CommunityQuillEditor";
+import UserProfileModal from "../components/community/UserProfileModal";
 
 const REPORT_REASON_OPTIONS = [
   { value: "ABUSE", label: "욕설/비방" },
@@ -42,6 +43,7 @@ const CommunityPostDetailPage = ({
     detail: "",
   });
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState(null);
 
   const fetchPostDetail = async () => {
     if (!postId) return;
@@ -113,6 +115,43 @@ const CommunityPostDetailPage = ({
       return acc;
     }, {});
   }, [postDetail]);
+
+  const handleOpenUserProfile = (event, userId) => {
+    event.stopPropagation();
+    if (!userId) return;
+    setSelectedProfileUserId(userId);
+  };
+
+  const handleCloseUserProfile = () => {
+    setSelectedProfileUserId(null);
+  };
+
+  const handleMoveUserMyPage = (profile) => {
+    alert("마이페이지 이동은 AppController 연결 후 사용할 수 있습니다.");
+    handleCloseUserProfile();
+  };
+
+  const renderWriterName = (target, options = {}) => {
+    const level = target?.level ?? target?.communityLevel;
+    const levelIconUrl = target?.levelIconUrl ?? target?.levelImageUrl;
+
+    return (
+      <>
+        {levelIconUrl ? (
+          <img
+            src={levelIconUrl}
+            alt={level ? `Lv.${level}` : "level"}
+            style={styles.writerLevelIcon}
+          />
+        ) : null}
+        {level ? <span style={styles.writerLevelText}>Lv.{level}</span> : null}
+        <span>{target?.nickname}</span>
+        {options.showHolding && target?.hasBoughtStock ? (
+          <span style={styles.holdingMark}>★</span>
+        ) : null}
+      </>
+    );
+  };
 
   const canManagePost = useMemo(() => {
     if (!currentUser || !postDetail) return false;
@@ -645,13 +684,17 @@ const response = await fetch(`/api/community/comments/${commentId}`, {
       }}
     >
       <div style={styles.commentTop}>
-        <span style={styles.nickname}>
+        <button
+          type="button"
+          style={styles.nicknameButton}
+          onClick={(event) => handleOpenUserProfile(event, comment.userId)}
+        >
           {isReply && <span style={styles.replyMark}>↳ </span>}
-          {comment.nickname}
+          {renderWriterName(comment)}
           {comment.userId === postDetail.userId && (
             <span style={styles.authorBadge}>(작성자)</span>
           )}
-        </span>
+        </button>
 
         <div style={styles.commentTopRight}>
           <span style={styles.commentDate}>{formatDateTime(comment.createdAt)}</span>
@@ -799,10 +842,13 @@ const response = await fetch(`/api/community/comments/${commentId}`, {
               )}
 
               <div style={styles.metaRow}>
-                <span style={styles.nickname}>
-                  {postDetail.nickname}
-                  {postDetail.hasBoughtStock ? "★" : ""}
-                </span>
+                <button
+                  type="button"
+                  style={styles.nicknameButton}
+                  onClick={(event) => handleOpenUserProfile(event, postDetail.userId)}
+                >
+                  {renderWriterName(postDetail, { showHolding: true })}
+                </button>
                 <span>{formatDateTime(postDetail.createdAt)}</span>
                 <span>조회 {postDetail.viewCount ?? 0}</span>
                 <span>댓글 {postDetail.commentCount ?? 0}</span>
@@ -876,10 +922,13 @@ const response = await fetch(`/api/community/comments/${commentId}`, {
               </h1>
 
               <div style={styles.metaRow}>
-                <span style={styles.nickname}>
-                  {postDetail.nickname}
-                  {postDetail.hasBoughtStock ? "★" : ""}
-                </span>
+                <button
+                  type="button"
+                  style={styles.nicknameButton}
+                  onClick={(event) => handleOpenUserProfile(event, postDetail.userId)}
+                >
+                  {renderWriterName(postDetail, { showHolding: true })}
+                </button>
                 <span>{formatDateTime(postDetail.createdAt)}</span>
                 <span>조회 {postDetail.viewCount ?? 0}</span>
                 <span>댓글 {postDetail.commentCount ?? 0}</span>
@@ -1131,6 +1180,12 @@ const response = await fetch(`/api/community/comments/${commentId}`, {
           </div>
         </div>
       )}
+
+      <UserProfileModal
+        userId={selectedProfileUserId}
+        onClose={handleCloseUserProfile}
+        onMoveMyPage={handleMoveUserMyPage}
+      />
     </>
   );
 };
@@ -1228,6 +1283,25 @@ const styles = {
     fontSize: "13px",
     color: "#6b7280",
     marginBottom: "20px",
+  },
+  nicknameButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "4px",
+    border: "none",
+    background: "transparent",
+    color: "#2563eb",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "800",
+    padding: "2px 4px",
+    borderRadius: "8px",
+  },
+  holdingMark: {
+    color: "#f59e0b",
+    fontSize: "13px",
+    fontWeight: "900",
   },
   nickname: {
     fontWeight: "800",
@@ -1801,6 +1875,26 @@ const styles = {
     fontWeight: "700",
     fontSize: "14px",
   },
+  writerLevelIcon: {
+    width: "12px",
+    height: "12px",
+    minWidth: "12px",
+    maxWidth: "12px",
+    maxHeight: "12px",
+    objectFit: "contain",
+    display: "inline-block",
+    verticalAlign: "middle",
+    flexShrink: 0,
+    opacity: 0.9,
+  },
+  writerLevelText: {
+    fontSize: "10px",
+    fontWeight: "800",
+    color: "#64748b",
+    lineHeight: 1,
+    whiteSpace: "nowrap",
+  },
+
 };
 
 export default CommunityPostDetailPage;
