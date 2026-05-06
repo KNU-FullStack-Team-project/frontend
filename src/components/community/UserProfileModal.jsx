@@ -140,6 +140,37 @@ const UserProfileModal = ({ userId, onClose, onMoveMyPage }) => {
             </div>
 
             <div style={styles.section}>
+              <div style={styles.sectionTitle}>대회 기록</div>
+              <div style={styles.competitionGrid}>
+                <div style={styles.competitionItem}>
+                  <span style={styles.competitionIcon}>🏆</span>
+                  <span style={styles.competitionLabel}>참가</span>
+                  <strong style={styles.competitionValue}>{formatNumber(profile.competitionParticipationCount)}회</strong>
+                </div>
+                <div style={styles.competitionItem}>
+                  <span style={styles.competitionIcon}>🥇</span>
+                  <span style={styles.competitionLabel}>우승</span>
+                  <strong style={styles.competitionValue}>{formatNumber(profile.competitionFirstCount)}회</strong>
+                </div>
+                <div style={styles.competitionItem}>
+                  <span style={styles.competitionIcon}>🥈</span>
+                  <span style={styles.competitionLabel}>준우승</span>
+                  <strong style={styles.competitionValue}>{formatNumber(profile.competitionSecondCount)}회</strong>
+                </div>
+                <div style={styles.competitionItem}>
+                  <span style={styles.competitionIcon}>🥉</span>
+                  <span style={styles.competitionLabel}>3등</span>
+                  <strong style={styles.competitionValue}>{formatNumber(profile.competitionThirdCount)}회</strong>
+                </div>
+                <div style={styles.competitionItemWide}>
+                  <span style={styles.competitionIcon}>⭐</span>
+                  <span style={styles.competitionLabel}>TOP3 입상</span>
+                  <strong style={styles.competitionValue}>{formatNumber(profile.competitionTop3Count)}회</strong>
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.section}>
               <div style={styles.sectionTitle}>대표 뱃지</div>
               {profile.badges?.length > 0 ? (
                 <div style={styles.badgeGrid}>
@@ -184,7 +215,7 @@ const styles = {
     backdropFilter: "blur(4px)",
   },
   card: {
-    width: "min(520px, 100%)",
+    width: "min(560px, 100%)",
     maxHeight: "90vh",
     overflowY: "auto",
     background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
@@ -341,6 +372,47 @@ const styles = {
     fontWeight: "900",
     color: "#111827",
     marginBottom: "10px",
+  },
+  competitionGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, 1fr)",
+    gap: "10px",
+  },
+  competitionItem: {
+    padding: "12px 8px",
+    borderRadius: "16px",
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    textAlign: "center",
+  },
+  competitionItemWide: {
+    gridColumn: "span 4",
+    padding: "13px 14px",
+    borderRadius: "16px",
+    background: "linear-gradient(135deg, #fffbeb, #fff7ed)",
+    border: "1px solid #fed7aa",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "10px",
+  },
+  competitionIcon: {
+    display: "block",
+    fontSize: "20px",
+    marginBottom: "5px",
+  },
+  competitionLabel: {
+    display: "block",
+    color: "#64748b",
+    fontSize: "11px",
+    fontWeight: "900",
+  },
+  competitionValue: {
+    display: "block",
+    marginTop: "4px",
+    color: "#111827",
+    fontSize: "16px",
+    fontWeight: "900",
   },
   badgeGrid: {
     display: "flex",
