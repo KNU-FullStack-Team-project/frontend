@@ -160,13 +160,6 @@ const UserProfileModal = ({ userId, onClose, onMoveMyPage }) => {
             </div>
 
             <div style={styles.footer}>
-              <button
-                type="button"
-                style={styles.primaryButton}
-                onClick={() => onMoveMyPage?.(profile)}
-              >
-                마이페이지 보기
-              </button>
               <button type="button" style={styles.secondaryButton} onClick={onClose}>
                 닫기
               </button>
