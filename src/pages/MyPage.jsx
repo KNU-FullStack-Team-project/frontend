@@ -58,6 +58,13 @@ const TEXT = {
   postCount: "게시글",
   commentCount: "댓글",
   receivedLikeCount: "받은 추천",
+  competitionRecord: "대회 기록",
+  competitionRecordDesc: "종료 처리된 대회 결과를 기준으로 집계됩니다.",
+  competitionParticipationCount: "대회 참가",
+  competitionFirstCount: "우승",
+  competitionSecondCount: "준우승",
+  competitionThirdCount: "3등",
+  competitionTop3Count: "TOP3 입상",
   noBadges: "획득한 뱃지가 없습니다.",
 };
 
@@ -471,6 +478,58 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                     <span className="mypage-info-value">
                       {communityProfile.receivedLikeCount ?? 0}
                     </span>
+                  </div>
+                </div>
+
+                <div className="mypage-community-badge-wrap">
+                  <div className="mypage-community-badge-title">
+                    {TEXT.competitionRecord}
+                  </div>
+                  <p className="mypage-community-empty">
+                    {TEXT.competitionRecordDesc}
+                  </p>
+
+                  <div className="mypage-info-list">
+                    <div className="mypage-info-item">
+                      <span className="mypage-info-label">
+                        {TEXT.competitionParticipationCount}
+                      </span>
+                      <span className="mypage-info-value">
+                        {communityProfile.competitionParticipationCount ?? 0}회
+                      </span>
+                    </div>
+                    <div className="mypage-info-item">
+                      <span className="mypage-info-label">
+                        {TEXT.competitionFirstCount}
+                      </span>
+                      <span className="mypage-info-value">
+                        {communityProfile.competitionFirstCount ?? 0}회
+                      </span>
+                    </div>
+                    <div className="mypage-info-item">
+                      <span className="mypage-info-label">
+                        {TEXT.competitionSecondCount}
+                      </span>
+                      <span className="mypage-info-value">
+                        {communityProfile.competitionSecondCount ?? 0}회
+                      </span>
+                    </div>
+                    <div className="mypage-info-item">
+                      <span className="mypage-info-label">
+                        {TEXT.competitionThirdCount}
+                      </span>
+                      <span className="mypage-info-value">
+                        {communityProfile.competitionThirdCount ?? 0}회
+                      </span>
+                    </div>
+                    <div className="mypage-info-item">
+                      <span className="mypage-info-label">
+                        {TEXT.competitionTop3Count}
+                      </span>
+                      <span className="mypage-info-value">
+                        {communityProfile.competitionTop3Count ?? 0}회
+                      </span>
+                    </div>
                   </div>
                 </div>
 
