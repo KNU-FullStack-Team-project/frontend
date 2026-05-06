@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import UserProfileModal from "../components/community/UserProfileModal";
 
 const PAGE_SIZE = 10;
 const BOARD_NOTICE_PREVIEW_COUNT = 1;
@@ -26,6 +27,8 @@ const StockCommunityPage = ({
   const [filterType, setFilterType] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [showAllStockBoardNotices, setShowAllStockBoardNotices] = useState(false);
+
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState(null);
 
   const currentUserId = currentUser?.userId ?? currentUser?.id ?? null;
 
@@ -225,6 +228,43 @@ const StockCommunityPage = ({
     setFilterType(nextFilter);
   };
 
+  const handleOpenUserProfile = (event, userId) => {
+    event.stopPropagation();
+    if (!userId) return;
+    setSelectedProfileUserId(userId);
+  };
+
+  const handleCloseUserProfile = () => {
+    setSelectedProfileUserId(null);
+  };
+
+  const handleMoveUserMyPage = (profile) => {
+    alert("마이페이지 이동은 AppController 연결 후 사용할 수 있습니다.");
+    handleCloseUserProfile();
+  };
+
+  const renderWriterName = (target, options = {}) => {
+    const level = target?.level ?? target?.communityLevel;
+    const levelIconUrl = target?.levelIconUrl ?? target?.levelImageUrl;
+
+    return (
+      <>
+        {levelIconUrl ? (
+          <img
+            src={levelIconUrl}
+            alt={level ? `Lv.${level}` : "level"}
+            style={styles.writerLevelIcon}
+          />
+        ) : null}
+        {level ? <span style={styles.writerLevelText}>Lv.{level}</span> : null}
+        <span>{target?.nickname}</span>
+        {options.showHolding && target?.hasBoughtStock ? (
+          <span style={styles.holdingMark}>★</span>
+        ) : null}
+      </>
+    );
+  };
+
   const getRowStyle = (post) => {
     if ((post.likeCount ?? 0) >= 10) {
       return {
@@ -255,7 +295,13 @@ const StockCommunityPage = ({
         <div style={styles.boardNoticeTextWrap}>
           <div style={styles.boardNoticeTitle}>{post.title}</div>
           <div style={styles.boardNoticeMeta}>
-            <span>{post.nickname}</span>
+            <button
+              type="button"
+              style={styles.nicknameButton}
+              onClick={(event) => handleOpenUserProfile(event, post.userId)}
+            >
+              {renderWriterName(post, { showHolding: true })}
+            </button>
             <span>{formatDateTime(post.createdAt)}</span>
             <span>댓글 {post.commentCount ?? 0}</span>
           </div>
@@ -288,10 +334,13 @@ const StockCommunityPage = ({
         </span>
       </td>
       <td style={styles.td}>
-        <span style={styles.nickname}>
-          {post.nickname}
-          {post.hasBoughtStock ? "★" : ""}
-        </span>
+        <button
+          type="button"
+          style={styles.nicknameButton}
+          onClick={(event) => handleOpenUserProfile(event, post.userId)}
+        >
+          {renderWriterName(post, { showHolding: true })}
+        </button>
       </td>
       <td style={styles.td}>{formatDateTime(post.createdAt)}</td>
       <td style={styles.td}>{post.viewCount ?? 0}</td>
@@ -622,6 +671,13 @@ const StockCommunityPage = ({
           </div>
         </div>
       </div>
+
+
+      <UserProfileModal
+        userId={selectedProfileUserId}
+        onClose={handleCloseUserProfile}
+        onMoveMyPage={handleMoveUserMyPage}
+      />
     </section>
   );
 };
@@ -1022,6 +1078,25 @@ const styles = {
     borderBottom: "1px solid #e5e7eb",
     textAlign: "center",
   },
+  nicknameButton: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "4px",
+    border: "none",
+    background: "transparent",
+    color: "#2563eb",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "800",
+    padding: "2px 4px",
+    borderRadius: "8px",
+  },
+  holdingMark: {
+    color: "#f59e0b",
+    fontSize: "13px",
+    fontWeight: "900",
+  },
   tr: {
     cursor: "pointer",
     borderBottom: "1px solid #f1f5f9",
@@ -1126,6 +1201,26 @@ const styles = {
     color: "#6b7280",
     lineHeight: "1.6",
   },
+  writerLevelIcon: {
+    width: "12px",
+    height: "12px",
+    minWidth: "12px",
+    maxWidth: "12px",
+    maxHeight: "12px",
+    objectFit: "contain",
+    display: "inline-block",
+    verticalAlign: "middle",
+    flexShrink: 0,
+    opacity: 0.9,
+  },
+  writerLevelText: {
+    fontSize: "10px",
+    fontWeight: "800",
+    color: "#64748b",
+    lineHeight: 1,
+    whiteSpace: "nowrap",
+  },
+
 };
 
 export default StockCommunityPage;

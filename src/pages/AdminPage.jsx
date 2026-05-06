@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import AppButton from "../common/AppButton";
+import UserProfileModal from "../components/community/UserProfileModal";
 
 const ROLE_OPTIONS = ["USER", "ADMIN"];
 const STATUS_OPTIONS = ["ACTIVE", "SUSPENDED"];
@@ -46,6 +47,11 @@ const AdminPage = ({
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState("");
   const [reportSearchKeyword, setReportSearchKeyword] = useState("");
+  const [communityUsers, setCommunityUsers] = useState([]);
+  const [communityUserLoading, setCommunityUserLoading] = useState(false);
+  const [communityUserError, setCommunityUserError] = useState("");
+  const [communityUserSearchKeyword, setCommunityUserSearchKeyword] = useState("");
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState(null);
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -132,6 +138,40 @@ const AdminPage = ({
     };
 
     loadReports();
+  }, [activeTab]);
+
+
+
+  useEffect(() => {
+    if (activeTab !== "community") {
+      return;
+    }
+
+    const loadCommunityUsers = async () => {
+      setCommunityUserLoading(true);
+      setCommunityUserError("");
+
+      try {
+        const response = await fetch("/api/admin/community/users", {
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text || "커뮤니티 활동 정보를 불러오지 못했습니다.");
+        }
+
+        const data = await response.json();
+        setCommunityUsers(Array.isArray(data) ? data : []);
+      } catch (loadError) {
+        setCommunityUserError(loadError.message || "커뮤니티 활동 정보를 불러오지 못했습니다.");
+        setCommunityUsers([]);
+      } finally {
+        setCommunityUserLoading(false);
+      }
+    };
+
+    loadCommunityUsers();
   }, [activeTab]);
 
   const handleUserFieldChange = (userId, field, value) => {
@@ -233,6 +273,31 @@ const AdminPage = ({
     }
   };
 
+
+  const handleOpenUserProfile = (userId) => {
+    if (!userId) return;
+    setSelectedProfileUserId(userId);
+  };
+
+  const handleCloseUserProfile = () => {
+    setSelectedProfileUserId(null);
+  };
+
+  const handleMoveUserMyPageFromProfile = (profile) => {
+    if (onOpenUserMyPage) {
+      onOpenUserMyPage({
+        id: profile.userId,
+        userId: profile.userId,
+        email: profile.email,
+        nickname: profile.nickname,
+        profileImageUrl: profile.profileImageUrl,
+        role: profile.role,
+        status: profile.status,
+      });
+    }
+    handleCloseUserProfile();
+  };
+
   const filteredUsers = users.filter((user) => {
     const keyword = searchKeyword.trim().toLowerCase();
 
@@ -291,6 +356,30 @@ const AdminPage = ({
     );
   }, [reports, reportSearchKeyword]);
 
+
+
+  const filteredCommunityUsers = useMemo(() => {
+    const keyword = communityUserSearchKeyword.trim().toLowerCase();
+
+    if (!keyword) {
+      return communityUsers;
+    }
+
+    return communityUsers.filter((user) =>
+      [
+        user.userId,
+        user.email,
+        user.nickname,
+        user.role,
+        user.status,
+        user.levelName,
+        ...(user.badges || []).map((badge) => badge.label),
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword)),
+    );
+  }, [communityUsers, communityUserSearchKeyword]);
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -343,6 +432,17 @@ const AdminPage = ({
               >
                 로그인로그
               </button>
+              <button
+                type="button"
+                className={`admin-toolbar-button ${activeTab === "community" ? "is-active" : ""
+                  }`}
+                onClick={() => {
+                  setActiveTab("community");
+                  setCommunityUserSearchKeyword("");
+                }}
+              >
+                커뮤니티활동
+              </button>
             </div>
             {activeTab === "users" ? (
               <div className="admin-search-wrap">
@@ -364,6 +464,16 @@ const AdminPage = ({
                   onChange={(event) =>
                     setLoginLogSearchKeyword(event.target.value)
                   }
+                />
+              </div>
+            ) : activeTab === "community" ? (
+              <div className="admin-search-wrap">
+                <input
+                  type="text"
+                  className="admin-search-input"
+                  placeholder="닉네임, 이메일, 레벨, 뱃지 검색"
+                  value={communityUserSearchKeyword}
+                  onChange={(event) => setCommunityUserSearchKeyword(event.target.value)}
                 />
               </div>
             ) : (
@@ -470,6 +580,86 @@ const AdminPage = ({
                         </div>
                       </td>
                       <td>{report.reportStatus || "-"}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          ) : activeTab === "community" ? (
+            <table className="stock-table admin-table">
+              <thead>
+                <tr>
+                  <th>유저</th>
+                  <th>레벨</th>
+                  <th>뱃지</th>
+                  <th>게시글</th>
+                  <th>댓글</th>
+                  <th>받은 추천</th>
+                  <th>신고</th>
+                  <th>주문</th>
+                  <th>상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                {communityUserLoading ? (
+                  <tr>
+                    <td colSpan="9">커뮤니티 활동 정보를 불러오는 중입니다.</td>
+                  </tr>
+                ) : communityUserError ? (
+                  <tr>
+                    <td colSpan="9">{communityUserError}</td>
+                  </tr>
+                ) : filteredCommunityUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan="9">조회된 커뮤니티 활동 정보가 없습니다.</td>
+                  </tr>
+                ) : (
+                  filteredCommunityUsers.map((user) => (
+                    <tr key={user.userId}>
+                      <td>
+                        <button
+                          type="button"
+                          className="activity-table-link"
+                          onClick={() => handleOpenUserProfile(user.userId)}
+                        >
+                          {user.nickname || "-"}
+                        </button>
+                        <div className="report-sub-text">{user.email || "-"}</div>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
+                          <img
+                            src={user.levelImageUrl || `/assets/community-badges/level-${user.communityLevel || 1}.png`}
+                            alt={`Lv.${user.communityLevel}`}
+                            style={{ width: "28px", height: "28px", borderRadius: "999px", objectFit: "cover" }}
+                          />
+                          <strong>{`Lv.${user.communityLevel || 1}`}</strong>
+                        </div>
+                        <div className="report-sub-text">{user.levelName || "-"}</div>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap" }}>
+                          {(user.badges || []).length === 0 ? (
+                            <span className="report-sub-text">-</span>
+                          ) : (
+                            user.badges.map((badge) => (
+                              <img
+                                key={badge.code}
+                                src={badge.imageUrl}
+                                alt={badge.label}
+                                title={badge.label}
+                                style={{ width: "28px", height: "28px", borderRadius: "999px", objectFit: "cover" }}
+                              />
+                            ))
+                          )}
+                        </div>
+                      </td>
+                      <td>{user.postCount ?? 0}</td>
+                      <td>{user.commentCount ?? 0}</td>
+                      <td>{user.receivedLikeCount ?? 0}</td>
+                      <td>{user.reportCount ?? 0}</td>
+                      <td>{user.orderCount ?? 0}</td>
+                      <td>{user.status || "-"}</td>
                     </tr>
                   ))
                 )}
@@ -640,6 +830,12 @@ const AdminPage = ({
           )}
         </div>
       ) : null}
+
+      <UserProfileModal
+        userId={selectedProfileUserId}
+        onClose={handleCloseUserProfile}
+        onMoveMyPage={handleMoveUserMyPageFromProfile}
+      />
     </div>
   );
 };
