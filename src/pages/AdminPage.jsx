@@ -96,15 +96,15 @@ const AdminPage = ({
       setLoginLogError("");
 
       try {
-        const response = await fetch("/api/admin/login-logs");
+        const response = await fetch("/api/admin/account-logs");
 
         if (!response.ok) {
-          throw new Error("로그인 로그를 불러오지 못했습니다.");
+          throw new Error("계정 기록을 불러오지 못했습니다.");
         }
 
         setLoginLogs(await response.json());
       } catch (loadError) {
-        setLoginLogError(loadError.message || "로그인 로그를 불러오지 못했습니다.");
+        setLoginLogError(loadError.message || "계정 기록을 불러오지 못했습니다.");
       } finally {
         setLoginLogLoading(false);
       }
@@ -326,6 +326,7 @@ const AdminPage = ({
         log.nickname,
         log.loginId,
         log.actionLabel,
+        log.detail,
       ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(keyword)),
@@ -430,7 +431,7 @@ const AdminPage = ({
                   setLoginLogSearchKeyword("");
                 }}
               >
-                로그인로그
+                계정기록
               </button>
               <button
                 type="button"
@@ -459,7 +460,7 @@ const AdminPage = ({
                 <input
                   type="text"
                   className="admin-search-input"
-                  placeholder="날짜, 닉네임, 아이디 검색"
+                  placeholder="날짜, 닉네임, 아이디, 기록, 사유 검색"
                   value={loginLogSearchKeyword}
                   onChange={(event) =>
                     setLoginLogSearchKeyword(event.target.value)
@@ -496,21 +497,22 @@ const AdminPage = ({
                   <th>날짜</th>
                   <th>닉네임</th>
                   <th>아이디</th>
-                  <th>로그인/로그아웃</th>
+                  <th>기록</th>
+                  <th>상세</th>
                 </tr>
               </thead>
               <tbody>
                 {loginLogLoading ? (
                   <tr>
-                    <td colSpan="4">로그인 로그를 불러오는 중입니다.</td>
+                    <td colSpan="5">계정 기록을 불러오는 중입니다.</td>
                   </tr>
                 ) : loginLogError ? (
                   <tr>
-                    <td colSpan="4">{loginLogError}</td>
+                    <td colSpan="5">{loginLogError}</td>
                   </tr>
                 ) : filteredLoginLogs.length === 0 ? (
                   <tr>
-                    <td colSpan="4">조회된 로그인 로그가 없습니다.</td>
+                    <td colSpan="5">조회된 계정 기록이 없습니다.</td>
                   </tr>
                 ) : (
                   filteredLoginLogs.map((log, index) => (
@@ -519,6 +521,7 @@ const AdminPage = ({
                       <td>{log.nickname || "-"}</td>
                       <td>{log.loginId || "-"}</td>
                       <td>{log.actionLabel || "-"}</td>
+                      <td>{log.detail || "-"}</td>
                     </tr>
                   ))
                 )}

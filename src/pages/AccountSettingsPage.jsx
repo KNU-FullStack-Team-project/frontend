@@ -42,6 +42,9 @@ const AccountSettingsPage = ({
   const [passwordMessage, setPasswordMessage] = useState("");
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [isWithdrawSaving, setIsWithdrawSaving] = useState(false);
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+  const [withdrawReason, setWithdrawReason] = useState("");
+  const [withdrawDeletionAgreed, setWithdrawDeletionAgreed] = useState(false);
   const fileInputRef = useRef(null);
 
   const isPasswordValid = isStrongPassword(passwordForm.newPassword);
@@ -63,6 +66,11 @@ const AccountSettingsPage = ({
     isPasswordValid &&
     isPasswordMatch &&
     !isPasswordSaving;
+  const canWithdraw =
+    Boolean(currentUser?.email) &&
+    Boolean(withdrawReason.trim()) &&
+    withdrawDeletionAgreed &&
+    !isWithdrawSaving;
 
   useEffect(() => {
     if (!currentUser?.email || isNicknameComposing) {
@@ -327,7 +335,17 @@ const AccountSettingsPage = ({
       return;
     }
 
-    if (!window.confirm("정말 회원탈퇴를 진행할까요?")) {
+    if (!withdrawReason.trim()) {
+      alert("회원 탈퇴 사유를 입력해 주세요.");
+      return;
+    }
+
+    if (!withdrawDeletionAgreed) {
+      alert("탈퇴 동의 항목을 체크해야 회원탈퇴를 진행할 수 있습니다.");
+      return;
+    }
+
+    if (!window.confirm("회원탈퇴를 진행하면 보유 중인 모든 계좌가 삭제됩니다. 정말 진행할까요?")) {
       return;
     }
 
@@ -341,6 +359,8 @@ const AccountSettingsPage = ({
         },
         body: JSON.stringify({
           email: currentUser.email,
+          reason: withdrawReason.trim(),
+          deletionAgreed: withdrawDeletionAgreed,
         }),
       });
 
@@ -350,6 +370,9 @@ const AccountSettingsPage = ({
         throw new Error(message || "회원탈퇴에 실패했습니다.");
       }
 
+      setWithdrawReason("");
+      setWithdrawDeletionAgreed(false);
+      setIsWithdrawModalOpen(false);
       alert(message || "회원탈퇴가 완료되었습니다.");
       onLogout?.();
     } catch (withdrawError) {
@@ -551,23 +574,99 @@ const AccountSettingsPage = ({
       </div>
 
       <div className="content-card" style={{ marginTop: '30px', borderTop: '1px solid #fee2e2' }}>
-        <div className="section-header" style={{ marginBottom: 0, paddingBottom: 0, borderBottom: 'none' }}>
+        <div className="section-header" style={{ marginBottom: '20px', paddingBottom: '18px' }}>
           <div>
             <h3 style={{ color: '#ef4444', margin: 0 }}>회원 탈퇴</h3>
-            <p className="mypage-subtext" style={{ margin: 0 }}>탈퇴 시 모든 정보가 삭제되며 복구할 수 없습니다.</p>
-          </div>
-          <div className="password-form__actions">
-            <AppButton
-              type="button"
-              variant="danger"
-              onClick={handleWithdraw}
-              disabled={isWithdrawSaving}
-            >
-              {isWithdrawSaving ? "처리 중..." : "회원탈퇴"}
-            </AppButton>
           </div>
         </div>
+
+        <div style={styles.withdrawWarning}>
+          회원탈퇴 진행 시 보유 중인 모든 계좌, 보유 종목, 주문 내역이 삭제됩니다.
+        </div>
+
+        <div className="password-form__actions" style={{ justifyContent: 'flex-end', marginTop: '20px' }}>
+          <AppButton
+            type="button"
+            variant="danger"
+            onClick={() => setIsWithdrawModalOpen(true)}
+            disabled={isWithdrawSaving}
+          >
+            회원탈퇴
+          </AppButton>
+        </div>
       </div>
+
+      {isWithdrawModalOpen ? (
+        <div style={styles.withdrawModalOverlay} onMouseDown={() => !isWithdrawSaving && setIsWithdrawModalOpen(false)}>
+          <div style={styles.withdrawModal} onMouseDown={(event) => event.stopPropagation()}>
+            <div style={styles.withdrawModalHeader}>
+              <div>
+                <h3 style={styles.withdrawModalTitle}>회원 탈퇴</h3>
+                <p style={styles.withdrawModalText}>
+                  탈퇴 사유를 입력하고 계정 영구 삭제에 동의해 주세요.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsWithdrawModalOpen(false)}
+                disabled={isWithdrawSaving}
+                style={styles.withdrawModalClose}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={styles.withdrawWarning}>
+              탈퇴 시 모든 계좌와 계정 정보가 삭제되며, 기존 게시글은 삭제되지 않고 유지됩니다.
+            </div>
+
+            <label style={styles.withdrawField}>
+              <span style={styles.withdrawLabel}>회원 탈퇴 사유</span>
+              <textarea
+                value={withdrawReason}
+                onChange={(event) => setWithdrawReason(event.target.value)}
+                maxLength={500}
+                rows={4}
+                placeholder="탈퇴 사유를 입력해 주세요."
+                style={styles.withdrawTextarea}
+                autoFocus
+              />
+              <span style={styles.withdrawCounter}>{withdrawReason.length}/500</span>
+            </label>
+
+            <label style={styles.withdrawAgree}>
+              <input
+                type="checkbox"
+                checked={withdrawDeletionAgreed}
+                onChange={(event) => setWithdrawDeletionAgreed(event.target.checked)}
+                style={styles.withdrawCheckbox}
+              />
+              <span>
+                회원탈퇴 진행 시 보유 중인 모든 계좌, 보유 종목, 주문 내역이 삭제됩니다.
+              </span>
+            </label>
+
+            <div style={styles.withdrawModalActions}>
+              <AppButton
+                type="button"
+                variant="outline"
+                onClick={() => setIsWithdrawModalOpen(false)}
+                disabled={isWithdrawSaving}
+              >
+                취소
+              </AppButton>
+              <AppButton
+                type="button"
+                variant="danger"
+                onClick={handleWithdraw}
+                disabled={!canWithdraw}
+              >
+                {isWithdrawSaving ? "처리 중..." : "회원탈퇴"}
+              </AppButton>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };
@@ -615,6 +714,118 @@ const styles = {
     color: "rgba(255, 255, 255, 0.9)",
     lineHeight: "1.6",
     maxWidth: "800px",
+  },
+  withdrawWarning: {
+    padding: "16px 18px",
+    borderRadius: "14px",
+    border: "1px solid #fecaca",
+    background: "#fff1f2",
+    color: "#991b1b",
+    fontSize: "14px",
+    lineHeight: 1.7,
+    marginBottom: "18px",
+  },
+  withdrawModalOverlay: {
+    position: "fixed",
+    inset: 0,
+    zIndex: 10000,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "20px",
+    background: "rgba(15, 23, 42, 0.56)",
+    backdropFilter: "blur(4px)",
+  },
+  withdrawModal: {
+    width: "min(560px, 100%)",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    borderRadius: "18px",
+    border: "1px solid #fee2e2",
+    background: "#ffffff",
+    boxShadow: "0 24px 70px rgba(15, 23, 42, 0.26)",
+    padding: "24px",
+  },
+  withdrawModalHeader: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: "16px",
+    marginBottom: "18px",
+  },
+  withdrawModalTitle: {
+    margin: 0,
+    color: "#ef4444",
+    fontSize: "22px",
+    fontWeight: 800,
+  },
+  withdrawModalText: {
+    margin: "6px 0 0",
+    color: "#64748b",
+    fontSize: "14px",
+    lineHeight: 1.6,
+  },
+  withdrawModalClose: {
+    width: "34px",
+    height: "34px",
+    borderRadius: "999px",
+    border: "1px solid #e5e7eb",
+    background: "#ffffff",
+    color: "#64748b",
+    cursor: "pointer",
+    fontSize: "22px",
+    lineHeight: 1,
+  },
+  withdrawField: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+  },
+  withdrawLabel: {
+    color: "#334155",
+    fontSize: "14px",
+    fontWeight: 700,
+  },
+  withdrawTextarea: {
+    width: "100%",
+    minHeight: "110px",
+    border: "1px solid #cbd5e1",
+    borderRadius: "14px",
+    padding: "14px 16px",
+    fontSize: "14px",
+    lineHeight: 1.6,
+    resize: "vertical",
+    outline: "none",
+    boxSizing: "border-box",
+    background: "#f8fafc",
+  },
+  withdrawCounter: {
+    alignSelf: "flex-end",
+    color: "#94a3b8",
+    fontSize: "12px",
+  },
+  withdrawAgree: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: "10px",
+    marginTop: "16px",
+    color: "#475569",
+    fontSize: "14px",
+    lineHeight: 1.6,
+  },
+  withdrawCheckbox: {
+    width: "18px",
+    height: "18px",
+    marginTop: "2px",
+    accentColor: "#ef4444",
+    flex: "0 0 auto",
+  },
+  withdrawModalActions: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "10px",
+    marginTop: "22px",
+    flexWrap: "wrap",
   },
 };
 
