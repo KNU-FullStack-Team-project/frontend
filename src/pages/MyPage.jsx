@@ -50,10 +50,27 @@ const TEXT = {
   profitRate: "수익률",
   assetGrowthTitle: "자산 성장 곡선",
   assetGrowthDesc: "일일 자산 총액 변동 추이입니다.",
+  communityInfo: "커뮤니티 정보",
+  communityInfoDesc: "게시글, 댓글, 추천 활동을 기준으로 계산됩니다.",
+  communityLevel: "커뮤니티 등급",
+  activityScore: "활동 점수",
+  badges: "보유 뱃지",
+  postCount: "게시글",
+  commentCount: "댓글",
+  receivedLikeCount: "받은 추천",
+  competitionRecord: "대회 기록",
+  competitionRecordDesc: "종료 처리된 대회 결과를 기준으로 집계됩니다.",
+  competitionParticipationCount: "대회 참가",
+  competitionFirstCount: "우승",
+  competitionSecondCount: "준우승",
+  competitionThirdCount: "3등",
+  competitionTop3Count: "TOP3 입상",
+  noBadges: "획득한 뱃지가 없습니다.",
 };
 
 const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   const [profile, setProfile] = useState(null);
+  const [communityProfile, setCommunityProfile] = useState(null);
   const [dashboard, setDashboard] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [selectedAccountId, setSelectedAccountId] = useState(null);
@@ -68,10 +85,31 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   const selectedAccount =
     accounts.find((account) => account.accountId === selectedAccountId) || null;
 
+  const fetchCommunityProfile = async (userId) => {
+    if (!userId) {
+      setCommunityProfile(null);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/community/users/${userId}/profile`);
+
+      if (!response.ok) {
+        setCommunityProfile(null);
+        return;
+      }
+
+      const data = await response.json();
+      setCommunityProfile(data);
+    } catch (err) {
+      console.error("Community profile load failed:", err);
+      setCommunityProfile(null);
+    }
+  };
+
   const fetchDashboardData = async (accountId) => {
     setIsLoading(true);
     try {
-      // 대시보드 데이터 조회
       const dashResponse = await fetch(
         `/api/accounts/my/dashboard?email=${targetEmail}&accountId=${accountId}`
       );
@@ -81,7 +119,6 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
         setDashboard(data);
       }
 
-      // 자산 히스토리(스냅샷) 조회
       const snapResponse = await fetch(`/api/portfolio/snapshots/${accountId}`);
       if (snapResponse.ok) {
         const snapData = await snapResponse.json();
@@ -135,8 +172,16 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
 
       setError("");
 
-      // 참여 대회 정보 가져오기
-      const userId = profileData?.id || currentUser?.userId;
+      const userId =
+        profileData?.userId ||
+        profileData?.id ||
+        viewedUser?.userId ||
+        viewedUser?.id ||
+        currentUser?.userId ||
+        currentUser?.id;
+
+      await fetchCommunityProfile(userId);
+
       if (userId) {
         const compResponse = await fetch(
           `/api/competitions/my?userId=${userId}`
@@ -174,12 +219,9 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
     setResettingAccountId(accountId);
 
     try {
-      const response = await fetch(
-        `/api/accounts/${accountId}/reset-cash`,
-        {
-          method: "POST",
-        }
-      );
+      const response = await fetch(`/api/accounts/${accountId}/reset-cash`, {
+        method: "POST",
+      });
 
       if (!response.ok) {
         const message = await response.text();
@@ -197,6 +239,7 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
   const profileImageUrl = profile?.profileImageUrl
     ? `${profile.profileImageUrl}`
     : "";
+
   const createdAtText = profile?.createdAt?.includes("T")
     ? profile.createdAt.split("T")[0]
     : profile?.createdAt?.slice(0, 10) || "-";
@@ -277,7 +320,9 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
               <div className="mypage-profile-copy">
                 <strong>{profile?.nickname ?? TEXT.user}</strong>
                 <div className="mypage-email-wrapper">
-                  <span title={profile?.email ?? targetEmail}>{profile?.email ?? targetEmail ?? "-"}</span>
+                  <span title={profile?.email ?? targetEmail}>
+                    {profile?.email ?? targetEmail ?? "-"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -315,18 +360,22 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                       <div
                         key={account.accountId}
                         type="button"
-                        className={`mypage-account-card ${isSelected ? "is-selected" : ""
-                          }`}
+                        className={`mypage-account-card ${
+                          isSelected ? "is-selected" : ""
+                        }`}
                         onClick={() => setSelectedAccountId(account.accountId)}
                       >
                         <div className="mypage-account-top">
                           <div>
                             <strong className="mypage-account-name">
-                              {account.accountName || `${TEXT.account} ${index + 1}`}
+                              {account.accountName ||
+                                `${TEXT.account} ${index + 1}`}
                             </strong>
                             <div className="mypage-account-meta">
                               {isMainAccount ? (
-                                <span className="mypage-badge">{TEXT.mainAccount}</span>
+                                <span className="mypage-badge">
+                                  {TEXT.mainAccount}
+                                </span>
                               ) : null}
                               {isSelected ? (
                                 <span className="mypage-badge active">
@@ -374,6 +423,146 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                 </div>
               )}
             </div>
+
+            {communityProfile ? (
+              <div className="mypage-community-section">
+                <div className="mypage-section-head">
+                  <div>
+                    <h3>{TEXT.communityInfo}</h3>
+                    <p>{TEXT.communityInfoDesc}</p>
+                  </div>
+                </div>
+
+                <div className="mypage-community-level-card">
+                  <div className="mypage-community-level-left">
+                    <div className="mypage-community-level-icon">
+                      {communityProfile.levelImageUrl ? (
+                        <img
+                          src={communityProfile.levelImageUrl}
+                          alt={`Lv.${communityProfile.communityLevel}`}
+                        />
+                      ) : (
+                        <span>{communityProfile.communityLevel ?? 1}</span>
+                      )}
+                    </div>
+
+                    <div className="mypage-community-level-copy">
+                      <strong>
+                        Lv.{communityProfile.communityLevel ?? 1}{" "}
+                        {communityProfile.levelName || "초보"}
+                      </strong>
+                      <span>
+                        {TEXT.activityScore} {communityProfile.activityScore ?? 0}점
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mypage-info-list">
+                  <div className="mypage-info-item">
+                    <span className="mypage-info-label">{TEXT.postCount}</span>
+                    <span className="mypage-info-value">
+                      {communityProfile.postCount ?? 0}
+                    </span>
+                  </div>
+                  <div className="mypage-info-item">
+                    <span className="mypage-info-label">{TEXT.commentCount}</span>
+                    <span className="mypage-info-value">
+                      {communityProfile.commentCount ?? 0}
+                    </span>
+                  </div>
+                  <div className="mypage-info-item">
+                    <span className="mypage-info-label">
+                      {TEXT.receivedLikeCount}
+                    </span>
+                    <span className="mypage-info-value">
+                      {communityProfile.receivedLikeCount ?? 0}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mypage-community-badge-wrap">
+                  <div className="mypage-community-badge-title">
+                    {TEXT.competitionRecord}
+                  </div>
+                  <p className="mypage-community-empty">
+                    {TEXT.competitionRecordDesc}
+                  </p>
+
+                  <div className="mypage-info-list">
+                    <div className="mypage-info-item">
+                      <span className="mypage-info-label">
+                        {TEXT.competitionParticipationCount}
+                      </span>
+                      <span className="mypage-info-value">
+                        {communityProfile.competitionParticipationCount ?? 0}회
+                      </span>
+                    </div>
+                    <div className="mypage-info-item">
+                      <span className="mypage-info-label">
+                        {TEXT.competitionFirstCount}
+                      </span>
+                      <span className="mypage-info-value">
+                        {communityProfile.competitionFirstCount ?? 0}회
+                      </span>
+                    </div>
+                    <div className="mypage-info-item">
+                      <span className="mypage-info-label">
+                        {TEXT.competitionSecondCount}
+                      </span>
+                      <span className="mypage-info-value">
+                        {communityProfile.competitionSecondCount ?? 0}회
+                      </span>
+                    </div>
+                    <div className="mypage-info-item">
+                      <span className="mypage-info-label">
+                        {TEXT.competitionThirdCount}
+                      </span>
+                      <span className="mypage-info-value">
+                        {communityProfile.competitionThirdCount ?? 0}회
+                      </span>
+                    </div>
+                    <div className="mypage-info-item">
+                      <span className="mypage-info-label">
+                        {TEXT.competitionTop3Count}
+                      </span>
+                      <span className="mypage-info-value">
+                        {communityProfile.competitionTop3Count ?? 0}회
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mypage-community-badge-wrap">
+                  <div className="mypage-community-badge-title">
+                    {TEXT.badges}
+                  </div>
+
+                  {(communityProfile.badges || []).length > 0 ? (
+                    <div className="mypage-community-badge-list">
+                      {communityProfile.badges.map((badge) => (
+                        <span
+                          key={badge.code}
+                          className="mypage-badge mypage-community-badge"
+                          title={badge.description || badge.label}
+                        >
+                          {badge.imageUrl ? (
+                            <img
+                              src={badge.imageUrl}
+                              alt={badge.label}
+                              className="mypage-community-badge-icon"
+                            />
+                          ) : null}
+                          {badge.label}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mypage-community-empty">{TEXT.noBadges}</p>
+                  )}
+                </div>
+              </div>
+            ) : null}
           </section>
         </aside>
 
@@ -483,8 +672,9 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                               return (
                                 <tr key={`${item.stockName}-${index}`}>
                                   <td>{item.stockName}</td>
-                                  <td>{`${item.quantity?.toLocaleString()}${TEXT.shares
-                                    }`}</td>
+                                  <td>{`${item.quantity?.toLocaleString()}${
+                                    TEXT.shares
+                                  }`}</td>
                                   <td>{item.averageBuyPrice}</td>
                                   <td>{item.currentPrice}</td>
                                   <td className={rateClass}>
@@ -506,13 +696,23 @@ const MyPage = ({ currentUser, viewedUser, onMoveAccountSettings }) => {
                 </div>
               </section>
 
-              {/* [이동] 자산 성장 곡선 차트 (자산 현황과 주문 내역 사이) */}
-              <section className="content-card mypage-growth-card" style={{ marginBottom: "24px", marginTop: "24px" }}>
+              <section
+                className="content-card mypage-growth-card"
+                style={{ marginBottom: "24px", marginTop: "24px" }}
+              >
                 <div className="mypage-card-header">
                   <div>
                     <p className="mypage-eyebrow">Performance</p>
                     <h2 className="mypage-title">{TEXT.assetGrowthTitle}</h2>
-                    <p style={{ fontSize: "14px", color: "#6b7280", marginTop: "4px" }}>{TEXT.assetGrowthDesc}</p>
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        color: "#6b7280",
+                        marginTop: "4px",
+                      }}
+                    >
+                      {TEXT.assetGrowthDesc}
+                    </p>
                   </div>
                 </div>
                 <div style={{ padding: "10px 0" }}>

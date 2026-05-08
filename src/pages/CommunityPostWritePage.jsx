@@ -120,7 +120,7 @@ const getSubmitConfig = () => {
       };
     }
 
-   return {
+    return {
   submitUrl: isStockBoard
     ? `/api/community/stocks/${symbol}/posts`
     : `/api/community/boards/free/posts`,
